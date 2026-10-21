@@ -1,0 +1,49 @@
+# Secrets: never in git (AGENTS.md, never list)
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+restic-password*
+*credentials*.json
+
+# Private project notes: a separate private repository (D-031). Never commit.
+/private/
+
+# Claude Code local settings (per machine)
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Tests and tools
+node_modules/
+playwright-report/
+test-results/
+
+# Data, dumps and logs
+data/
+backups/
+*.dump
+*.sql.gz
+*.log
+
+# OS and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
