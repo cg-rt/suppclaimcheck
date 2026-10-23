@@ -1,0 +1,17 @@
+# Developer tools for the whole repo (D-032). Not a module: each module in services/ has its own project.
+[project]
+name = "suppclaimcheck-dev"
+version = "0.0.0"
+description = "Repo-wide developer tools for SuppClaimCheck"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pre-commit==4.6.2",
+]
+
+[tool.uv]
+package = false
+# Only releases at least two weeks old, indirect dependencies included (AGENTS.md section 7).
+exclude-newer = "14 days"

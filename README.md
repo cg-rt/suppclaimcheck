@@ -46,6 +46,17 @@ Only `edge` and `gateway` can reach the internet. Everything else runs on an int
 | [Architecture map](docs/architecture/architecture.yaml) | Modules, networks and the path of one claim |
 | [Agent rules](AGENTS.md) | How AI agents work on this repo, and what they must never do |
 
+## Working on it
+
+Python tools run through [uv](https://docs.astral.sh/uv/); the private-words hook needs Node. Set up the commit checks once per clone:
+
+```bash
+uv sync
+uv run pre-commit install
+```
+
+Every commit then runs gitleaks, ruff, the whitespace and end-of-file fixers and the private-words check ([D-032](docs/DECISIONS.md)). To run them on every file: `uv run pre-commit run --all-files`.
+
 ## How it is built
 
 Built by its owner ([cg-rt](https://github.com/cg-rt)) with AI-assisted development. The owner scopes, designs, directs, tests and operates it; AI agents (Claude Code) write much of the code under the rules in [AGENTS.md](AGENTS.md), enforced by the hooks in `.claude/`. Project-management notes are kept privately.
