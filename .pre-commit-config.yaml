@@ -30,3 +30,11 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+
+      # The README diagram and the viewer data are generated from the map (P0.4).
+      - id: map-build-check
+        name: generated map files are up to date
+        entry: uv run python tools/map_build.py --check
+        language: system
+        pass_filenames: false
+        files: ^(docs/architecture/architecture\.yaml|README\.md|docs/architecture/viewer/map-data\.js|tools/map_build\.py)$

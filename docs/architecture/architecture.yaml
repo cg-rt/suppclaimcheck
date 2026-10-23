@@ -5,17 +5,19 @@
 # Update at every phase gate and whenever a module, port, dependency or version changes.
 
 schema_version: 1
-updated: 2026-10-21
+updated: 2026-10-23
 
 system:
   name: SuppClaimCheck
   summary: >
     Checks claims about dietary supplements against open-access biomedical literature.
     The user confirms the claim before any spending; code verifies every quote and computes the verdict and score.
+  host_label: Ubuntu VM in Hyper-V, Docker Engine   # short form for diagrams
   host: Hyper-V VM scc-prod (Ubuntu Server 26.04 LTS, Docker Engine) on the owner's Windows 11 mini PC (home server)
   public_hostnames:
     - suppclaimcheck.com          # public site -> web
     - admin.suppclaimcheck.com    # admin -> web, behind Cloudflare Access
+  entry: {client: Browser, via: Cloudflare Tunnel + Access, module: edge}   # how a visitor's request arrives
 
 networks:
   - id: internal
@@ -28,6 +30,7 @@ networks:
 modules:
   - id: edge
     name: Edge
+    role: tunnel in from Cloudflare
     folder: services/edge
     containers: [edge]
     status: planned          # planned | built | live
@@ -46,6 +49,7 @@ modules:
 
   - id: web
     name: Web
+    role: site, admin, login
     folder: services/web
     containers: [web]
     status: planned
@@ -66,6 +70,7 @@ modules:
 
   - id: core
     name: Core
+    role: jobs, pipeline, retrieval
     folder: services/core
     containers: [core-api, core-worker]
     status: planned
@@ -86,6 +91,7 @@ modules:
 
   - id: gateway
     name: Gateway
+    role: LLMs, sources, budget
     folder: services/gateway
     containers: [gateway]
     status: planned
@@ -106,6 +112,8 @@ modules:
 
   - id: postgres
     name: PostgreSQL
+    role: data, queue, vectors
+    kind: datastore          # drawn as a database
     folder: services/postgres
     containers: [postgres]
     status: planned

@@ -13,6 +13,10 @@ dev = [
     "pyyaml==6.0.3",
 ]
 
+[tool.ruff]
+# Scripts in tools/ import each other as top-level modules.
+src = [".", "tools"]
+
 [tool.pytest.ini_options]
 testpaths = ["tools/tests"]
 pythonpath = ["tools"]
