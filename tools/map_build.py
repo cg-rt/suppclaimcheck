@@ -85,7 +85,8 @@ def mermaid(map_data: dict) -> str:
         if apis and not (entry and module["id"] == entry["module"]):
             ext = "x_" + node_id(module["id"])[2:]
             lines.append(
-                f"  {node_id(module['id'])} --> {ext}([{label(', '.join(apis))}])"
+                f"  {node_id(module['id'])} --> "
+                f"{ext}[{label('Outside services<br/>' + ', '.join(apis))}]"
             )
 
     egress = [m for m in modules if internet & set(m.get("networks", []))]

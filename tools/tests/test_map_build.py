@@ -31,6 +31,7 @@ SMALL_MAP = {
             "containers": ["api", "worker"],
             "networks": ["internal"],
             "depends_on": ["db", "db"],
+            "external_apis": ["LLM"],
         },
         {
             "id": "db",
@@ -53,6 +54,7 @@ def test_mermaid_draws_entry_modules_and_dependencies():
     # A container name resolves to its module; duplicate dependencies are drawn once.
     assert "  m_edge --> m_core" in lines
     assert lines.count("  m_core --> m_db") == 1
+    assert '  m_core --> x_core["Outside services<br/>LLM"]' in lines
     # The entry module's outside service is the entry itself, so it gets no extra node.
     assert not any("x_edge" in line for line in lines)
     assert "  class m_edge egress" in lines
