@@ -29,7 +29,7 @@ Read this first, every session. It is the single source of agent instructions; `
 | `docs/EVALS.md` | Eval set description and results table |
 | `docs/architecture/architecture.yaml` | Architecture map: single source for the viewer and the README diagram |
 | `services/<module>/` | One folder per module: `edge`, `web`, `core`, `gateway`, `postgres` (from Phase 1) |
-| `deploy/` | Compose files, `versions.env`, deploy, rollback, backup and restore scripts |
+| `deploy/` | Compose files, `versions.env`, deploy, rollback, backup and restore scripts; `deploy/host/` builds the production VM |
 | `evals/` | `cases/` (tuning) and `held_out/` (never used for tuning) |
 | `tools/` | Developer tools, such as `check-private-words.mjs` |
 | `.claude/` | Claude Code hooks |
