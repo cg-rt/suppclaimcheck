@@ -87,6 +87,7 @@ Project-management decisions are kept in a private repository and share this num
 - **Trade-offs:** Postgres full-text ranking is not true BM25; acceptable at this scale. Only one embedding model is evaluated (a domain model is in the backlog).
 
 ### D-020 · 2026-10-21 · LLM providers: bake-off, provisional choice · [Together]
+- **Superseded in part by D-033 (2026-10-23):** v1 runs on Claude only; the bake-off below moves to after v1. The price and data-terms notes stay as reference.
 - **Decision:** compare three providers on the eval set in Phase 2. Prices are USD per million tokens, input/output:
   - Anthropic: Claude Haiku 5.5 at 0.10 / 0.50; Sonnet 5.5 at 2 / 10. API data not used for training. Processing is global or US-only, so EU-only would need AWS or Google Cloud.
   - Google: Gemini 3.1 Flash-Lite at 0.25 / 1.50; Gemini 3.6 Flash at 0.75 / 3.75, doubling on 1 Jan 2027. Paid-tier data not used to improve products. EU regions only via Vertex AI.
@@ -137,3 +138,9 @@ Project-management decisions are kept in a private repository and share this num
 - **Decision:** the pre-commit framework runs gitleaks, ruff (check and format), the trailing-whitespace and end-of-file fixers, and the private-words check (D-031) on every commit, whoever makes it. pre-commit itself is pinned in a repo-root uv project that holds developer tools only (`pyproject.toml` with a `dev` group, `uv.lock` committed, not a package); uv takes only releases at least 14 days old, indirect dependencies included. Hook repos are pinned to commit SHAs with the tag in a comment, as D-023 does for Actions.
 - **Alternatives:** `uv tool install pre-commit` (per machine, version not in the repo); `gitleaks-docker` (Docker must be running for every commit); `gitleaks-system` (a separate binary to install and keep updated).
 - **Trade-offs:** the first run after install takes about 2 minutes while pre-commit builds gitleaks (it downloads Go if needed). Node must be on the PATH for the private-words hook. The root project is not a uv workspace; whether modules join one is decided when the first module is created.
+
+### D-033 · 2026-10-23 · Claude only for v1; provider bake-off after v1 · [Owner]
+- **Context:** D-020 planned accounts with three LLM providers in Phase 0 and a bake-off in Phase 2 (P2.08). Phases 1–2 already ran on Claude Haiku 5.5 alone, so the other two accounts would sit unused, and the bake-off adds work to a schedule that is already late.
+- **Decision:** v1 uses Anthropic only (Claude Haiku 5.5 as provisional model, Sonnet 5.5 available for comparison within Anthropic). Only the Anthropic account and spend limit are set up. Whether to compare other providers is decided after v1.
+- **Kept:** the gateway's provider interface stays swappable (P1.06), so adding a provider later is one adapter plus an eval run. Model choice remains versioned config, and any model change still needs an eval run (AGENTS.md section 8).
+- **Trade-offs:** no measured cross-provider comparison in v1, so the model choice is defended by Claude's own eval results and cost, not by a comparison, and the planning agent is itself a Claude model (D-020's disclosure). No fallback during an Anthropic outage: checks fail cleanly and are retried later. Processing stays global or US-only; EU-only processing would need another provider.

@@ -65,9 +65,8 @@ To be written in P2.02 (`core eval run --config <version> [--held-out]`). Live r
 | Setting | Verdict acc. | Quote pass | Notes |
 |---|---|---|---|
 
-### Provider bake-off (P2.08)
-| Model | Verdict acc. | Quote pass | Structured-output failures | EUR per check | p95 s | Data terms | EU processing |
-|---|---|---|---|---|---|---|---|
+### Provider bake-off
+Not in v1: v1 runs on Claude only (D-033). A comparison with other providers may follow after v1, using this eval set.
 
 ## Outcome measures
 Measures that involve people (manual vs assisted checking time, tester ratings) are kept privately and summarised elsewhere by the owner.

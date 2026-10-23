@@ -36,7 +36,7 @@ flowchart LR
   m_core --> m_postgres
   m_core --> m_gateway
   m_gateway --> m_postgres
-  m_gateway --> x_gateway["Outside services<br/>Anthropic, Google Gemini, Mistral, NCBI E-utilities, Europe PMC, PMC Cloud Service, article websites, Telegram"]
+  m_gateway --> x_gateway["Outside services<br/>Anthropic, NCBI E-utilities, Europe PMC, PMC Cloud Service, article websites, Telegram"]
   classDef egress stroke-dasharray: 5 4
   class m_edge,m_gateway egress
 ```
