@@ -143,6 +143,12 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 
 ---
 
+## RB-14 Rebuild the production VM
+**Status:** steps verified on 2026-10-23 (first build)
+- **When:** the VM is lost or corrupted, or the host is replaced.
+- **Steps:** follow [`deploy/host/README.md`](../deploy/host/README.md): turn on Hyper-V, create the VM with `01-create-vm.ps1`, install Ubuntu Server, set up key login, then run `02-ssh-hardening.sh` and `03-docker-firewall-updates.sh`. Then deploy the current versions (RB-13) and restore the database (RB-12).
+- **Verify:** only SSH answers from the host; `docker run --rm hello-world` works on the VM; the smoke test passes after the deploy.
+
 ## Release go-live checklist
 To be completed in P3.13. Copy it into the private log for each release and tick it there.
 - [ ] CI green on the release commit; all tests pass
