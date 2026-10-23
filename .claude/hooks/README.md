@@ -32,7 +32,7 @@ node --test .claude/hooks/hooks.test.mjs
 Each test sends a hook the same JSON Claude Code would send and checks the decision. Quoted text and heredoc bodies, such as commit messages, are not treated as commands.
 
 ## Limits
-- They bind Claude Code only. Pre-commit (planned) and GitHub push protection cover every committer.
+- They bind Claude Code only. Pre-commit (`.pre-commit-config.yaml`, D-032) and GitHub push protection cover every committer.
 - The guards read command text, not git's own parser. They err towards blocking: any `git … push` on one line counts as a push, even when `push` is only part of a branch name such as `fix/hooks-push-x`. A `-C` folder that isn't a git repo blocks the push.
 - An agent could edit these files. Changes to `.claude/` show up in the pull request, so review them there.
 - To pause them on one machine, set `"disableAllHooks": true` in `.claude/settings.local.json` (not committed). Remove it again afterwards.

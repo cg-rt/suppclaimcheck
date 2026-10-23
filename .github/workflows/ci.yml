@@ -1,0 +1,84 @@
+# CI skeleton (P0.3). Every action is pinned to a full commit SHA; the comment names the tag (D-023).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # The release binary, checked against its published SHA-256, instead of a third-party action.
+      - name: Install gitleaks
+        env:
+          VERSION: 8.30.1
+          SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl -sSfL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          echo "${SHA256}  gitleaks.tar.gz" | sha256sum --check
+          tar -xzf gitleaks.tar.gz gitleaks
+      - name: Scan the whole git history
+        run: ./gitleaks git --redact --verbose --exit-code 1 .
+
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+        with:
+          version: "0.13.4"
+      - run: uv sync --locked
+      # The gitleaks hook scans staged changes, and CI has none; the gitleaks job above scans the whole history.
+      - name: Run the commit hooks on every file
+        env:
+          SKIP: gitleaks
+        run: uv run pre-commit run --all-files --show-diff-on-failure
+
+  repo-checks:
+    name: repo checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+        with:
+          version: "0.13.4"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: "24"
+      - run: uv sync --locked
+      - name: No tracked files under private/ (D-031)
+        run: |
+          tracked="$(git ls-files -- private)"
+          if [ -n "$tracked" ]; then
+            echo "These files are under private/, which must never be committed:"
+            echo "$tracked"
+            exit 1
+          fi
+      - name: Architecture map matches services/
+        run: uv run python tools/check_map.py
+      - name: Tool tests
+        run: uv run pytest
+      - name: Claude Code hook tests
+        run: node --test .claude/hooks/hooks.test.mjs

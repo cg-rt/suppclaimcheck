@@ -1,6 +1,7 @@
 # Architecture map: the single source of truth.
 # The viewer (docs/architecture/viewer/, P0.4) and the README Mermaid diagram are generated from this file.
-# Rule: every folder in services/ appears here as a module and vice versa (CI check, P0.3).
+# Rule: every folder in services/ appears here as a module, and every built or live module has its folder
+# (tools/check_map.py, run in CI, P0.3). Planned modules may not have a folder yet.
 # Update at every phase gate and whenever a module, port, dependency or version changes.
 
 schema_version: 1

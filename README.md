@@ -57,6 +57,8 @@ uv run pre-commit install
 
 Every commit then runs gitleaks, ruff, the whitespace and end-of-file fixers and the private-words check ([D-032](docs/DECISIONS.md)). To run them on every file: `uv run pre-commit run --all-files`.
 
+CI (`.github/workflows/ci.yml`) runs the same hooks on every pull request, plus a gitleaks scan of the whole history, a check that the [architecture map](docs/architecture/architecture.yaml) matches `services/`, a check that nothing under `private/` is tracked, and the tests (`uv run pytest`, `node --test .claude/hooks/hooks.test.mjs`).
+
 ## How it is built
 
 Built by its owner ([cg-rt](https://github.com/cg-rt)) with AI-assisted development. The owner scopes, designs, directs, tests and operates it; AI agents (Claude Code) write much of the code under the rules in [AGENTS.md](AGENTS.md), enforced by the hooks in `.claude/`. Project-management notes are kept privately.

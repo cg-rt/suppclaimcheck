@@ -9,7 +9,13 @@ dependencies = []
 [dependency-groups]
 dev = [
     "pre-commit==4.6.2",
+    "pytest==9.1.1",
+    "pyyaml==6.0.3",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tools/tests"]
+pythonpath = ["tools"]
 
 [tool.uv]
 package = false
