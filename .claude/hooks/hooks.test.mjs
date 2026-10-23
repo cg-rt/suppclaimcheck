@@ -10,8 +10,12 @@ import { fileURLToPath } from 'node:url';
 
 const HOOKS = fileURLToPath(new URL('.', import.meta.url));
 
+// Without CLAUDE_PROJECT_DIR the guard takes the test's folder as the project, so results don't depend on the machine.
+const ENV = { ...process.env };
+delete ENV.CLAUDE_PROJECT_DIR;
+
 function run(script, payload) {
-  const result = spawnSync(process.execPath, [join(HOOKS, script)], { input: JSON.stringify(payload), encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [join(HOOKS, script)], { input: JSON.stringify(payload), encoding: 'utf8', env: ENV });
   const out = result.stdout.trim();
   return { code: result.status, output: out ? JSON.parse(out) : null };
 }
@@ -140,16 +144,124 @@ test('command guard allows pushing from a feature branch', () => {
   }
 });
 
+// --- Pushing with git -C -----------------------------------------------------
+// The branch that counts is the one in the repo git -C points at. The private notes repo (D-031)
+// is pushed from the project root with `git -C private push`, straight to its main.
+
+const slash = (path) => path.replace(/\\/g, '/');
+const featureBranch = (dir) => execFileSync('git', ['switch', '-c', 'feat/x'], { cwd: dir, stdio: 'ignore' });
+
+// A project on main whose private/ folder is its own repo, also on main.
+function projectWithPrivateRepo() {
+  const dir = tempRepo();
+  initRepo(join(dir, 'private'));
+  return dir;
+}
+
+test('command guard blocks git -C into a repo on main, even from outside any repo', () => {
+  const dir = tempRepo();
+  try {
+    const r = shell(`git -C "${slash(dir)}" push -u origin feat/x`);
+    assert.ok(isDenied(r), JSON.stringify(r.output));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('command guard allows git -C into a feature-branch repo while the session repo is on main', () => {
+  const session = tempRepo();
+  const other = tempRepo();
+  try {
+    featureBranch(other);
+    assert.equal(shell(`git -C "${slash(other)}" push -u origin feat/x`, 'Bash', session).output, null);
+  } finally {
+    rmSync(session, { recursive: true, force: true });
+    rmSync(other, { recursive: true, force: true });
+  }
+});
+
+test('command guard allows pushing the private notes repo with git -C private push', () => {
+  const dir = projectWithPrivateRepo();
+  try {
+    assert.equal(shell('git -C private push', 'Bash', dir).output, null);
+    assert.equal(shell('git -C private add -A && git -C private commit -F msg.txt && git -C private push', 'Bash', dir).output, null);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('command guard still blocks pushing the project repo from main when a private repo exists', () => {
+  const dir = projectWithPrivateRepo();
+  try {
+    assert.ok(isDenied(shell('git push -u origin feat/x', 'Bash', dir)));
+    assert.ok(isDenied(shell('git -C private push && git push -u origin feat/x', 'Bash', dir)));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('command guard blocks git -C private push when private/ is not its own repo', () => {
+  const dir = tempRepo();
+  try {
+    mkdirSync(join(dir, 'private'));
+    const r = shell('git -C private push', 'Bash', dir);
+    assert.ok(isDenied(r), JSON.stringify(r.output));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('command guard blocks a push whose -C folder is not a git repo', () => {
+  const dir = tempRepo();
+  try {
+    featureBranch(dir);
+    const r = shell('git -C does-not-exist push', 'Bash', dir);
+    assert.ok(isDenied(r), JSON.stringify(r.output));
+    assert.match(r.output.hookSpecificOutput.permissionDecisionReason, /not a git repo/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('command guard reads a quoted -C path that contains spaces', () => {
+  const session = tempRepo();
+  const other = tempRepo('scc hook test-');
+  try {
+    featureBranch(other);
+    assert.equal(shell(`git -C "${slash(other)}" push`, 'Bash', session).output, null);
+  } finally {
+    rmSync(session, { recursive: true, force: true });
+    rmSync(other, { recursive: true, force: true });
+  }
+});
+
+test('command guard reads Git Bash /d/... paths after -C', { skip: process.platform !== 'win32' }, () => {
+  const session = tempRepo();
+  const other = tempRepo();
+  try {
+    featureBranch(other);
+    const posix = slash(other).replace(/^([a-zA-Z]):/, (_, drive) => `/${drive.toLowerCase()}`);
+    assert.equal(shell(`git -C ${posix} push`, 'Bash', session).output, null);
+  } finally {
+    rmSync(session, { recursive: true, force: true });
+    rmSync(other, { recursive: true, force: true });
+  }
+});
+
 // --- Stop reminder -----------------------------------------------------------
 
-function tempRepo() {
-  const dir = mkdtempSync(join(tmpdir(), 'scc-hook-test-'));
+function initRepo(dir) {
+  mkdirSync(dir, { recursive: true });
   const git = (...args) => execFileSync('git', ['-c', 'user.email=test@example.com', '-c', 'user.name=test', ...args], { cwd: dir, stdio: 'ignore' });
   git('init', '-b', 'main');
   writeFileSync(join(dir, 'README.md'), 'test\n');
   git('add', '.');
   git('commit', '-m', 'init');
   return dir;
+}
+
+function tempRepo(prefix = 'scc-hook-test-') {
+  return initRepo(mkdtempSync(join(tmpdir(), prefix)));
 }
 
 const HOUR_AGO = new Date(Date.now() - 3600_000);
@@ -246,6 +358,19 @@ test('command guard blocks a commit that stages files under private/', () => {
     gitIn(dir, 'add', '-f', 'private/plan.md');
     const r = shell('git commit -m "add plan"', 'Bash', dir);
     assert.ok(isDenied(r), JSON.stringify(r.output));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('command guard checks the private words in the repo that git -C commit points at', () => {
+  const dir = projectWithPrivateRepo();
+  try {
+    writeFileSync(join(dir, 'private', 'pii-patterns.txt'), '# test list\nzanzibar\n');
+    writeFileSync(join(dir, 'notes.txt'), 'Greetings from Zanzibar\n');
+    gitIn(dir, 'add', 'notes.txt');
+    assert.ok(isDenied(shell('git commit -m "add notes"', 'Bash', dir)));
+    assert.equal(shell('git -C private commit -m "add notes"', 'Bash', dir).output, null);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
