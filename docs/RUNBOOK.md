@@ -24,9 +24,13 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** the tunnel is healthy in the dashboard; the site loads on your phone over mobile data.
 
 ## RB-02 Machine rebooted by Windows Update
-**Status:** draft, VM part to be verified by the Phase 0 reboot drill
+**Status:** VM part verified by the reboot drill on 2026-10-23: Windows booted, and the VM started on its own about a minute later (the 30 s start delay plus boot), before anyone signed in. Containers to be verified in Phase 1.
 - **Symptoms:** a short outage (UptimeRobot down, then up); Windows shows a recent restart.
 - **Checks:** did the VM start by itself? Did all containers come back healthy?
+- **Good to know:**
+  - Windows may sign the user in automatically after a restart and then lock the screen, so a session can exist before anyone touches the PC. The VM's start does not depend on it.
+  - The Default Switch gives the VM a new IP address after a host restart. Always use `scc-prod.mshome.net` (or the `scc-prod` SSH alias), never the IP.
+  - The VM's clock runs on UTC; compare times with the host's local time accordingly.
 - **Commands** (Windows PowerShell as administrator, then the VM):
   ```powershell
   Get-VM scc-prod | Select-Object Name, State, Uptime
