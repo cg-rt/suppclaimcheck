@@ -130,7 +130,7 @@ window.ARCHITECTURE_MAP = {
       "version": "0.0.0",
       "phase_built": 1,
       "technology": "Python 3.14, FastAPI, provider SDKs, httpx",
-      "purpose": "The single door to the outside world: LLM providers (interface, prompts, token and cost accounting, budget guard), PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts.\n",
+      "purpose": "The single door to the outside world: the LLM provider (Anthropic Claude for v1, D-033, behind a swappable interface; prompts, token and cost accounting, budget guard), PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts.\n",
       "why_it_exists": "Holds every API key, so the budget cap cannot be bypassed and egress is one auditable place. Merges the AI gateway and the sources connector (D-011).\n",
       "ports": {
         "internal": 8000,
@@ -148,8 +148,6 @@ window.ARCHITECTURE_MAP = {
       ],
       "external_apis": [
         "Anthropic",
-        "Google Gemini",
-        "Mistral",
         "NCBI E-utilities",
         "Europe PMC",
         "PMC Cloud Service",

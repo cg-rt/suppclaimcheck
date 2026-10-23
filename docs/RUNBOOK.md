@@ -102,7 +102,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   ```bash
   docker compose logs --since 30m gateway | grep -Ei "provider|401|429|5[0-9]{2}"
   ```
-- **Fix:** 401 means the key is wrong, expired or revoked: rotate the secret and restart `gateway`. 429 means rate-limited: backoff handles short bursts; for sustained limits, check the provider console limits. 5xx means a provider outage: check the provider's status page. If a second provider adapter has passed the evals, activate a config version that uses it (admin → Configuration, with a reason).
+- **Fix:** 401 means the key is wrong, expired or revoked: rotate the secret and restart `gateway`. 429 means rate-limited: backoff handles short bursts; for sustained limits, check the provider console limits. 5xx means a provider outage: check the provider's status page. v1 has a single provider (D-033), so there is no fallback: jobs fail cleanly at that stage; retry them from admin once the status page shows recovery.
 - **Verify:** a test claim completes; failed jobs retried from admin.
 
 ## RB-09 Budget cap reached
