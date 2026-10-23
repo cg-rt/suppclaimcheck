@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Architecture map · SuppClaimCheck</title>
+  <link rel="stylesheet" href="viewer.css">
+  <script src="map-data.js" defer></script>
+  <script src="viewer.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <h1>How SuppClaimCheck fits together</h1>
+    <p class="lede" id="summary"></p>
+    <p class="meta" id="meta"></p>
+  </header>
+
+  <main>
+    <section class="map" aria-labelledby="map-title">
+      <h2 id="map-title" class="visually-hidden">System map</h2>
+      <p class="hint">Choose a module to see what it does and why it exists. A dashed outline means it can reach the internet.</p>
+      <div class="diagram" id="diagram">
+        <svg class="wires" id="wires" aria-hidden="true"></svg>
+      </div>
+    </section>
+
+    <div class="study">
+      <section class="detail" id="detail" aria-live="polite" aria-labelledby="detail-title"></section>
+
+      <section class="path" aria-labelledby="path-title">
+        <h2 id="path-title">Follow one claim</h2>
+        <div class="stepper">
+          <button type="button" class="step-nav" id="prev">Previous</button>
+          <p class="step-count" id="step-count" aria-live="polite"></p>
+          <button type="button" class="step-nav" id="next">Next</button>
+          <button type="button" class="step-nav step-clear" id="clear" hidden>Show whole system</button>
+        </div>
+        <div class="step-now" id="step-now"></div>
+        <ol class="steps" id="steps"></ol>
+      </section>
+    </div>
+
+    <section class="deferred" aria-labelledby="deferred-title">
+      <h2 id="deferred-title">Merged or deferred</h2>
+      <p>Modules from the original proposal that are not separate containers in v1.</p>
+      <dl id="deferred"></dl>
+    </section>
+  </main>
+
+  <footer class="colophon">
+    <p>Generated from <code>docs/architecture/architecture.yaml</code> by <code>tools/map_build.py</code>. Works offline: open this file in any browser.</p>
+  </footer>
+
+  <noscript><p class="noscript">This page needs JavaScript. The same map is in <code>docs/architecture/architecture.yaml</code>.</p></noscript>
+</body>
+</html>

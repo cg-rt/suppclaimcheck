@@ -78,6 +78,8 @@ jobs:
           fi
       - name: Architecture map matches services/
         run: uv run python tools/check_map.py
+      - name: Generated map files are up to date
+        run: uv run python tools/map_build.py --check
       - name: Tool tests
         run: uv run pytest
       - name: Claude Code hook tests

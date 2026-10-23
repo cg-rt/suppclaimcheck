@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "architecture-viewer",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "-m", "http.server", "18090", "--bind", "127.0.0.1", "--directory", "docs/architecture/viewer"],
+      "port": 18090
+    }
+  ]
+}
