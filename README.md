@@ -67,6 +67,8 @@ uv run pre-commit install
 
 Every commit then runs gitleaks, ruff, the whitespace and end-of-file fixers and the private-words check ([D-032](docs/DECISIONS.md)). To run them on every file: `uv run pre-commit run --all-files`.
 
+After changing `docs/architecture/architecture.yaml`, regenerate the README diagram and the viewer data with `uv run python tools/map_build.py`; CI fails when they are out of date.
+
 CI (`.github/workflows/ci.yml`) runs the same hooks on every pull request, plus a gitleaks scan of the whole history, a check that the [architecture map](docs/architecture/architecture.yaml) matches `services/`, a check that nothing under `private/` is tracked, and the tests (`uv run pytest`, `node --test .claude/hooks/hooks.test.mjs`).
 
 ## How it is built
