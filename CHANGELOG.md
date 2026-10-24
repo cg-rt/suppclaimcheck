@@ -4,7 +4,9 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
-## [0.1.0] - not yet released
+## [0.1.1] - not yet released
+
+The first release. `v0.1.0` was tagged but never released: its workflow logged out of GHCR before the attestation step, so only an unsigned edge image was pushed (`suppclaimcheck-edge:0.1.0`); do not deploy it.
 
 ### Added
 - Walking-skeleton modules: `edge` (Cloudflare Tunnel), `web`, `core` (`core-api` and a placeholder `core-worker`), `gateway`, `postgres` (PostgreSQL 18 + pgvector). Each has a Dockerfile with a base image pinned by digest and a non-root user.
@@ -28,3 +30,6 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 ### Changed
 - Python images no longer ship pip, and the postgres image installs Debian security updates at build time (P1.11).
 - edge uses cloudflared 2026.10.3, taken before it was two weeks old for a certificate-validation fix (D-040).
+
+### Fixed
+- Release workflow: stays logged in to GHCR until the build provenance attestation is stored.

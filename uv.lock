@@ -983,7 +983,7 @@ wheels = [
 
 [[package]]
 name = "scc-common"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "libs/common" }
 dependencies = [
     { name = "alembic" },
@@ -1006,7 +1006,7 @@ requires-dist = [
 
 [[package]]
 name = "scc-core"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "services/core" }
 dependencies = [
     { name = "procrastinate" },
@@ -1023,7 +1023,7 @@ requires-dist = [
 
 [[package]]
 name = "scc-gateway"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "services/gateway" }
 dependencies = [
     { name = "anthropic" },
@@ -1040,7 +1040,7 @@ requires-dist = [
 
 [[package]]
 name = "scc-web"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "services/web" }
 dependencies = [
     { name = "argon2-cffi" },
