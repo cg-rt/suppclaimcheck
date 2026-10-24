@@ -7,7 +7,16 @@ from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    FastAPI,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from procrastinate import App
 from psycopg_pool import AsyncConnectionPool
 
@@ -15,7 +24,7 @@ from scc_common import correlation
 from scc_common.app import Check, create_app, http_check
 from scc_common.db import conninfo_from_env, db_check
 from scc_core import config, jobs, tasks
-from scc_core.models import Claim, Job, JobCreate
+from scc_core.models import Claim, Job, JobCreate, JobEvent, JobSummary
 
 log = logging.getLogger("scc.jobs")
 IdempotencyKey = Annotated[
@@ -84,6 +93,15 @@ async def create_job(
     return job
 
 
+@router.get("")
+async def list_jobs(
+    user_id: int, request: Request, limit: Annotated[int, Query(ge=1, le=200)] = 50
+) -> list[JobSummary]:
+    """A user's jobs, newest first."""
+    async with _deps(request).pool.connection() as conn:
+        return await jobs.list_for_user(conn, user_id, limit)
+
+
 @router.get("/{job_id}", responses={404: {"description": "No such job"}})
 async def get_job(job_id: UUID, request: Request) -> Job:
     async with _deps(request).pool.connection() as conn:
@@ -91,6 +109,16 @@ async def get_job(job_id: UUID, request: Request) -> Job:
     if job is None:
         raise HTTPException(404, {"code": "not_found", "message": "No such job."})
     return job
+
+
+@router.get("/{job_id}/events", responses={404: {"description": "No such job"}})
+async def get_job_events(job_id: UUID, request: Request) -> list[JobEvent]:
+    """Every state the job has been in, oldest first: the progress page reads these."""
+    async with _deps(request).pool.connection() as conn:
+        events = await jobs.events(conn, job_id)
+    if not events:
+        raise HTTPException(404, {"code": "not_found", "message": "No such job."})
+    return events
 
 
 @router.post(

@@ -11,7 +11,7 @@ from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from scc_core.models import Claim, Job, JobCreate, JobState
+from scc_core.models import Claim, Job, JobCreate, JobEvent, JobState, JobSummary
 
 _COLUMNS = (
     "id, user_id, state, input_type, input_text, extracted_claims, confirmed_claim, result, error, "
@@ -145,3 +145,27 @@ async def correlation_id(conn: AsyncConnection, job_id: UUID) -> str | None:
     )
     row = await cur.fetchone()
     return row[0] if row else None
+
+
+async def list_for_user(
+    conn: AsyncConnection, user_id: int, limit: int
+) -> list[JobSummary]:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            """
+            SELECT id, state, input_text, confirmed_claim, created_at,
+                   result->>'verdict' AS verdict, (result->>'score')::int AS score
+            FROM core.jobs WHERE user_id = %s ORDER BY created_at DESC LIMIT %s
+            """,
+            (user_id, limit),
+        )
+        return [JobSummary(**row) for row in await cur.fetchall()]
+
+
+async def events(conn: AsyncConnection, job_id: UUID) -> list[JobEvent]:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            "SELECT state, detail, at FROM core.job_events WHERE job_id = %s ORDER BY id",
+            (job_id,),
+        )
+        return [JobEvent(**row) for row in await cur.fetchall()]

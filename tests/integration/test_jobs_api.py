@@ -100,3 +100,34 @@ def test_confirm_only_when_waiting_for_confirmation(migrated_db):
     assert too_early.json()["detail"]["code"] == "wrong_state"
     assert unknown.status_code == 404
     assert queued == 1  # only the extraction; nothing was searched
+
+
+def test_history_lists_only_that_users_jobs_newest_first(migrated_db):
+    async def steps(client, connector):
+        for i, user in enumerate((41, 41, 42)):
+            await client.post(
+                "/jobs",
+                json={**BODY, "user_id": user, "input_text": f"Claim {i}"},
+                headers={"Idempotency-Key": f"history-key-{i:02d}"},
+            )
+        return (await client.get("/jobs", params={"user_id": 41})).json()
+
+    rows = with_core(migrated_db, steps)
+    assert [r["input_text"] for r in rows] == ["Claim 1", "Claim 0"]
+    assert rows[0]["verdict"] is None and rows[0]["state"] == "submitted"
+
+
+def test_events_list_every_state_and_404_for_unknown_jobs(migrated_db):
+    async def steps(client, connector):
+        job = (
+            await client.post(
+                "/jobs", json=BODY, headers={"Idempotency-Key": "events-key-01"}
+            )
+        ).json()
+        events = await client.get(f"/jobs/{job['id']}/events")
+        unknown = await client.get("/jobs/00000000-0000-0000-0000-000000000000/events")
+        return events, unknown
+
+    events, unknown = with_core(migrated_db, steps)
+    assert [e["state"] for e in events.json()] == ["submitted"]
+    assert unknown.status_code == 404

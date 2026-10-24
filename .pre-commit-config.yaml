@@ -17,12 +17,12 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
     hooks:
-      # Recorded HTTP responses stay byte for byte.
+      # Recorded HTTP responses and vendored minified scripts stay byte for byte.
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
-        exclude: ^tests/fixtures/.*/literature/
+        exclude: ^(tests/fixtures/.*/literature/|services/web/src/scc_web/static/js/)
       - id: end-of-file-fixer
-        exclude: ^tests/fixtures/.*/literature/
+        exclude: ^(tests/fixtures/.*/literature/|services/web/src/scc_web/static/js/)
 
   # Blocks private details and anything under private/ (D-031). Skips itself where private/ is absent, such as CI.
   - repo: local

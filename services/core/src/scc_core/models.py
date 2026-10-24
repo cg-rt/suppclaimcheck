@@ -57,6 +57,24 @@ class Job(BaseModel):
     updated_at: datetime
 
 
+class JobSummary(BaseModel):
+    """One row of a user's history: enough to list it, not the whole result."""
+
+    id: UUID
+    state: JobState
+    input_text: str
+    confirmed_claim: Claim | None
+    verdict: str | None
+    score: int | None
+    created_at: datetime
+
+
+class JobEvent(BaseModel):
+    state: JobState
+    detail: str | None
+    at: datetime
+
+
 # Structured LLM outputs. Strict: no extra fields, every field present (nullable where optional).
 class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
