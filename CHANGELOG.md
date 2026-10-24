@@ -4,6 +4,12 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
+### Added
+- Jobs API in core-api (`POST /jobs` with an `Idempotency-Key`, `GET /jobs/{id}`, `POST /jobs/{id}/confirm`) and a Procrastinate worker in core-worker; jobs carry their correlation ID.
+- Pipeline v0: claim extraction, confirmation, PubMed query by code, one open-access article from Europe PMC, JATS passages ranked by Postgres full-text search, passage assessment, verbatim quote verification with hallucination events, and rubric v0 for the verdict and score.
+- Gateway: schema-constrained Claude calls with a monthly cap per lane that fails closed, cost from a versioned price table, retries on transient errors only, and a record of every call; PubMed and Europe PMC with the licence allowlist, a rate limiter and an article cache.
+- Committed OpenAPI specs for web, core and gateway, checked against the code in CI.
+
 ## [0.1.0] - not yet released
 
 ### Added

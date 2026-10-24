@@ -1,0 +1,81 @@
+{
+  "info": {
+    "title": "SuppClaimCheck web",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/health/deps": {
+      "get": {
+        "operationId": "health_deps_health_deps_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "description": "A dependency failed"
+          }
+        },
+        "summary": "Health Deps",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/version": {
+      "get": {
+        "operationId": "version_version_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Version Version Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Version",
+        "tags": [
+          "ops"
+        ]
+      }
+    }
+  }
+}

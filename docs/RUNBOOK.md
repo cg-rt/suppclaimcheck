@@ -96,7 +96,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   ```bash
   docker compose logs --since 30m gateway | grep -Ei "eutils|europepmc|timeout|429|5[0-9]{2}"
   ```
-- **Fix:** for 5xx or timeouts, the service is down; retries with backoff run automatically and jobs fail cleanly once retries are exhausted. Retry them from admin later. For 429, check that the NCBI API key is set and the limiter is at 8 requests/s or lower. If Europe PMC is down but PubMed works, the PMC Cloud fallback should take over: check the logs say so.
+- **Fix:** for 5xx or timeouts, the service is down; retries with backoff run automatically and jobs fail cleanly once retries are exhausted. Retry them from admin later. For 429, check that the NCBI API key is set and the limiter is at 8 requests/s or lower. If Europe PMC is down but PubMed works, jobs fail at `retrieving` with the message "The literature databases are not answering": the PMC Cloud Service fallback (D-017) is not built yet. Articles already in the cache (`gateway.articles`) are still served.
 - **Verify:** a test claim completes; failed jobs retried.
 
 ## RB-08 LLM provider errors or rate limits
@@ -106,15 +106,25 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   ```bash
   docker compose logs --since 30m gateway | grep -Ei "provider|401|429|5[0-9]{2}"
   ```
+  The job's `error` and the gateway's `llm_calls.error` name the cause: `provider_unavailable` (gave up after retries), `provider_rejected` (4xx, often the key), `provider_not_configured` (no key in the `anthropic_api_key` secret), `provider_refused` (the model declined).
 - **Fix:** 401 means the key is wrong, expired or revoked: rotate the secret and restart `gateway`. 429 means rate-limited: backoff handles short bursts; for sustained limits, check the provider console limits. 5xx means a provider outage: check the provider's status page. v1 has a single provider (D-033), so there is no fallback: jobs fail cleanly at that stage; retry them from admin once the status page shows recovery.
 - **Verify:** a test claim completes; failed jobs retried from admin.
 
 ## RB-09 Budget cap reached
-**Status:** draft, verify in P1.15
-- **Symptoms:** new jobs are refused with the budget message; Telegram alert; admin banner.
-- **Checks:** is this normal use, or a spike from one user (RB-10)? Was there an eval run?
+**Status:** refusal verified in dev 2026-10-24 (gateway test `test_cap_reached_refuses_before_the_provider_is_called`, and a dev job with the cap lowered to EUR 0.0001). The Telegram alert (P1.14) and the admin banner (P3.04) are not built yet.
+- **Symptoms:** jobs fail with "This month's budget for checks is used up. Checks will work again next month."; the gateway logs `budget cap reached` with the lane, the spend and the cap.
+- **How the cap works:** before every LLM call, the gateway reserves the call's worst-case cost and refuses it if this month's spend plus that would pass the lane's cap (`live` EUR 15, `eval` EUR 5, in `services/gateway/src/scc_gateway/config/gateway-v0.toml`). If the database can't be reached, no call is made.
+- **Checks:** this month's spend per lane, from the VM:
+  ```bash
+  docker compose exec postgres psql -U postgres -d scc -c "SELECT lane, status, count(*), sum(cost_eur) FROM gateway.llm_calls WHERE created_at >= date_trunc('month', now()) GROUP BY 1, 2"
+  ```
+  Is this normal use, or a spike from one user (RB-10)? Was there an eval run?
 - **Fix:** if it's abuse, go to RB-10. If it's legitimate, either wait for the next month or, **the owner only**, raise the cap with a new config version and a reason. Never raise it past the EUR 25 total without a DECISIONS entry.
-- **Verify:** the costs page shows the remaining budget; new jobs are accepted or refused as intended.
+- **Drill (dev):** `SCC_BUDGET_CAP_OVERRIDE_EUR` lowers every cap, and can never raise one. Restart the gateway with it, submit a claim, and check the job fails with the budget message; then restart without it.
+  ```bash
+  SCC_BUDGET_CAP_OVERRIDE_EUR=0.0001 docker compose -f deploy/compose.dev.yaml up -d gateway
+  ```
+- **Verify:** the spend query shows the expected total; new jobs are accepted or refused as intended.
 
 ## RB-10 Suspected abuse or injection attempts
 **Status:** draft, verify in P3
