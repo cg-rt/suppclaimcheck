@@ -121,7 +121,7 @@ Project-management decisions are kept in a private repository and share this num
 - **Decision:** no open router ports. The only way in is Cloudflare Tunnel. The admin hostname is behind Cloudflare Access (free up to 50 users) and the app's admin role. The internal Docker network has no internet; only `edge` and `gateway` sit on the egress network. Hostnames stay one level deep so Cloudflare's free certificate covers them.
 
 ### D-028 · 2026-10-21 · Repository conventions · [Together]
-- **Decision:** one public monorepo. Feature branches; PRs with CI green before merge; conventional commits; per-module tags `<module>/vX.Y.Z`; LF line endings.
+- **Decision:** one public monorepo. Feature branches; PRs with CI green before merge; conventional commits; per-module tags `<module>/vX.Y.Z` (superseded by D-034: one app tag `vX.Y.Z`); LF line endings.
 
 ### D-030 · 2026-10-21 · Claude Code guard hooks in Node.js · [Together]
 - **Decision:** the hooks are small Node.js scripts in `.claude/hooks/`, with no npm packages. The two guards fail closed (`onFailure: "block"`); the Stop reminder fails open. Scope approved by the owner: block reading as well as editing secret files, and block `ssh`/`scp`/`sftp` so production stays the owner's. Added by the agent in the same spirit: block pushing to `main`, `SKIP=` (which turns off pre-commit checks), and `git clean -x`.
@@ -144,3 +144,19 @@ Project-management decisions are kept in a private repository and share this num
 - **Decision:** v1 uses Anthropic only (Claude Haiku 5.5 as provisional model, Sonnet 5.5 available for comparison within Anthropic). Only the Anthropic account and spend limit are set up. Whether to compare other providers is decided after v1.
 - **Kept:** the gateway's provider interface stays swappable (P1.06), so adding a provider later is one adapter plus an eval run. Model choice remains versioned config, and any model change still needs an eval run (AGENTS.md section 8).
 - **Trade-offs:** no measured cross-provider comparison in v1, so the model choice is defended by Claude's own eval results and cost, not by a comparison, and the planning agent is itself a Claude model (D-020's disclosure). No fallback during an Anthropic outage: checks fail cleanly and are retried later. Processing stays global or US-only; EU-only processing would need another provider.
+
+### D-034 · 2026-10-24 · One version for the whole app · [Owner]
+- **Context:** D-028 planned a version, changelog and tag per module, and CI that builds only the modules a change touches. For five small modules, one operator and a four-week window, that is bookkeeping without a matching benefit.
+- **Decision:** the app has one semantic version, one root `CHANGELOG.md` and one tag `vX.Y.Z`. Each release builds, scans and pushes every image with that version. `deploy/versions.env` holds one line; `deploy.sh <version>` and `rollback.sh` act on the whole stack. `/version` still reports the version and git SHA in every module. Amends D-028 (per-module tags) and D-022 (deploy by version).
+- **Alternatives:** per-module versions (D-028 as written): independent releases and rollbacks, at the cost of path-filtered CI, five changelogs and a version matrix to reason about.
+- **Trade-offs:** no rollback of one module alone; every release rebuilds all images (minutes, not hours). Re-splitting versions later is a backlog item.
+
+### D-035 · 2026-10-24 · v1 scope trims · [Owner]
+- **Context:** a review of the plan at the start of Phase 1 found work sized beyond what v1 needs.
+- **Decision:**
+  - Contract tests: CI checks that each committed OpenAPI spec matches the code, plus a few hand-written API tests per module. Schemathesis moves to after v1.
+  - Auth: no identity-provider abstraction for a future Google sign-in; refactor if that is ever built. Every security control in D-016 stays.
+  - Live evals run from the CLI on the developer machine, inside the eval budget lane (D-021). No LLM key is stored in GitHub; CI runs only the free tier with recorded responses.
+  - Security review: OWASP Top 10 checklist, security headers and clean scans. The full ASVS level 1 checklist moves to after v1.
+  - Admin: the runbook is linked (not rendered), the architecture map becomes a health and version table, config activation and rollback stay on the CLI with a read-only versions and diff page, and logs are shown per job trace plus a recent-errors list rather than a general log browser.
+- **Trade-offs:** less breadth in admin and in the security write-up; the rules that matter most (budget cap, quote verification, guardrails, evals) are unchanged.
