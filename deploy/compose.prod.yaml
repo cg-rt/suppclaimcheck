@@ -1,0 +1,177 @@
+# Production stack on the VM (P1.02). Lives in /opt/suppclaimcheck as compose.prod.yaml, beside secrets/.
+# Images come from GHCR at one app version (D-034); deploy.sh (P1.12) sets SCC_VERSION from versions.env.
+# No host ports: the only way in is the Cloudflare Tunnel held by edge (D-027).
+# Secret files: /opt/suppclaimcheck/secrets/<name>, folder mode 0700 (root), files 0444, so the
+# non-root containers can read their own mounted file while other users on the VM can't reach the folder.
+name: scc
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: [/tmp]
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "10m", max-file: "5"}
+
+x-db-env: &db-env
+  SCC_DB_HOST: postgres
+  SCC_DB_NAME: scc
+
+x-migrate-env: &migrate-env
+  <<: *db-env
+  SCC_DB_ADMIN_USER: postgres
+  SCC_DB_ADMIN_PASSWORD_FILE: /run/secrets/postgres_superuser_password
+
+services:
+  postgres:
+    image: ghcr.io/cg-rt/suppclaimcheck-postgres:${SCC_VERSION:?set SCC_VERSION}
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+    environment:
+      POSTGRES_DB: scc
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_superuser_password
+    secrets: [postgres_superuser_password]
+    volumes: [pgdata:/var/lib/postgresql]
+    networks: [internal]
+
+  # One-off migrate steps (P1.03): bootstrap the module's roles and schema, run its migrations, exit.
+  web-migrate:
+    image: ghcr.io/cg-rt/suppclaimcheck-web:${SCC_VERSION:?set SCC_VERSION}
+    command: ["python", "-m", "scc_web.migrate"]
+    restart: "no"
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *migrate-env
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_web_password
+    secrets: [postgres_superuser_password, db_web_password]
+    depends_on: {postgres: {condition: service_healthy}}
+    networks: [internal]
+
+  core-migrate:
+    image: ghcr.io/cg-rt/suppclaimcheck-core:${SCC_VERSION:?set SCC_VERSION}
+    command: ["python", "-m", "scc_core.migrate"]
+    restart: "no"
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *migrate-env
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_core_password
+    secrets: [postgres_superuser_password, db_core_password]
+    depends_on: {postgres: {condition: service_healthy}}
+    networks: [internal]
+
+  gateway-migrate:
+    image: ghcr.io/cg-rt/suppclaimcheck-gateway:${SCC_VERSION:?set SCC_VERSION}
+    command: ["python", "-m", "scc_gateway.migrate"]
+    restart: "no"
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *migrate-env
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_gateway_password
+    secrets: [postgres_superuser_password, db_gateway_password]
+    depends_on: {postgres: {condition: service_healthy}}
+    networks: [internal]
+
+  web:
+    image: ghcr.io/cg-rt/suppclaimcheck-web:${SCC_VERSION:?set SCC_VERSION}
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *db-env
+      SCC_SERVICE: web
+      SCC_DB_USER: scc_web_app
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_web_password
+      SCC_CORE_URL: http://core-api:8000
+    secrets: [db_web_password]
+    depends_on:
+      web-migrate: {condition: service_completed_successfully}
+      core-api: {condition: service_healthy}
+    networks: [internal]
+
+  core-api:
+    image: ghcr.io/cg-rt/suppclaimcheck-core:${SCC_VERSION:?set SCC_VERSION}
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *db-env
+      SCC_SERVICE: core-api
+      SCC_DB_USER: scc_core_app
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_core_password
+      SCC_GATEWAY_URL: http://gateway:8000
+    secrets: [db_core_password]
+    depends_on:
+      core-migrate: {condition: service_completed_successfully}
+      gateway: {condition: service_healthy}
+    networks: [internal]
+
+  core-worker:
+    image: ghcr.io/cg-rt/suppclaimcheck-core:${SCC_VERSION:?set SCC_VERSION}
+    command: ["python", "-m", "scc_core.worker"]
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *db-env
+      SCC_SERVICE: core-worker
+      SCC_DB_USER: scc_core_app
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_core_password
+      SCC_GATEWAY_URL: http://gateway:8000
+    secrets: [db_core_password]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, sys, time; sys.exit(time.time() - os.path.getmtime('/tmp/heartbeat') > 30)"]
+      interval: 10s
+      timeout: 3s
+      start_period: 15s
+      retries: 3
+    depends_on:
+      core-migrate: {condition: service_completed_successfully}
+    networks: [internal]
+
+  gateway:
+    image: ghcr.io/cg-rt/suppclaimcheck-gateway:${SCC_VERSION:?set SCC_VERSION}
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *db-env
+      SCC_SERVICE: gateway
+      SCC_DB_USER: scc_gateway_app
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_gateway_password
+    secrets: [db_gateway_password]
+    depends_on:
+      gateway-migrate: {condition: service_completed_successfully}
+    networks: [internal, egress]
+
+  edge:
+    image: ghcr.io/cg-rt/suppclaimcheck-edge:${SCC_VERSION:?set SCC_VERSION}
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/tunnel_token
+    secrets: [tunnel_token]
+    depends_on: {web: {condition: service_healthy}}
+    networks: [internal, egress]
+
+networks:
+  # No route to the internet (D-027). Every module is on it.
+  internal: {internal: true}
+  # Only edge and gateway may reach outside services.
+  egress: {}
+
+volumes:
+  pgdata: {}
+
+secrets:
+  postgres_superuser_password: {file: ./secrets/postgres_superuser_password}
+  db_web_password: {file: ./secrets/db_web_password}
+  db_core_password: {file: ./secrets/db_core_password}
+  db_gateway_password: {file: ./secrets/db_gateway_password}
+  tunnel_token: {file: ./secrets/tunnel_token}

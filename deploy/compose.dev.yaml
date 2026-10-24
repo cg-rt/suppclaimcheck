@@ -1,0 +1,195 @@
+# Development stack on Docker Desktop (P1.02). Start: docker compose -f deploy/compose.dev.yaml up -d --build
+# First time on a machine: uv run python tools/dev_secrets.py (random dev-only passwords, never committed).
+# Ports bind to 127.0.0.1 only and avoid 5432 and 5678, which another stack on this PC uses (AGENTS.md section 7).
+name: scc-dev
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: [/tmp]
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "10m", max-file: "5"}
+
+x-db-env: &db-env
+  SCC_DB_HOST: postgres
+  SCC_DB_NAME: scc
+
+x-migrate-env: &migrate-env
+  <<: *db-env
+  SCC_DB_ADMIN_USER: postgres
+  SCC_DB_ADMIN_PASSWORD_FILE: /run/secrets/postgres_superuser_password
+
+x-core-build: &core-build
+  context: ..
+  dockerfile: services/core/Dockerfile
+  args: {GIT_SHA: "${GIT_SHA:-dev}"}
+
+services:
+  postgres:
+    build: {context: ../services/postgres}
+    image: scc-postgres:dev
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+    environment:
+      POSTGRES_DB: scc
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_superuser_password
+    secrets: [postgres_superuser_password]
+    volumes: [pgdata:/var/lib/postgresql]
+    networks: [internal]
+
+  # One-off migrate steps (P1.03): bootstrap the module's roles and schema, run its migrations, exit.
+  web-migrate:
+    image: scc-web:dev
+    build: {context: .., dockerfile: services/web/Dockerfile, args: {GIT_SHA: "${GIT_SHA:-dev}"}}
+    command: ["python", "-m", "scc_web.migrate"]
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *migrate-env
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_web_password
+    secrets: [postgres_superuser_password, db_web_password]
+    depends_on: {postgres: {condition: service_healthy}}
+    networks: [internal]
+
+  core-migrate:
+    image: scc-core:dev
+    build: *core-build
+    command: ["python", "-m", "scc_core.migrate"]
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *migrate-env
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_core_password
+    secrets: [postgres_superuser_password, db_core_password]
+    depends_on: {postgres: {condition: service_healthy}}
+    networks: [internal]
+
+  gateway-migrate:
+    image: scc-gateway:dev
+    build: {context: .., dockerfile: services/gateway/Dockerfile, args: {GIT_SHA: "${GIT_SHA:-dev}"}}
+    command: ["python", "-m", "scc_gateway.migrate"]
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *migrate-env
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_gateway_password
+    secrets: [postgres_superuser_password, db_gateway_password]
+    depends_on: {postgres: {condition: service_healthy}}
+    networks: [internal]
+
+  web:
+    image: scc-web:dev
+    build: {context: .., dockerfile: services/web/Dockerfile, args: {GIT_SHA: "${GIT_SHA:-dev}"}}
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *db-env
+      SCC_SERVICE: web
+      SCC_DB_USER: scc_web_app
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_web_password
+      SCC_CORE_URL: http://core-api:8000
+    secrets: [db_web_password]
+    ports: ["127.0.0.1:18080:8000"]
+    depends_on:
+      web-migrate: {condition: service_completed_successfully}
+      core-api: {condition: service_healthy}
+    networks: [internal, devhost]
+
+  core-api:
+    image: scc-core:dev
+    build: *core-build
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *db-env
+      SCC_SERVICE: core-api
+      SCC_DB_USER: scc_core_app
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_core_password
+      SCC_GATEWAY_URL: http://gateway:8000
+    secrets: [db_core_password]
+    ports: ["127.0.0.1:18081:8000"]
+    depends_on:
+      core-migrate: {condition: service_completed_successfully}
+      gateway: {condition: service_healthy}
+    networks: [internal, devhost]
+
+  core-worker:
+    image: scc-core:dev
+    build: *core-build
+    command: ["python", "-m", "scc_core.worker"]
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *db-env
+      SCC_SERVICE: core-worker
+      SCC_DB_USER: scc_core_app
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_core_password
+      SCC_GATEWAY_URL: http://gateway:8000
+    secrets: [db_core_password]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, sys, time; sys.exit(time.time() - os.path.getmtime('/tmp/heartbeat') > 30)"]
+      interval: 10s
+      timeout: 3s
+      start_period: 15s
+      retries: 3
+    depends_on:
+      core-migrate: {condition: service_completed_successfully}
+    # Internal only: no internet, and no published port (P1.02).
+    networks: [internal]
+
+  gateway:
+    image: scc-gateway:dev
+    build: {context: .., dockerfile: services/gateway/Dockerfile, args: {GIT_SHA: "${GIT_SHA:-dev}"}}
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      <<: *db-env
+      SCC_SERVICE: gateway
+      SCC_DB_USER: scc_gateway_app
+      SCC_DB_PASSWORD_FILE: /run/secrets/db_gateway_password
+    secrets: [db_gateway_password]
+    ports: ["127.0.0.1:18082:8000"]
+    depends_on:
+      gateway-migrate: {condition: service_completed_successfully}
+    networks: [internal, egress, devhost]
+
+  # The tunnel isn't used in dev; it starts only with --profile edge and a tunnel token secret.
+  edge:
+    profiles: [edge]
+    image: scc-edge:dev
+    build: {context: ../services/edge}
+    restart: unless-stopped
+    <<: *hardening
+    logging: *logging
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/tunnel_token
+    secrets: [tunnel_token]
+    depends_on: {web: {condition: service_healthy}}
+    networks: [internal, egress]
+
+networks:
+  # No route to the internet (D-027). Every module is on it.
+  internal: {internal: true}
+  # Only edge and gateway may reach outside services.
+  egress: {}
+  # Dev only: Docker can't publish ports from an internal-only network, so the modules with a
+  # 127.0.0.1 port also join this one. Production has no host ports and no such network.
+  devhost: {}
+
+volumes:
+  pgdata: {}
+
+secrets:
+  postgres_superuser_password: {file: ../secrets/dev/postgres_superuser_password}
+  db_web_password: {file: ../secrets/dev/db_web_password}
+  db_core_password: {file: ../secrets/dev/db_core_password}
+  db_gateway_password: {file: ../secrets/dev/db_gateway_password}
+  tunnel_token: {file: ../secrets/dev/tunnel_token}
