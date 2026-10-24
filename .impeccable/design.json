@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-24T18:30:00+03:00",
+  "title": "Design System: SuppClaimCheck",
+  "extensions": {
+    "colorMeta": {
+      "action": { "role": "primary", "displayName": "Action orange", "canonical": "#c2410c", "tonalRamp": ["#3b1405", "#5e2008", "#7c2d12", "#9a3412", "#c2410c", "#ea6a35", "#f6b493", "#fbeee6"] },
+      "ground": { "role": "neutral", "displayName": "Sage ground", "canonical": "#eef0ea", "tonalRamp": ["#22261f", "#3a3f36", "#5b6157", "#8b9185", "#c4c8bd", "#dde0d7", "#eef0ea", "#f6f7f3"] },
+      "supported": { "role": "semantic", "displayName": "Supported green", "canonical": "#3c6b2a" },
+      "contradicted": { "role": "semantic", "displayName": "Contradicted red", "canonical": "#9b2c2c" },
+      "mixed": { "role": "semantic", "displayName": "Mixed amber", "canonical": "#7a5a00" },
+      "none": { "role": "semantic", "displayName": "No verdict grey", "canonical": "#5b6157" }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "One per page: the question the page asks." },
+      "claim": { "displayName": "Claim", "purpose": "The confirmed claim on the result page." },
+      "label": { "displayName": "Card heading", "purpose": "The small grey heading of each card." },
+      "quote": { "displayName": "Literature voice", "purpose": "Sentences quoted from an article or the user's text only." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 2px 10px rgb(34 38 31 / 0.06), 0 1px 2px rgb(34 38 31 / 0.04)", "purpose": "The one lift: white cards above the ground." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Button, field and progress-row state changes, 160-250ms." },
+      { "name": "pulse", "value": "1.6s opacity 1 to 0.35", "purpose": "The current progress stage's dot; off under reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action of a page, and New check in the header.",
+      "html": "<button class=\"ds-btn\">Find the claim</button>",
+      "css": ".ds-btn { min-height: 48px; padding: 12px 24px; background: #c2410c; color: #fff; border: 2px solid #c2410c; border-radius: 999px; font: 700 1.0625rem/1.2 'Nunito Sans', sans-serif; cursor: pointer; transition: background-color 160ms cubic-bezier(0.16,1,0.3,1); } .ds-btn:hover { background: #9a3412; border-color: #9a3412; } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 3px solid #c2410c; outline-offset: 3px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A second route, such as Go to the start on error pages.",
+      "html": "<a class=\"ds-btn2\" href=\"#\">Go to the start</a>",
+      "css": ".ds-btn2 { display: inline-flex; min-height: 48px; align-items: center; padding: 12px 24px; color: #c2410c; border: 2px solid #c2410c; border-radius: 999px; font: 700 1.0625rem/1.2 'Nunito Sans', sans-serif; text-decoration: none; } .ds-btn2:hover { background: #fbeee6; color: #9a3412; } .ds-btn2:focus-visible { outline: 3px solid #c2410c; outline-offset: 3px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "One question per card, with its own small grey heading.",
+      "html": "<section class=\"ds-card\"><h2 class=\"ds-card-h\">What the research says</h2><p class=\"ds-verdict\">Supported</p></section>",
+      "css": ".ds-card { background: #fff; border-radius: 20px; padding: 24px 32px; box-shadow: 0 2px 10px rgb(34 38 31 / 0.06), 0 1px 2px rgb(34 38 31 / 0.04); display: grid; gap: 16px; font-family: 'Nunito Sans', sans-serif; color: #22261f; } .ds-card-h { margin: 0; font-size: 0.875rem; font-weight: 700; color: #5b6157; } .ds-verdict { margin: 0; font-size: 2rem; font-weight: 800; color: #3c6b2a; letter-spacing: -0.02em; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled field; orange border and soft halo on focus.",
+      "html": "<label class=\"ds-field\"><span>Supplement or ingredient</span><input value=\"creatine\"></label>",
+      "css": ".ds-field { display: grid; gap: 4px; font: 400 1.0625rem 'Nunito Sans', sans-serif; color: #22261f; } .ds-field span { font-weight: 700; } .ds-field input { min-height: 48px; padding: 12px 16px; border: 1.5px solid #8b9185; border-radius: 12px; font: inherit; } .ds-field input:hover { border-color: #5b6157; } .ds-field input:focus-visible { outline: none; border-color: #c2410c; box-shadow: 0 0 0 3px #fbeee6; }"
+    },
+    {
+      "name": "Evidence Quote",
+      "kind": "custom",
+      "description": "A verified sentence from an article, tinted by direction, in the literature's serif.",
+      "html": "<div class=\"ds-quote\"><blockquote>“Upper-body strength increased more in the creatine group than in the placebo group.”</blockquote><p>Reports a larger strength gain with creatine.</p><small>Results · Nutrients 2019 · CC BY</small></div>",
+      "css": ".ds-quote { background: #e9f1e4; border-radius: 12px; padding: 16px 24px; display: grid; gap: 8px; font-family: 'Nunito Sans', sans-serif; color: #22261f; } .ds-quote blockquote { margin: 0; font: italic 400 1.1875rem/1.5 'Source Serif 4', Georgia, serif; } .ds-quote p { margin: 0; } .ds-quote small { color: #5b6157; font-size: 0.875rem; }"
+    },
+    {
+      "name": "Header Navigation",
+      "kind": "nav",
+      "description": "Name left; text links, then the New check pill.",
+      "html": "<nav class=\"ds-nav\"><b>SuppClaimCheck</b><a href=\"#\" aria-current=\"page\">History</a><a href=\"#\">Account</a><a class=\"ds-pill\" href=\"#\">New check</a></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 24px; font: 600 1.0625rem 'Nunito Sans', sans-serif; } .ds-nav b { font-weight: 800; font-size: 1.25rem; margin-right: auto; } .ds-nav a { color: #22261f; text-decoration: none; } .ds-nav a:hover { color: #c2410c; } .ds-nav a[aria-current] { box-shadow: inset 0 -2px 0 #22261f; } .ds-nav .ds-pill { background: #c2410c; color: #fff; padding: 8px 16px; border-radius: 999px; font-weight: 700; } .ds-nav .ds-pill:hover { background: #9a3412; color: #fff; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "One question per card",
+    "overview": "A check reads as a short, calm column of white cards on a soft sage ground. Each card answers one question in plain words: what you asked, what the research says, the sentences themselves, what was searched, what wasn't. The interface is friendly and familiar so the evidence can be the interesting part.",
+    "keyCharacteristics": [
+      "A single 720px column on every screen; no sidebars.",
+      "Soft-cornered white cards with one gentle shadow.",
+      "One orange, and it only ever marks something you can press.",
+      "Our voice is a rounded humanist sans; the literature's voice is an italic serif.",
+      "Verdict colours are inks for words and marks, never fills that shout."
+    ],
+    "rules": [
+      { "name": "The Pressable Orange Rule", "body": "If it is orange, it can be pressed; if it can be pressed, its primary state is orange. Never use orange for a verdict, a status or decoration.", "section": "colors" },
+      { "name": "The Calm Verdict Rule", "body": "A verdict is a coloured word and a mark on a flat bar, never a coloured badge, gauge or ring.", "section": "colors" },
+      { "name": "The Two Voices Rule", "body": "The serif is the literature talking. Never set our own copy in it.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Scores, counts, dates, PMIDs and times use tabular lining figures (.num).", "section": "typography" }
+    ],
+    "dos": [
+      "Do give each card one question and a heading that names it.",
+      "Do put limits (what was searched, skipped and dropped) in the same stack as the verdict.",
+      "Do keep the not-medical-advice card directly after the verdict."
+    ],
+    "donts": [
+      "Don't use orange for anything that can't be pressed.",
+      "Don't show the score as a ring, gauge or big hero number.",
+      "Don't nest cards inside cards; inner groups are tiles or quote blocks.",
+      "Don't set our own copy in the serif, or quotes in the sans.",
+      "Don't load fonts or scripts from another host; the content security policy forbids it."
+    ]
+  }
+}

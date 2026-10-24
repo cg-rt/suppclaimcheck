@@ -1,0 +1,10 @@
+{% from "macros.html" import icon %}
+<ol class="stages">
+{% for row in rows %}
+  <li class="stage stage--{{ row.status }}"{% if row.status == "current" %} aria-current="step"{% endif %}>
+    <span class="stage__mark">{{ icon(row.status) }}</span>
+    <span class="stage__label">{{ row.label }}</span>
+    <span class="stage__time">{% if row.at %}<time>{{ row.at }}</time>{% elif row.status == "waiting" %}waiting{% endif %}</span>
+  </li>
+{% endfor %}
+</ol>

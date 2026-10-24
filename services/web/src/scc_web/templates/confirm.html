@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "macros.html" import steps, error_box %}
+{% block title %}Confirm the claim{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">Is this the claim to check?</h1>
+  {{ steps("confirm") }}
+  <p class="lede">This is what was found in your text. Correct anything that's wrong, then start the search. Nothing has been searched yet.</p>
+  {{ error_box(error) }}
+</section>
+{% for claim in claims %}
+{% set n = loop.index %}
+<section class="card" aria-labelledby="claim-{{ n }}-title">
+  <form class="form" method="post" action="/checks/{{ job.id }}/confirm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <h2 class="card__title" id="claim-{{ n }}-title">{% if claims|length > 1 %}Claim <span class="num">{{ n }}</span> of <span class="num">{{ claims|length }}</span>{% else %}The claim{% endif %}</h2>
+    {% if claim.quote %}<p class="from-text">From your text: <q>{{ claim.quote }}</q></p>{% endif %}
+    <div class="field">
+      <label for="supplement-{{ n }}">Supplement or ingredient</label>
+      <input id="supplement-{{ n }}" name="supplement" required maxlength="200" value="{{ claim.supplement or '' }}">
+    </div>
+    <div class="field">
+      <label for="effect-{{ n }}">Claimed effect</label>
+      <textarea id="effect-{{ n }}" name="effect" rows="2" required maxlength="500">{{ claim.effect or '' }}</textarea>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="population-{{ n }}">Who it's for <span class="optional">optional</span></label>
+        <input id="population-{{ n }}" name="population" maxlength="300" value="{{ claim.population or '' }}">
+      </div>
+      <div class="field">
+        <label for="dose-{{ n }}">Dose <span class="optional">optional</span></label>
+        <input id="dose-{{ n }}" name="dose" maxlength="200" value="{{ claim.dose or '' }}">
+      </div>
+      <div class="field">
+        <label for="duration-{{ n }}">How long <span class="optional">optional</span></label>
+        <input id="duration-{{ n }}" name="duration" maxlength="200" value="{{ claim.duration or '' }}">
+      </div>
+    </div>
+    <button class="button" type="submit">Search the literature for this claim</button>
+    <p class="small">Each search uses part of this month's budget for checks.</p>
+  </form>
+</section>
+{% else %}
+<section class="card">
+  <p>No claim was found in your text. <a href="/checks/new">Start a new check</a>.</p>
+</section>
+{% endfor %}
+<section class="card card--quiet" aria-labelledby="text-title">
+  <h2 class="card__title" id="text-title">Your text</h2>
+  <p class="your-text">{{ job.input_text }}</p>
+</section>
+{% endblock %}

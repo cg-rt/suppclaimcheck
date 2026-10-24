@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "macros.html" import steps %}
+{% block title %}Checking{% endblock %}
+{# Without JavaScript the page refreshes itself; with it, the stream below updates in place. #}
+{% block head %}<noscript><meta http-equiv="refresh" content="4"></noscript>{% endblock %}
+{% block main %}
+<section class="card" id="progress-card">
+  <h1 class="title">{% if job.state in ("submitted", "extracting") %}Reading your text{% else %}Checking the claim{% endif %}</h1>
+  {{ steps("confirm" if job.state in ("submitted", "extracting") else "search") }}
+  {% if job.confirmed_claim %}
+  <p class="claim claim--small">{{ job.confirmed_claim.supplement|capitalize }}: {{ job.confirmed_claim.effect }}{% if job.confirmed_claim.population %}, in {{ job.confirmed_claim.population }}{% endif %}</p>
+  {% endif %}
+  <p class="lede">This usually takes under a minute. You can leave this page and find the check later in History.</p>
+  <div hx-ext="sse" sse-connect="/checks/{{ job.id }}/events" sse-close="settled">
+    <div id="stages" sse-swap="progress">{% include "partials/stages.html" %}</div>
+    <p class="visually-hidden" aria-live="polite" sse-swap="status"></p>
+    <div hx-get="/checks/{{ job.id }}" hx-trigger="sse:settled" hx-select="#main" hx-target="#main" hx-swap="outerHTML" hx-push-url="false"></div>
+  </div>
+</section>
+<section class="card card--quiet" aria-labelledby="now-title">
+  <h2 class="card__title" id="now-title">What happens now</h2>
+  <p>Code builds the PubMed search from the claim. A language model labels passages; code checks every quote against the article and works out the verdict.</p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/htmx-2.0.11.min.js"></script>
+<script src="/static/js/htmx-ext-sse-2.2.4.min.js"></script>
+{% endblock %}

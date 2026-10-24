@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "macros.html" import steps, error_box %}
+{% set nav = "new" %}
+{% block title %}New check{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">What claim do you want to check?</h1>
+  {{ steps("enter") }}
+  <p class="lede">Paste a sentence from an ad, an article or a video description, or type the claim in your own words. One claim at a time works best.</p>
+  {{ error_box(error) }}
+  <form class="form" method="post" action="/checks">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+    <div class="field">
+      <label for="input_text">The claim or the text that makes it</label>
+      <p class="hint" id="input_text_hint">For example: “Taking creatine while doing resistance training makes older adults stronger.”</p>
+      <textarea id="input_text" name="input_text" rows="6" maxlength="20000" required aria-describedby="input_text_hint">{{ text or '' }}</textarea>
+    </div>
+    <button class="button" type="submit">Find the claim</button>
+  </form>
+  <p class="small">Next, you'll see the claim as it was understood and can correct it. Nothing is searched until you confirm.</p>
+</section>
+<section class="card card--quiet" aria-labelledby="does-title">
+  <h2 class="card__title" id="does-title">What this check does, and doesn't</h2>
+  <p>It searches PubMed for open-access articles, reads one whose licence allows it, and shows the sentences that support or contradict the claim, each checked word for word against the article.</p>
+  <p>It doesn't give medical advice or tell you whether to take anything. It can't read articles that aren't open access.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block column_class %} column--narrow{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">{{ title }}</h1>
+  <p class="lede">{{ message }}</p>
+  <p><a class="button button--secondary" href="/">Go to the start</a></p>
+</section>
+{% endblock %}

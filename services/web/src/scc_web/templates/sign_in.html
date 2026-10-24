@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "macros.html" import error_box %}
+{% block title %}Sign in{% endblock %}
+{% block column_class %} column--narrow{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">Sign in</h1>
+  <p class="lede">SuppClaimCheck checks claims about dietary supplements against open-access research, and shows the evidence word for word. It is invite-only.</p>
+  {{ error_box(error) }}
+  <form class="form" method="post" action="/sign-in" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ pre_csrf }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="username" spellcheck="false" required value="{{ email or '' }}">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <button class="button" type="submit">Sign in</button>
+  </form>
+</section>
+<p class="aside">No account? Accounts are created by invitation only.</p>
+{% endblock %}

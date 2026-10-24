@@ -9,6 +9,10 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - Pipeline v0: claim extraction, confirmation, PubMed query by code, one open-access article from Europe PMC, JATS passages ranked by Postgres full-text search, passage assessment, verbatim quote verification with hallucination events, and rubric v0 for the verdict and score.
 - Gateway: schema-constrained Claude calls with a monthly cap per lane that fails closed, cost from a versioned price table, retries on transient errors only, and a record of every call; PubMed and Europe PMC with the licence allowlist, a rate limiter and an article cache.
 - Committed OpenAPI specs for web, core and gateway, checked against the code in CI.
+- Login in web: invite-only accounts from an admin CLI (`python -m scc_web.admin`), Argon2id hashes, server-side sessions in a `__Host-` cookie with idle and absolute timeouts, CSRF tokens on every form, sign-in lockout and rate limit, password change (D-039).
+- Web pages: sign in, new check, confirm the claim, live progress over server-sent events, result (verdict, score with its arithmetic, verified quotes with citation and licence, what was searched, what could not be checked, not-medical-advice notice), history and account. Design tokens in `docs/DESIGN.md`.
+- core-api: `GET /jobs?user_id=` (history) and `GET /jobs/{id}/events` (progress).
+- Browser smoke test with axe accessibility checks (`tests/e2e`), run against a running stack.
 
 ## [0.1.0] - not yet released
 
