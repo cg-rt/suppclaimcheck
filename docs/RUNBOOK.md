@@ -78,16 +78,17 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** free space is above 20%; writes succeed.
 
 ## RB-06 Disk full
-**Status:** draft, verify in P1.15
-- **Symptoms:** the disk alert (80%) fires; containers fail to start; backups fail.
+**Status:** the alert is rehearsed in dev on 2026-10-24 (`disk-check.sh` with the threshold lowered to 1% ran the alert path); the fix steps are a draft, verify in P3.13.
+- **Symptoms:** a Telegram alert "Disk over 80%" from the hourly `scc-disk-check` timer (or healthchecks.io reports the disk check as failing); containers fail to start; backups fail.
 - **Commands:**
   ```bash
   df -h /
   docker system df
   sudo du -sh /var/lib/docker/* 2>/dev/null | sort -h | tail
+  journalctl -u scc-disk-check --since today --no-pager
   ```
-- **Fix:** remove unused images: `docker image prune -a --filter "until=168h"`. Older versions can be pulled again from GHCR for a rollback. Check that Docker log rotation is on. If it's still tight, grow the VM disk: shut the VM down, resize the VHDX in Hyper-V Manager, start it, then grow the partition and filesystem in Ubuntu.
-- **Verify:** free space is above 20%; all services healthy.
+- **Fix:** remove unused images: `docker image prune -a --filter "until=168h"`. Older versions can be pulled again from GHCR for a rollback. Check that Docker log rotation is on (`cat /etc/docker/daemon.json`; `04-ops-timers.sh` writes it). If it's still tight, grow the VM disk: shut the VM down, resize the VHDX in Hyper-V Manager, start it, then grow the partition and filesystem in Ubuntu.
+- **Verify:** free space is above 20%; `sudo ./disk-check.sh` prints `disk ok`; all services healthy.
 
 ## RB-07 PubMed or full-text source down
 **Status:** draft, verify in P2
@@ -111,8 +112,8 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** a test claim completes; failed jobs retried from admin.
 
 ## RB-09 Budget cap reached
-**Status:** refusal verified in dev 2026-10-24 (gateway test `test_cap_reached_refuses_before_the_provider_is_called`, and a dev job with the cap lowered to EUR 0.0001). The Telegram alert (P1.14) and the admin banner (P3.04) are not built yet.
-- **Symptoms:** jobs fail with "This month's budget for checks is used up. Checks will work again next month."; the gateway logs `budget cap reached` with the lane, the spend and the cap.
+**Status:** rehearsed in dev on 2026-10-24: with the cap lowered to EUR 0.0001, a job failed with the budget message, the gateway logged `budget cap reached` and raised the `budget_cap_reached` alert (Telegram not configured in dev, so it logged `alert not sent`). Alert delivery is covered by `services/gateway/tests/test_alerts.py`; a real phone message comes with C1.3. The admin banner arrives with P3.04.
+- **Symptoms:** a Telegram alert "budget_cap_reached · live" (sent once an hour at most); jobs fail with "This month's budget for checks is used up. Checks will work again next month."; the gateway logs `budget cap reached` with the lane, the spend and the cap.
 - **How the cap works:** before every LLM call, the gateway reserves the call's worst-case cost and refuses it if this month's spend plus that would pass the lane's cap (`live` EUR 15, `eval` EUR 5, in `services/gateway/src/scc_gateway/config/gateway-v0.toml`). If the database can't be reached, no call is made.
 - **Checks:** this month's spend per lane, from the VM:
   ```bash
@@ -124,6 +125,9 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   ```bash
   SCC_BUDGET_CAP_OVERRIDE_EUR=0.0001 docker compose -f deploy/compose.dev.yaml up -d gateway
   ```
+  ```bash
+  docker compose -f deploy/compose.dev.yaml up -d gateway
+  ```
 - **Verify:** the spend query shows the expected total; new jobs are accepted or refused as intended.
 
 ## RB-10 Suspected abuse or injection attempts
@@ -133,27 +137,51 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** no new flags from that account; costs back to normal.
 
 ## RB-11 Backup failed
-**Status:** draft, verify in P1.15
-- **Symptoms:** healthchecks.io or Telegram alert: no backup ping.
+**Status:** rehearsed in dev on 2026-10-24 against a local restic repository: with the database stopped, `backup.sh` failed, kept no snapshot (3 before, 3 after) and raised the alert. Verify on the VM with C1.5 and C1.7.
+- **Symptoms:** a Telegram alert "Backup (nightly) FAILED" with the last log lines, or healthchecks.io reports the backup check as late or failed.
 - **Commands:**
   ```bash
-  systemctl status scc-backup.service
-  journalctl -u scc-backup.service --since today
+  systemctl status scc-backup.service --no-pager
+  journalctl -u scc-backup.service --since yesterday --no-pager
   ```
-- **Fix:** the usual causes are expired R2 credentials, a full disk (RB-06), or the database being down (RB-04). Fix the cause, then run `sudo systemctl start scc-backup.service`.
-- **Verify:** the restic snapshot list shows today's snapshot; healthchecks.io is green.
+- **Fix:** the usual causes are expired R2 credentials (`secrets/restic.env`), a full disk (RB-06), or the database being down (RB-04). Fix the cause, then run the backup again:
+  ```bash
+  sudo systemctl start scc-backup.service
+  ```
+- **Verify:** the journal ends with `backup (nightly) done: <snapshot id> ...`; healthchecks.io is green.
 
 ## RB-12 Restore from backup
-**Status:** draft, verify in C1.5
+**Status:** rehearsed in dev on 2026-10-24: a scratch restore compared row counts (all equal except the one row added after the backup), and a full replace restored a pinned snapshot, reran the migrate steps and passed the smoke test. The VM drill is C1.5.
 - **When:** data loss, corruption, or a restore drill (monthly).
-- **Steps:** run `./deploy/restore.sh <snapshot-id> <target-db>`, restoring into a scratch database first. Compare row counts with production. For a real restore: stop `core-worker`, `core-api` and `web`, restore into `scc`, start them again, and run the smoke test.
-- **Verify:** row counts match the snapshot; smoke test passes; record it in the private log.
+- **Drill (no downtime):** restores the latest snapshot into a new scratch database and prints row counts, live vs restored, per table:
+  ```bash
+  sudo ./restore.sh
+  ```
+  A named snapshot instead: `sudo restic snapshots` (with `secrets/restic.env` loaded) lists them, then `sudo ./restore.sh <id>`. Drop the scratch database afterwards with the command it prints.
+- **Real restore (downtime):** makes a safety backup of the current state, stops the app, replaces the `scc` database with the snapshot, then redeploys the recorded version (migrate steps and smoke test). It asks you to type `REPLACE`.
+  ```bash
+  sudo ./restore.sh latest --replace
+  ```
+- **Verify:** row counts look as expected; the smoke test passed; record it in the private log.
 
 ## RB-13 Deploy and roll back
-**Status:** draft, verify in P1.12
-- **Deploy:** `./deploy/deploy.sh <version>` pulls the images, runs migrations, restarts and runs the smoke test.
-- **Roll back:** `./deploy/rollback.sh` returns the stack to the previous version in `versions.env`. Migrations must be backward-compatible for one version, so a rollback never needs a down-migration.
-- **Verify:** `/version` shows the expected version; smoke test passes.
+**Status:** rehearsed in dev on 2026-10-24 with production's compose file and scripts (`tools/rehearse_deploy.py`): first deploy, upgrade, a deliberately failing deploy, rollback after the failure, rollback after a good deploy, and a deploy with the pre-deploy backup. The first VM deploy is C1.3.
+- **Deploy:** pulls the version's images, backs up the database, runs the migrate steps, starts everything, then runs the smoke test (health, version, sign-in, history, and one canned claim, which costs about EUR 0.01 of the live budget). `versions.env` changes only after the smoke test passes.
+  ```bash
+  sudo ./deploy.sh 0.2.0
+  ```
+  Add `--no-claim` to skip the canned claim (no LLM calls).
+- **When a deploy fails:** it prints what failed and alerts on Telegram. `versions.env` still names the last good version. Roll back:
+  ```bash
+  sudo ./rollback.sh
+  ```
+  After a failed deploy it returns to the recorded good version; after a good deploy, to the previous one; `sudo ./rollback.sh 0.1.0` goes to a version you name. A rollback skips the canned claim.
+- **Migrations:** forward-only. A rollback runs the older code on the newer schema, which is safe while migrations only add tables and columns. A migration that removes or renames must ship in two releases (add, then remove), or the rollback becomes a restore (RB-12) from the pre-deploy backup.
+- **Rehearse in dev:** `uv run python tools/rehearse_deploy.py`, then from `.rehearsal/` in Git Bash:
+  ```bash
+  SCC_PROJECT=scc-rehearsal SCC_COMPOSE_EXTRA=compose.rehearsal.yaml SCC_SKIP_PULL=1 ./deploy.sh 0.1.0 --no-claim
+  ```
+- **Verify:** the smoke test printed `smoke test passed`; `cat versions.env` shows the new version and the previous one.
 
 ---
 
