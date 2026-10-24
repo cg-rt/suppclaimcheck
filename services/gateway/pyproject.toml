@@ -3,7 +3,11 @@ name = "scc-gateway"
 version = "0.1.0"
 description = "SuppClaimCheck gateway module"
 requires-python = ">=3.14"
-dependencies = ["scc-common"]
+dependencies = [
+    "anthropic==1.13.0",
+    "psycopg-pool==3.3.3",
+    "scc-common",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.4,<0.14"]

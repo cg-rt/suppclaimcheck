@@ -1,0 +1,43 @@
+# Gateway config v0 (P1.06, P1.07). Versioned config, never constants in code (AGENTS.md section 8).
+version = "gateway-v0"
+
+[budget]
+# Monthly hard caps per lane, in EUR (D-021). New LLM calls are refused once spent + this call's
+# worst-case cost would pass the cap. Provider console limits are a second safety net.
+live_monthly_cap_eur = 15.0
+eval_monthly_cap_eur = 5.0
+# USD to EUR. Deliberately pessimistic (1 USD is less than 1 EUR), so spend is over-counted, never under.
+eur_per_usd = 1.0
+# For the worst-case estimate before a call: characters per input token, rounded down to over-count.
+chars_per_token_estimate = 3
+
+# USD per million tokens. Claude Haiku 5.5: 0.10 / 0.50 for prompts up to 100K tokens, 0.50 / 2.50 beyond.
+[prices."claude-haiku-5-5"]
+input_usd_per_mtok = 0.10
+output_usd_per_mtok = 0.50
+long_prompt_threshold_tokens = 100_000
+long_input_usd_per_mtok = 0.50
+long_output_usd_per_mtok = 2.50
+
+[prices."claude-sonnet-5-5"]
+input_usd_per_mtok = 2.00
+output_usd_per_mtok = 10.00
+
+[llm]
+timeout_s = 90
+max_attempts = 3
+backoff_base_s = 1.0
+backoff_max_s = 20.0
+
+[literature]
+tool = "suppclaimcheck"
+email = "contact@suppclaimcheck.com"
+# NCBI allows 10 requests/s with an API key and 3 without; we stay below both (D-017).
+ncbi_requests_per_second_with_key = 8
+ncbi_requests_per_second_without_key = 3
+timeout_s = 20
+max_attempts = 3
+backoff_base_s = 1.0
+backoff_max_s = 10.0
+# Licences that allow text mining for this non-commercial project (D-017), as Europe PMC writes them.
+licence_allowlist = ["cc0", "cc by", "cc by-sa", "cc by-nd", "cc by-nc", "cc by-nc-sa", "cc by-nc-nd"]

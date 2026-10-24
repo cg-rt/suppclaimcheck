@@ -1,0 +1,451 @@
+{
+  "components": {
+    "schemas": {
+      "FetchRequest": {
+        "properties": {
+          "full_texts": {
+            "default": 1,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Full Texts",
+            "type": "integer"
+          },
+          "pmids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Pmids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pmids"
+        ],
+        "title": "FetchRequest",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "SearchRequest": {
+        "properties": {
+          "max_results": {
+            "default": 20,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Results",
+            "type": "integer"
+          },
+          "query": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "SearchRequest",
+        "type": "object"
+      },
+      "StructuredReply": {
+        "properties": {
+          "call_id": {
+            "title": "Call Id",
+            "type": "integer"
+          },
+          "cost_eur": {
+            "title": "Cost Eur",
+            "type": "number"
+          },
+          "input_tokens": {
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "output": {
+            "additionalProperties": true,
+            "title": "Output",
+            "type": "object"
+          },
+          "output_tokens": {
+            "title": "Output Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "output",
+          "model",
+          "input_tokens",
+          "output_tokens",
+          "cost_eur",
+          "call_id"
+        ],
+        "title": "StructuredReply",
+        "type": "object"
+      },
+      "StructuredRequest": {
+        "properties": {
+          "data": {
+            "maxLength": 200000,
+            "title": "Data",
+            "type": "string"
+          },
+          "effort": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Effort",
+            "type": "string"
+          },
+          "instructions": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Instructions",
+            "type": "string"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "lane": {
+            "default": "live",
+            "enum": [
+              "live",
+              "eval"
+            ],
+            "title": "Lane",
+            "type": "string"
+          },
+          "max_tokens": {
+            "maximum": 16000.0,
+            "minimum": 1.0,
+            "title": "Max Tokens",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "schema": {
+            "additionalProperties": true,
+            "title": "Schema",
+            "type": "object"
+          },
+          "stage": {
+            "pattern": "^[a-z_]{1,32}$",
+            "title": "Stage",
+            "type": "string"
+          },
+          "thinking": {
+            "enum": [
+              "disabled",
+              "adaptive"
+            ],
+            "title": "Thinking",
+            "type": "string"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "stage",
+          "model",
+          "max_tokens",
+          "effort",
+          "thinking",
+          "instructions",
+          "data",
+          "schema"
+        ],
+        "title": "StructuredRequest",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "SuppClaimCheck gateway",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/health/deps": {
+      "get": {
+        "operationId": "health_deps_health_deps_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "description": "A dependency failed"
+          }
+        },
+        "summary": "Health Deps",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/literature/fetch": {
+      "post": {
+        "description": "Licence and metadata for each PMID; JATS full text for the first allowed ones. Skips are counted.",
+        "operationId": "literature_fetch_literature_fetch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Literature Fetch Literature Fetch Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Literature Fetch",
+        "tags": [
+          "literature"
+        ]
+      }
+    },
+    "/literature/search": {
+      "post": {
+        "description": "PubMed search with the open-access filter; PMIDs in relevance order.",
+        "operationId": "literature_search_literature_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Literature Search Literature Search Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Literature Search",
+        "tags": [
+          "literature"
+        ]
+      }
+    },
+    "/llm/structured": {
+      "post": {
+        "description": "One schema-constrained LLM call, priced, capped, retried on transient errors and recorded.",
+        "operationId": "llm_structured_llm_structured_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StructuredRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StructuredReply"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "402": {
+            "description": "Monthly budget cap reached"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Llm Structured",
+        "tags": [
+          "llm"
+        ]
+      }
+    },
+    "/version": {
+      "get": {
+        "operationId": "version_version_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Version Version Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Version",
+        "tags": [
+          "ops"
+        ]
+      }
+    }
+  }
+}
