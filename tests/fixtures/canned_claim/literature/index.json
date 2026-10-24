@@ -1,0 +1,17 @@
+{
+ "GET https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%28%22creatine%22%5Btiab%5D+AND+%28muscle%5Btiab%5D+OR+strength%5Btiab%5D+OR+resistance%5Btiab%5D+OR+training%5Btiab%5D%29+AND+%28older%5Btiab%5D+OR+adults%5Btiab%5D%29%29+AND+pubmed+pmc+open+access%5Bfilter%5D&retmode=json&retmax=20&sort=relevance&tool=suppclaimcheck&email=contact%40suppclaimcheck.com": {
+  "content_type": "application/json; charset=UTF-8",
+  "file": "83ecbe14c85f5ff2",
+  "status": 200
+ },
+ "GET https://www.ebi.ac.uk/europepmc/webservices/rest/PMC7871530/fullTextXML": {
+  "content_type": "application/xml",
+  "file": "a7cef80df2fddae3",
+  "status": 200
+ },
+ "GET https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A33557850+OR+EXT_ID%3A37432300+OR+EXT_ID%3A33670822+OR+EXT_ID%3A39720835+OR+EXT_ID%3A39519498+OR+EXT_ID%3A33599244+OR+EXT_ID%3A32599716+OR+EXT_ID%3A39458423+OR+EXT_ID%3A34039357+OR+EXT_ID%3A29865091+OR+EXT_ID%3A29910741+OR+EXT_ID%3A38892701+OR+EXT_ID%3A29138605+OR+EXT_ID%3A34199420+OR+EXT_ID%3A33652673+OR+EXT_ID%3A31523937+OR+EXT_ID%3A35334912+OR+EXT_ID%3A37764774+OR+EXT_ID%3A28251287+OR+EXT_ID%3A31652853%29+AND+SRC%3AMED&resultType=core&format=json&pageSize=25": {
+  "content_type": "application/json;charset=UTF-8",
+  "file": "c191338c9860fb26",
+  "status": 200
+ }
+}

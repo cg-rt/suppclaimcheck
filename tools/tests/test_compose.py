@@ -62,11 +62,19 @@ def test_long_running_services_restart_and_migrate_steps_do_not(compose):
 def test_secrets_are_files_never_environment_values(compose):
     for name, service in compose["services"].items():
         for key, value in (service.get("environment") or {}).items():
-            if "PASSWORD" in key or "TOKEN" in key:
+            if any(word in key for word in ("PASSWORD", "TOKEN", "KEY")):
                 assert key.endswith("_FILE"), f"{name}: {key}"
                 assert str(value).startswith("/run/secrets/"), f"{name}: {key}"
     for secret in compose["secrets"].values():
         assert set(secret) == {"file"}
+
+
+def test_only_the_gateway_holds_outside_api_keys(compose):
+    for name, service in compose["services"].items():
+        keys = {s for s in service.get("secrets", []) if s.endswith("_api_key")}
+        assert keys == (
+            {"anthropic_api_key", "ncbi_api_key"} if name == "gateway" else set()
+        ), name
 
 
 def test_prod_images_come_from_ghcr_at_one_version():

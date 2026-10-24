@@ -1,0 +1,2178 @@
+{
+ "version": "6.9",
+ "hitCount": 20,
+ "request": {
+  "queryString": "(EXT_ID:33557850 OR EXT_ID:37432300 OR EXT_ID:33670822 OR EXT_ID:39720835 OR EXT_ID:39519498 OR EXT_ID:33599244 OR EXT_ID:32599716 OR EXT_ID:39458423 OR EXT_ID:34039357 OR EXT_ID:29865091 OR EXT_ID:29910741 OR EXT_ID:38892701 OR EXT_ID:29138605 OR EXT_ID:34199420 OR EXT_ID:33652673 OR EXT_ID:31523937 OR EXT_ID:35334912 OR EXT_ID:37764774 OR EXT_ID:28251287 OR EXT_ID:31652853) AND SRC:MED",
+  "resultType": "core",
+  "cursorMark": "*",
+  "pageSize": 25,
+  "sort": "",
+  "synonym": false
+ },
+ "resultList": {
+  "result": [
+   {
+    "id": "39720835",
+    "source": "MED",
+    "pmid": "39720835",
+    "pmcid": "PMC11703406",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC11703406"
+     ]
+    },
+    "doi": "10.1080/15502783.2024.2441760",
+    "title": "Part II. Common questions and misconceptions about creatine supplementation: what does the scientific evidence really show?",
+    "authorString": "Antonio J, Brown AF, Candow DG, Chilibeck PD, Ellery SJ, Forbes SC, Gualano B, Jagim AR, Kerksick C, Kreider RB, Ostojic SM, Rawson ES, Roberts MD, Roschel H, Smith-Ryan AE, Stout JR, Tarnopolsky MA, VanDusseldorp TA, Willoughby DS, Ziegenfuss TN.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-6114-1649"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-6896-5552"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7817-1908"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-9057-2720"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-3906-1658"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-5405-304X"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-6651-5096"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-6655-4482"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-7270-2541"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-8930-1058"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-9513-6132"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-0312-3746"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-0458-7294"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "1",
+     "volume": "22",
+     "journalIssueId": 3871888,
+     "dateOfPublication": "2025 Dec",
+     "monthOfPublication": 12,
+     "yearOfPublication": 2025,
+     "journal": {
+      "medlineAbbreviation": "J Int Soc Sports Nutr",
+      "title": "Journal of the International Society of Sports Nutrition",
+      "essn": "1550-2783",
+      "issn": "1550-2783",
+      "nlmid": "101234168",
+      "isoabbreviation": "J Int Soc Sports Nutr"
+     },
+     "printPublicationDate": "2025-12-01"
+    },
+    "pubYear": "2025",
+    "pageInfo": "2441760",
+    "publicationStatus": "ppublish",
+    "language": "eng",
+    "pubModel": "Print-Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 18,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "nct",
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2024-12-25",
+    "dateOfCreation": "2024-12-25",
+    "dateOfRevision": "2025-01-08",
+    "electronicPublicationDate": "2024-12-25",
+    "firstPublicationDate": "2024-12-25",
+    "firstIndexDate": "2024-12-25",
+    "fullTextReceivedDate": "2025-11-29",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "39519498",
+    "source": "MED",
+    "pmid": "39519498",
+    "pmcid": "PMC11547435",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC11547435"
+     ]
+    },
+    "doi": "10.3390/nu16213665",
+    "title": "Effects of Creatine Supplementation and Resistance Training on Muscle Strength Gains in Adults <50 Years of Age: A Systematic Review and Meta-Analysis.",
+    "authorString": "Wang Z, Qiu B, Li R, Han Y, Petersen C, Liu S, Zhang Y, Liu C, Candow DG, Del Coso J.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0002-5785-984X"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-7867-6807"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-8015-2279"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-3872-914X"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-4028-0863"
+      },
+      {
+       "type": "ORCID",
+       "value": "0009-0009-3778-6282"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "21",
+     "volume": "16",
+     "journalIssueId": 3850350,
+     "dateOfPublication": "2024 Oct",
+     "monthOfPublication": 10,
+     "yearOfPublication": 2024,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2024-10-01"
+    },
+    "pubYear": "2024",
+    "pageInfo": "3665",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "Meta-Analysis",
+      "Systematic Review",
+      "review-article",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 26,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2024-11-09",
+    "dateOfCreation": "2024-11-09",
+    "dateOfRevision": "2024-11-20",
+    "electronicPublicationDate": "2024-10-28",
+    "firstPublicationDate": "2024-10-28",
+    "firstIndexDate": "2024-11-15",
+    "fullTextReceivedDate": "2025-02-05",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "39458423",
+    "source": "MED",
+    "pmid": "39458423",
+    "pmcid": "PMC11510680",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC11510680"
+     ]
+    },
+    "doi": "10.3390/nu16203428",
+    "title": "Acute Sarcopenia: Mechanisms and Management.",
+    "authorString": "Damanti S, Senini E, De Lorenzo R, Merolla A, Santoro S, Festorazzi C, Messina M, Vitali G, Sciorati C, Rovere-Querini P.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0002-2399-3688"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-2030-9366"
+      },
+      {
+       "type": "ORCID",
+       "value": "0009-0000-3584-4754"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "20",
+     "volume": "16",
+     "journalIssueId": 3842786,
+     "dateOfPublication": "2024 Oct",
+     "monthOfPublication": 10,
+     "yearOfPublication": 2024,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2024-10-01"
+    },
+    "pubYear": "2024",
+    "pageInfo": "3428",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 31,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2024-10-26",
+    "dateOfCreation": "2024-10-26",
+    "dateOfRevision": "2024-10-28",
+    "electronicPublicationDate": "2024-10-10",
+    "firstPublicationDate": "2024-10-10",
+    "firstIndexDate": "2024-10-27",
+    "fullTextReceivedDate": "2024-11-01",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "38892701",
+    "source": "MED",
+    "pmid": "38892701",
+    "pmcid": "PMC11174392",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC11174392"
+     ]
+    },
+    "doi": "10.3390/nu16111768",
+    "title": "Nutritional Ergogenic Aids in Cycling: A Systematic Review.",
+    "authorString": "Valiño-Marques A, Lamas A, Miranda JM, Cepeda A, Regal P.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7283-9372"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7992-1491"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-9324-1342"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-1584-9931"
+      },
+      {
+       "type": "ORCID",
+       "value": "0009-0001-3088-2521"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "11",
+     "volume": "16",
+     "journalIssueId": 3787943,
+     "dateOfPublication": "2024 Jun",
+     "monthOfPublication": 6,
+     "yearOfPublication": 2024,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2024-06-01"
+    },
+    "pubYear": "2024",
+    "pageInfo": "1768",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "Systematic Review",
+      "review-article",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 6,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2024-06-19",
+    "dateOfCreation": "2024-06-19",
+    "dateOfRevision": "2025-07-11",
+    "electronicPublicationDate": "2024-06-05",
+    "firstPublicationDate": "2024-06-05",
+    "firstIndexDate": "2024-06-19",
+    "fullTextReceivedDate": "2024-06-22",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "37764774",
+    "source": "MED",
+    "pmid": "37764774",
+    "pmcid": "PMC10535924",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC10535924"
+     ]
+    },
+    "doi": "10.3390/nu15183990",
+    "title": "Coenzyme Q10 Supplementation in Athletes: A Systematic Review.",
+    "authorString": "Fernandes MSS, Fidelis DEDS, Aidar FJ, Badicu G, Greco G, Cataldi S, Santos GCJ, de Souza RF, Ardigò LP.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7378-4529"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7677-5070"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-1066-9176"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-3899-6849"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-5023-3721"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-5929-4766"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-7010-5049"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-4100-8765"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "18",
+     "volume": "15",
+     "journalIssueId": 3636507,
+     "dateOfPublication": "2023 Sep",
+     "monthOfPublication": 9,
+     "yearOfPublication": 2023,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2023-09-01"
+    },
+    "pubYear": "2023",
+    "pageInfo": "3990",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "Systematic Review",
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 17,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2026-03-11",
+    "dateOfCreation": "2023-09-28",
+    "dateOfRevision": "2026-03-13",
+    "electronicPublicationDate": "2023-09-15",
+    "firstPublicationDate": "2023-09-15",
+    "firstIndexDate": "2023-09-29",
+    "fullTextReceivedDate": "2023-09-30",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "37432300",
+    "source": "MED",
+    "pmid": "37432300",
+    "pmcid": "PMC10180745",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC10180745"
+     ]
+    },
+    "doi": "10.3390/nu15092116",
+    "title": "The Effects of Creatine Supplementation Combined with Resistance Training on Regional Measures of Muscle Hypertrophy: A Systematic Review with Meta-Analysis.",
+    "authorString": "Burke R, Piñero A, Coleman M, Mohan A, Sapuppo M, Augustin F, Aragon AA, Candow DG, Forbes SC, Swinton P, Schoenfeld BJ.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-6896-5552"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-8186-1889"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-9663-0696"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-1201-2685"
+      },
+      {
+       "type": "ORCID",
+       "value": "0009-0005-7860-1572"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "9",
+     "volume": "15",
+     "journalIssueId": 3573166,
+     "dateOfPublication": "2023 Apr",
+     "monthOfPublication": 4,
+     "yearOfPublication": 2023,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2023-04-01"
+    },
+    "pubYear": "2023",
+    "pageInfo": "2116",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "Meta-Analysis",
+      "Systematic Review",
+      "review-article",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 40,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2023-07-13",
+    "dateOfCreation": "2023-07-11",
+    "dateOfRevision": "2025-06-26",
+    "electronicPublicationDate": "2023-04-28",
+    "firstPublicationDate": "2023-04-28",
+    "firstIndexDate": "2023-07-11",
+    "fullTextReceivedDate": "2023-05-22",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "35334912",
+    "source": "MED",
+    "pmid": "35334912",
+    "pmcid": "PMC8949037",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC8949037"
+     ]
+    },
+    "doi": "10.3390/nu14061255",
+    "title": "Creatine Supplementation for Muscle Growth: A Scoping Review of Randomized Clinical Trials from 2012 to 2021.",
+    "authorString": "Wu SH, Chen KL, Hsu C, Chen HC, Chen JY, Yu SY, Shiu YJ.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7625-7193"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-3992-9824"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "6",
+     "volume": "14",
+     "journalIssueId": 3333201,
+     "dateOfPublication": "2022 Mar",
+     "monthOfPublication": 3,
+     "yearOfPublication": 2022,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2022-03-01"
+    },
+    "pubYear": "2022",
+    "pageInfo": "1255",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "Scoping Review",
+      "review-article",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 34,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2022-03-30",
+    "dateOfCreation": "2022-03-26",
+    "dateOfRevision": "2025-01-30",
+    "electronicPublicationDate": "2022-03-16",
+    "firstPublicationDate": "2022-03-16",
+    "firstIndexDate": "2022-03-28",
+    "fullTextReceivedDate": "2025-02-04",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "34199420",
+    "source": "MED",
+    "pmid": "34199420",
+    "pmcid": "PMC8229907",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC8229907"
+     ]
+    },
+    "doi": "10.3390/nu13061912",
+    "title": "Meta-Analysis Examining the Importance of Creatine Ingestion Strategies on Lean Tissue Mass and Strength in Older Adults.",
+    "authorString": "Forbes SC, Candow DG, Ostojic SM, Roberts MD, Chilibeck PD.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-6896-5552"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-7270-2541"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-7359-5362"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "6",
+     "volume": "13",
+     "journalIssueId": 3192335,
+     "dateOfPublication": "2021 Jun",
+     "monthOfPublication": 6,
+     "yearOfPublication": 2021,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2021-06-01"
+    },
+    "pubYear": "2021",
+    "pageInfo": "1912",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "Meta-Analysis",
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 53,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2021-08-16",
+    "dateOfCreation": "2021-07-02",
+    "dateOfRevision": "2021-08-16",
+    "electronicPublicationDate": "2021-06-02",
+    "firstPublicationDate": "2021-06-02",
+    "firstIndexDate": "2021-07-03",
+    "fullTextReceivedDate": "2025-02-04",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "33599244",
+    "source": "MED",
+    "pmid": "33599244",
+    "pmcid": "PMC8213426",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC8213426"
+     ]
+    },
+    "doi": "10.1093/rheumatology/keab166",
+    "title": "A systematic review and meta-analysis to inform cancer screening guidelines in idiopathic inflammatory myopathies.",
+    "authorString": "Oldroyd AGS, Allard AB, Callen JP, Chinoy H, Chung L, Fiorentino D, George MD, Gordon P, Kolstad K, Kurtzman DJB, Machado PM, McHugh NJ, Postolova A, Selva-O'Callaghan A, Schmidt J, Tansley S, Vleugels RA, Werth VP, Aggarwal R.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-5701-6490"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-6492-1288"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7531-8038"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-8411-7972"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-0072-6939"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-2765-658X"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-2823-9761"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-4633-9598"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "6",
+     "volume": "60",
+     "journalIssueId": 3189723,
+     "dateOfPublication": "2021 Jun",
+     "monthOfPublication": 6,
+     "yearOfPublication": 2021,
+     "journal": {
+      "medlineAbbreviation": "Rheumatology (Oxford)",
+      "title": "Rheumatology (Oxford, England)",
+      "essn": "1462-0332",
+      "issn": "1462-0324",
+      "nlmid": "100883501",
+      "isoabbreviation": "Rheumatology (Oxford)"
+     },
+     "printPublicationDate": "2021-06-01"
+    },
+    "pubYear": "2021",
+    "pageInfo": "2615-2628",
+    "publicationStatus": "ppublish",
+    "language": "eng",
+    "pubModel": "Print",
+    "pubTypeList": {
+     "pubType": [
+      "Meta-Analysis",
+      "Research Support, Non-U.S. Gov't",
+      "research-article",
+      "Systematic Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 119,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by-nc",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "N",
+    "dateOfCompletion": "2021-08-18",
+    "dateOfCreation": "2021-02-18",
+    "dateOfRevision": "2025-05-30",
+    "firstPublicationDate": "2021-06-01",
+    "firstIndexDate": "2021-02-19",
+    "fullTextReceivedDate": "2025-02-04",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "34039357",
+    "source": "MED",
+    "pmid": "34039357",
+    "pmcid": "PMC8152067",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC8152067"
+     ]
+    },
+    "doi": "10.1186/s12970-021-00438-0",
+    "title": "Taurine in sports and exercise.",
+    "authorString": "Kurtz JA, VanDusseldorp TA, Doyle JA, Otis JS.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0003-1215-9177"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "1",
+     "volume": "18",
+     "journalIssueId": 3168370,
+     "dateOfPublication": "2021 May",
+     "monthOfPublication": 5,
+     "yearOfPublication": 2021,
+     "journal": {
+      "medlineAbbreviation": "J Int Soc Sports Nutr",
+      "title": "Journal of the International Society of Sports Nutrition",
+      "essn": "1550-2783",
+      "issn": "1550-2783",
+      "nlmid": "101234168",
+      "isoabbreviation": "J Int Soc Sports Nutr"
+     },
+     "printPublicationDate": "2021-05-01"
+    },
+    "pubYear": "2021",
+    "pageInfo": "39",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 69,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2021-07-12",
+    "dateOfCreation": "2021-05-27",
+    "dateOfRevision": "2024-08-10",
+    "electronicPublicationDate": "2021-05-26",
+    "firstPublicationDate": "2021-05-26",
+    "firstIndexDate": "2021-05-28",
+    "fullTextReceivedDate": "2025-02-04",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "33652673",
+    "source": "MED",
+    "pmid": "33652673",
+    "pmcid": "PMC7996960",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC7996960"
+     ]
+    },
+    "doi": "10.3390/nu13030745",
+    "title": "Current Evidence and Possible Future Applications of Creatine Supplementation for Older Adults.",
+    "authorString": "Candow DG, Forbes SC, Kirk B, Duque G.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-6896-5552"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-8126-0637"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-0176-776X"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "3",
+     "volume": "13",
+     "journalIssueId": 3122874,
+     "dateOfPublication": "2021 Feb",
+     "monthOfPublication": 2,
+     "yearOfPublication": 2021,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2021-02-01"
+    },
+    "pubYear": "2021",
+    "pageInfo": "745",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 38,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2021-05-10",
+    "dateOfCreation": "2021-03-03",
+    "dateOfRevision": "2021-05-10",
+    "electronicPublicationDate": "2021-02-26",
+    "firstPublicationDate": "2021-02-26",
+    "firstIndexDate": "2021-03-03",
+    "fullTextReceivedDate": "2025-02-04",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "33670822",
+    "source": "MED",
+    "pmid": "33670822",
+    "pmcid": "PMC7922146",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC7922146"
+     ]
+    },
+    "doi": "10.3390/nu13020664",
+    "title": "Creatine Supplementation in Children and Adolescents.",
+    "authorString": "Jagim AR, Kerksick CM.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0002-6651-5096"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-0458-7294"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "2",
+     "volume": "13",
+     "journalIssueId": 3105598,
+     "dateOfPublication": "2021 Feb",
+     "monthOfPublication": 2,
+     "yearOfPublication": 2021,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2021-02-01"
+    },
+    "pubYear": "2021",
+    "pageInfo": "664",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 35,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2021-05-13",
+    "dateOfCreation": "2021-03-06",
+    "dateOfRevision": "2021-05-13",
+    "electronicPublicationDate": "2021-02-18",
+    "firstPublicationDate": "2021-02-18",
+    "firstIndexDate": "2021-03-06",
+    "fullTextReceivedDate": "2025-02-04",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "33557850",
+    "source": "MED",
+    "pmid": "33557850",
+    "pmcid": "PMC7871530",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC7871530"
+     ]
+    },
+    "doi": "10.1186/s12970-021-00412-w",
+    "title": "Common questions and misconceptions about creatine supplementation: what does the scientific evidence really show?",
+    "authorString": "Antonio J, Candow DG, Forbes SC, Gualano B, Jagim AR, Kreider RB, Rawson ES, Smith-Ryan AE, VanDusseldorp TA, Willoughby DS, Ziegenfuss TN.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0002-3906-1658"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-8930-1058"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "1",
+     "volume": "18",
+     "journalIssueId": 3108130,
+     "dateOfPublication": "2021 Feb",
+     "monthOfPublication": 2,
+     "yearOfPublication": 2021,
+     "journal": {
+      "medlineAbbreviation": "J Int Soc Sports Nutr",
+      "title": "Journal of the International Society of Sports Nutrition",
+      "essn": "1550-2783",
+      "issn": "1550-2783",
+      "nlmid": "101234168",
+      "isoabbreviation": "J Int Soc Sports Nutr"
+     },
+     "printPublicationDate": "2021-02-01"
+    },
+    "pubYear": "2021",
+    "pageInfo": "13",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 125,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2021-06-14",
+    "dateOfCreation": "2021-02-09",
+    "dateOfRevision": "2023-09-19",
+    "electronicPublicationDate": "2021-02-08",
+    "firstPublicationDate": "2021-02-08",
+    "firstIndexDate": "2021-02-10",
+    "fullTextReceivedDate": "2025-02-04",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "32599716",
+    "source": "MED",
+    "pmid": "32599716",
+    "pmcid": "PMC7353308",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC7353308"
+     ]
+    },
+    "doi": "10.3390/nu12061880",
+    "title": "Effects of Creatine Supplementation during Resistance Training Sessions in Physically Active Young Adults.",
+    "authorString": "Mills S, Candow DG, Forbes SC, Neary JP, Ormsbee MJ, Antonio J.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-6896-5552"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-1939-7656"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-2480-8031"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "6",
+     "volume": "12",
+     "journalIssueId": 2963084,
+     "dateOfPublication": "2020 Jun",
+     "monthOfPublication": 6,
+     "yearOfPublication": 2020,
+     "journal": {
+      "medlineAbbreviation": "Nutrients",
+      "title": "Nutrients",
+      "essn": "2072-6643",
+      "issn": "2072-6643",
+      "nlmid": "101521595",
+      "isoabbreviation": "Nutrients"
+     },
+     "printPublicationDate": "2020-06-01"
+    },
+    "pubYear": "2020",
+    "pageInfo": "E1880",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "research-article",
+      "Randomized Controlled Trial",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 31,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2021-03-15",
+    "dateOfCreation": "2020-07-01",
+    "dateOfRevision": "2021-03-15",
+    "electronicPublicationDate": "2020-06-24",
+    "firstPublicationDate": "2020-06-24",
+    "firstIndexDate": "2020-07-01",
+    "fullTextReceivedDate": "2025-02-03",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "31652853",
+    "source": "MED",
+    "pmid": "31652853",
+    "pmcid": "PMC6921011",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC6921011"
+     ]
+    },
+    "doi": "10.3390/biom9110642",
+    "title": "Muscular Atrophy and Sarcopenia in the Elderly: Is There a Role for Creatine Supplementation?",
+    "authorString": "Dolan E, Artioli GG, Pereira RMR, Gualano B.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7100-8681"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-8463-2213"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-1018-7601"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-3723-5028"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "11",
+     "volume": "9",
+     "journalIssueId": 2874120,
+     "dateOfPublication": "2019 Oct",
+     "monthOfPublication": 10,
+     "yearOfPublication": 2019,
+     "journal": {
+      "medlineAbbreviation": "Biomolecules",
+      "title": "Biomolecules",
+      "essn": "2218-273X",
+      "issn": "2218-273X",
+      "nlmid": "101596414",
+      "isoabbreviation": "Biomolecules"
+     },
+     "printPublicationDate": "2019-10-01"
+    },
+    "pubYear": "2019",
+    "pageInfo": "E642",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "Research Support, Non-U.S. Gov't",
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 43,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2020-09-22",
+    "dateOfCreation": "2019-10-27",
+    "dateOfRevision": "2020-09-22",
+    "electronicPublicationDate": "2019-10-23",
+    "firstPublicationDate": "2019-10-23",
+    "firstIndexDate": "2019-10-27",
+    "fullTextReceivedDate": "2025-02-03",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "31523937",
+    "source": "MED",
+    "pmid": "31523937",
+    "pmcid": "PMC6818450",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC6818450"
+     ]
+    },
+    "doi": "10.1002/jcsm.12483",
+    "title": "Sarcopenia: A Time for Action. An SCWD Position Paper.",
+    "authorString": "Bauer J, Morley JE, Schols AMWJ, Ferrucci L, Cruz-Jentoft AJ, Dent E, Baracos VE, Crawford JA, Doehner W, Heymsfield SB, Jatoi A, Kalantar-Zadeh K, Lainscak M, Landi F, Laviano A, Mancuso M, Muscaritoli M, Prado CM, Strasser F, von Haehling S, Coats AJS, Anker SD.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7598-708X"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7628-4861"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-3472-1389"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-3609-5641"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-4006-3992"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-6273-1613"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-8666-0725"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-9818-042X"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "5",
+     "volume": "10",
+     "journalIssueId": 2874633,
+     "dateOfPublication": "2019 Oct",
+     "monthOfPublication": 10,
+     "yearOfPublication": 2019,
+     "journal": {
+      "medlineAbbreviation": "J Cachexia Sarcopenia Muscle",
+      "title": "Journal of cachexia, sarcopenia and muscle",
+      "essn": "2190-6009",
+      "issn": "2190-5991",
+      "nlmid": "101552883",
+      "isoabbreviation": "J Cachexia Sarcopenia Muscle"
+     },
+     "printPublicationDate": "2019-10-01"
+    },
+    "pubYear": "2019",
+    "pageInfo": "956-961",
+    "publicationStatus": "ppublish",
+    "language": "eng",
+    "pubModel": "Print-Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "research-article",
+      "Review",
+      "Consensus Statement",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 558,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasData": "Y",
+    "license": "cc by-nc",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2020-07-20",
+    "dateOfCreation": "2019-09-17",
+    "dateOfRevision": "2026-01-27",
+    "electronicPublicationDate": "2019-09-15",
+    "firstPublicationDate": "2019-09-15",
+    "firstIndexDate": "2019-09-17",
+    "fullTextReceivedDate": "2025-02-03",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "29910741",
+    "source": "MED",
+    "pmid": "29910741",
+    "pmcid": "PMC5992463",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC5992463"
+     ]
+    },
+    "doi": "10.3389/fphys.2018.00634",
+    "title": "Physiology and Pathophysiology in Ultra-Marathon Running.",
+    "authorString": "Knechtle B, Nikolaidis PT.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-8030-7122"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "wikipedia",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "volume": "9",
+     "journalIssueId": 2644114,
+     "dateOfPublication": "2018 ",
+     "monthOfPublication": 0,
+     "yearOfPublication": 2018,
+     "journal": {
+      "medlineAbbreviation": "Front Physiol",
+      "title": "Frontiers in physiology",
+      "essn": "1664-042X",
+      "issn": "1664-042X",
+      "nlmid": "101549006",
+      "isoabbreviation": "Front Physiol"
+     },
+     "printPublicationDate": "2018-01-01"
+    },
+    "pubYear": "2018",
+    "pageInfo": "634",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic-eCollection",
+    "pubTypeList": {
+     "pubType": [
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 209,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCreation": "2018-06-19",
+    "dateOfRevision": "2022-03-21",
+    "electronicPublicationDate": "2018-06-01",
+    "firstPublicationDate": "2018-06-01",
+    "firstIndexDate": "2018-06-18",
+    "fullTextReceivedDate": "2025-02-03",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "29865091",
+    "source": "MED",
+    "pmid": "29865091",
+    "pmcid": "PMC6004913",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC6004913"
+     ]
+    },
+    "doi": "10.3233/jnd-180308",
+    "title": "Current Classification and Management of Inflammatory Myopathies.",
+    "authorString": "Schmidt J.",
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "2",
+     "volume": "5",
+     "journalIssueId": 2692317,
+     "dateOfPublication": "2018 ",
+     "monthOfPublication": 0,
+     "yearOfPublication": 2018,
+     "journal": {
+      "medlineAbbreviation": "J Neuromuscul Dis",
+      "title": "Journal of neuromuscular diseases",
+      "essn": "2214-3602",
+      "issn": "2214-3599",
+      "nlmid": "101649948",
+      "isoabbreviation": "J Neuromuscul Dis"
+     },
+     "printPublicationDate": "2018-01-01"
+    },
+    "pubYear": "2018",
+    "pageInfo": "109-129",
+    "publicationStatus": "ppublish",
+    "language": "eng",
+    "pubModel": "Print",
+    "pubTypeList": {
+     "pubType": [
+      "Research Support, Non-U.S. Gov't",
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 194,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "Y",
+    "license": "cc by-nc",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "nct"
+     ]
+    },
+    "dateOfCompletion": "2018-11-01",
+    "dateOfCreation": "2018-06-06",
+    "dateOfRevision": "2022-12-13",
+    "firstPublicationDate": "2018-01-01",
+    "firstIndexDate": "2018-06-05",
+    "fullTextReceivedDate": "2025-02-03",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "29138605",
+    "source": "MED",
+    "pmid": "29138605",
+    "pmcid": "PMC5679696",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC5679696"
+     ]
+    },
+    "doi": "10.2147/oajsm.s123529",
+    "title": "Effect of creatine supplementation during resistance training on lean tissue mass and muscular strength in older adults: a meta-analysis.",
+    "authorString": "Chilibeck PD, Kaviani M, Candow DG, Zello GA.",
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0002-1186-3384"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "volume": "8",
+     "journalIssueId": 2551326,
+     "dateOfPublication": "2017 ",
+     "monthOfPublication": 0,
+     "yearOfPublication": 2017,
+     "journal": {
+      "medlineAbbreviation": "Open Access J Sports Med",
+      "title": "Open access journal of sports medicine",
+      "essn": "1179-1543",
+      "issn": "1179-1543",
+      "nlmid": "101566036",
+      "isoabbreviation": "Open Access J Sports Med"
+     },
+     "printPublicationDate": "2017-01-01"
+    },
+    "pubYear": "2017",
+    "pageInfo": "213-226",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic-eCollection",
+    "pubTypeList": {
+     "pubType": [
+      "review-article",
+      "Review",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 160,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasData": "Y",
+    "license": "cc by-nc",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "dateOfCreation": "2017-11-16",
+    "dateOfRevision": "2020-09-30",
+    "electronicPublicationDate": "2017-11-02",
+    "firstPublicationDate": "2017-11-02",
+    "firstIndexDate": "2017-11-16",
+    "fullTextReceivedDate": "2025-02-03",
+    "hasEvaluations": "N"
+   },
+   {
+    "id": "28251287",
+    "source": "MED",
+    "pmid": "28251287",
+    "pmcid": "PMC5457808",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC5457808"
+     ]
+    },
+    "doi": "10.1007/s00198-017-3980-9",
+    "title": "Nutrition and physical activity in the prevention and treatment of sarcopenia: systematic review.",
+    "authorString": "Beaudart C, Dawson A, Shaw SC, Harvey NC, Kanis JA, Binkley N, Reginster JY, Chapurlat R, Chan DC, Bruyère O, Rizzoli R, Cooper C, Dennison EM, IOF-ESCEO Sarcopenia Working Group.",
+    "investigatorList": {
+     "investigator": [
+      {
+       "fullName": "Adib G",
+       "lastName": "Adib",
+       "firstName": "G",
+       "initials": "G"
+      },
+      {
+       "fullName": "Brandi ML",
+       "lastName": "Brandi",
+       "firstName": "M L",
+       "initials": "ML",
+       "authorId": {
+        "type": "ORCID",
+        "value": "0000-0002-8741-0592"
+       }
+      },
+      {
+       "fullName": "Chevalley T",
+       "lastName": "Chevalley",
+       "firstName": "T",
+       "initials": "T"
+      },
+      {
+       "fullName": "Clark P",
+       "lastName": "Clark",
+       "firstName": "P",
+       "initials": "P",
+       "authorId": {
+        "type": "ORCID",
+        "value": "0000-0001-7981-5357"
+       }
+      },
+      {
+       "fullName": "Dawson-Hughes B",
+       "lastName": "Dawson-Hughes",
+       "firstName": "B",
+       "initials": "B"
+      },
+      {
+       "fullName": "El Maghraoui A",
+       "lastName": "El Maghraoui",
+       "firstName": "A",
+       "initials": "A"
+      },
+      {
+       "fullName": "Engelke K",
+       "lastName": "Engelke",
+       "firstName": "K",
+       "initials": "K"
+      },
+      {
+       "fullName": "Fielding R",
+       "lastName": "Fielding",
+       "firstName": "R",
+       "initials": "R"
+      },
+      {
+       "fullName": "Foldes AJ",
+       "lastName": "Foldes",
+       "firstName": "A J",
+       "initials": "AJ"
+      },
+      {
+       "fullName": "Gugliemi G",
+       "lastName": "Gugliemi",
+       "firstName": "G",
+       "initials": "G"
+      },
+      {
+       "fullName": "Kaufman JM",
+       "lastName": "Kaufman",
+       "firstName": "J M",
+       "initials": "JM"
+      },
+      {
+       "fullName": "Larijani B",
+       "lastName": "Larijani",
+       "firstName": "B",
+       "initials": "B"
+      },
+      {
+       "fullName": "Lems W",
+       "lastName": "Lems",
+       "firstName": "W",
+       "initials": "W"
+      },
+      {
+       "fullName": "van Loon LJC",
+       "lastName": "van Loon",
+       "firstName": "L J C",
+       "initials": "LJC",
+       "authorId": {
+        "type": "ORCID",
+        "value": "0000-0002-6768-9231"
+       }
+      },
+      {
+       "fullName": "Lyritis GP",
+       "lastName": "Lyritis",
+       "firstName": "G P",
+       "initials": "GP"
+      },
+      {
+       "fullName": "Maggi S",
+       "lastName": "Maggi",
+       "firstName": "S",
+       "initials": "S"
+      },
+      {
+       "fullName": "Masi L",
+       "lastName": "Masi",
+       "firstName": "L",
+       "initials": "L"
+      },
+      {
+       "fullName": "McCloskey E",
+       "lastName": "McCloskey",
+       "firstName": "E",
+       "initials": "E"
+      },
+      {
+       "fullName": "Messina OD",
+       "lastName": "Messina",
+       "firstName": "O D",
+       "initials": "OD"
+      },
+      {
+       "fullName": "Papaioannou A",
+       "lastName": "Papaioannou",
+       "firstName": "A",
+       "initials": "A"
+      },
+      {
+       "fullName": "Szulc P",
+       "lastName": "Szulc",
+       "firstName": "P",
+       "initials": "P",
+       "authorId": {
+        "type": "ORCID",
+        "value": "0000-0003-4168-6697"
+       }
+      },
+      {
+       "fullName": "Veronese N",
+       "lastName": "Veronese",
+       "firstName": "N",
+       "initials": "N"
+      }
+     ]
+    },
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7712-4042"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-7981-5357"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0001-8214-6385"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-0827-5303"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-2206-6858"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-3048-4961"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-6768-9231"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-8194-2512"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-8741-0592"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-2215-2243"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-3510-0709"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-4168-6697"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-4269-9393"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics"
+     ]
+    },
+    "journalInfo": {
+     "issue": "6",
+     "volume": "28",
+     "journalIssueId": 2562587,
+     "dateOfPublication": "2017 Jun",
+     "monthOfPublication": 6,
+     "yearOfPublication": 2017,
+     "journal": {
+      "medlineAbbreviation": "Osteoporos Int",
+      "title": "Osteoporosis international : a journal established as result of cooperation between the European Foundation for Osteoporosis and the National Osteoporosis Foundation of the USA",
+      "essn": "1433-2965",
+      "issn": "0937-941X",
+      "nlmid": "9100105",
+      "isoabbreviation": "Osteoporos Int"
+     },
+     "printPublicationDate": "2017-06-01"
+    },
+    "pubYear": "2017",
+    "pageInfo": "1817-1833",
+    "publicationStatus": "ppublish",
+    "language": "eng",
+    "pubModel": "Print-Electronic",
+    "pubTypeList": {
+     "pubType": [
+      "Systematic Review",
+      "review-article",
+      "Journal Article"
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 435,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "Y",
+    "hasData": "N",
+    "license": "cc by-nc",
+    "authMan": "Y",
+    "epmcAuthMan": "Y",
+    "nihAuthMan": "N",
+    "manuscriptId": "EMS71757",
+    "hasTMAccessionNumbers": "N",
+    "dateOfCompletion": "2018-06-04",
+    "dateOfCreation": "2017-03-03",
+    "dateOfRevision": "2025-06-23",
+    "electronicPublicationDate": "2017-03-01",
+    "firstPublicationDate": "2017-03-01",
+    "firstIndexDate": "2017-03-03",
+    "fullTextReceivedDate": "2025-02-03",
+    "hasEvaluations": "N"
+   }
+  ]
+ }
+}
