@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% set nav = "history" %}
+{% block title %}History{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">Your checks</h1>
+  {% if jobs %}
+  <ul class="history">
+    {% for j in jobs %}
+    {% set c = j.confirmed_claim %}
+    <li class="history__item">
+      <a class="history__claim" href="/checks/{{ j.id }}">{% if c %}{{ c.supplement|capitalize }}: {{ c.effect }}{% else %}{{ j.input_text|truncate(90) }}{% endif %}</a>
+      <p class="history__meta">
+        <time class="num" datetime="{{ j.created_at }}">{{ j.created_at[:10] }}</time>
+        <span aria-hidden="true">·</span>
+        {% if j.verdict %}<span class="verdict-ink verdict-ink--{{ classes.get(j.verdict, 'none') }}">{{ j.verdict }}</span>{% if j.score is not none %} <span class="num">{{ j.score }}</span>/100{% endif %}{% else %}{{ stages.get(j.state, j.state) }}{% endif %}
+      </p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="lede">You haven't checked a claim yet. A check takes about a minute: paste the claim, confirm it, and read what the research says.</p>
+  <p><a class="button" href="/checks/new">Check your first claim</a></p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% from "macros.html" import icon %}
+{% set r = view.result %}
+{% set claim = job.confirmed_claim %}
+{% block title %}{{ view.verdict }}: {{ claim.supplement }}{% endblock %}
+{% block main %}
+<section class="card" aria-labelledby="claim-title">
+  <h1 class="card__title" id="claim-title">You asked about</h1>
+  <p class="claim">{{ claim.supplement|capitalize }}: {{ claim.effect }}{% if claim.population %}, in {{ claim.population }}{% endif %}.</p>
+  <p class="meta">The claim as you confirmed it{% if claim.dose %} · dose: {{ claim.dose }}{% endif %}{% if claim.duration %} · duration: {{ claim.duration }}{% endif %} · checked <time datetime="{{ job.updated_at }}" class="num">{{ job.updated_at[:10] }}</time></p>
+</section>
+
+<section class="card verdict verdict--{{ view.verdict_class }}" aria-labelledby="found-title">
+  <h2 class="card__title" id="found-title">What the research says</h2>
+  <div class="verdict__head">
+    <p class="verdict__word">{{ view.verdict }}</p>
+    <p class="verdict__score"><span class="num">{{ view.score }}</span> <span class="verdict__of">out of 100</span></p>
+  </div>
+  <p class="verdict__why">{{ view.explanation }}</p>
+
+  <figure class="scale">
+    <svg class="scale__track" viewBox="0 0 100 12" preserveAspectRatio="none" role="img" aria-label="Score {{ view.score }} on a scale from 0 to 100" focusable="false">
+      <rect class="scale__bar" x="0" y="4" width="100" height="4" rx="2"/>
+      <rect class="scale__mid" x="49.8" y="2" width="0.4" height="8"/>
+      <rect class="scale__mark" x="{{ [[view.score - 0.75, 0]|max, 98.5]|min }}" y="0" width="1.5" height="12" rx="0.75"/>
+    </svg>
+    <figcaption class="scale__ends"><span><span class="num">0</span> evidence against</span><span><span class="num">50</span> balanced or too weak</span><span><span class="num">100</span> evidence for</span></figcaption>
+  </figure>
+
+  <dl class="counts">
+    <div><dt>Articles read</dt><dd class="num">{{ r.articles_assessed }}</dd></div>
+    <div><dt>Passages for</dt><dd class="num">{{ r.supporting }}</dd></div>
+    <div><dt>Passages against</dt><dd class="num">{{ r.contradicting }}</dd></div>
+    <div><dt>Quotes dropped</dt><dd class="num">{{ r.quotes_dropped }}</dd></div>
+  </dl>
+
+  <details class="workings">
+    <summary>How the score was worked out</summary>
+    <ol class="workings__steps">{% for step in view.steps %}<li class="num">{{ step }}</li>{% endfor %}</ol>
+    <p class="small">Code computes the verdict and score from {{ r.rubric_version }}; the language model never does. This version gives full strength from six verified passages.</p>
+  </details>
+</section>
+
+<aside class="card card--warning" aria-labelledby="advice-title">
+  <h2 class="card__title" id="advice-title">Not medical advice</h2>
+  <p>This describes what open-access research says about one claim. It doesn't say whether you should take {{ claim.supplement }}, or how much. Ask a doctor or pharmacist.</p>
+</aside>
+
+<section class="card" aria-labelledby="evidence-title">
+  <h2 class="card__title" id="evidence-title">The evidence, word for word</h2>
+  <p class="small">Every quote below was found word for word in the article. Quotes that weren't are never shown.</p>
+  {% for group, title in [(view.supporting, "Supports the claim"), (view.contradicting, "Contradicts the claim")] %}
+  {% if group %}
+  <h3 class="subhead">{{ title }} <span class="num">({{ group|length }})</span></h3>
+  <ul class="quotes">
+    {% for q in group %}
+    <li class="quote quote--{{ q.label }}">
+      <blockquote class="quote__text"><p>{{ q.quote }}</p></blockquote>
+      <p class="quote__why">{{ q.reason }}</p>
+      <p class="quote__source">{{ q.section }} · {{ q.citation }} · {{ q.licence }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% endfor %}
+  {% if not view.supporting and not view.contradicting %}
+  <p>No passage in the article read supports or contradicts the claim.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="article-title">
+  <h2 class="card__title" id="article-title">The article that was read</h2>
+  {% for a in view.articles %}
+  <div class="citation">
+    <p class="citation__title">{{ a.title }}</p>
+    <p class="citation__line">{{ a.citation }}.{% if a.doi %} doi:{{ a.doi }}{% endif %}</p>
+    <p class="citation__line">Licence: {{ a.licence }} · PMID <span class="num">{{ a.pmid }}</span> · {{ a.pmcid }}</p>
+    <p class="citation__links">
+      {% if a.pmc_url %}<a href="{{ a.pmc_url }}" rel="noopener noreferrer" target="_blank">Full text on PubMed Central {{ icon("out") }}<span class="visually-hidden"> (opens in a new tab)</span></a>{% endif %}
+      {% if a.pubmed_url %}<a href="{{ a.pubmed_url }}" rel="noopener noreferrer" target="_blank">PubMed record {{ icon("out") }}<span class="visually-hidden"> (opens in a new tab)</span></a>{% endif %}
+    </p>
+  </div>
+  {% else %}
+  <p>No article could be read for this claim.</p>
+  {% endfor %}
+</section>
+
+<section class="card" aria-labelledby="searched-title">
+  <h2 class="card__title" id="searched-title">What was searched</h2>
+  <dl class="facts">
+    <div><dt>Database</dt><dd>{{ r.searched.database }}</dd></div>
+    <div><dt>Search</dt><dd><code>{{ r.searched.query }}</code></dd></div>
+    <div><dt>Matches</dt><dd class="num">{{ r.searched.matches }}</dd></div>
+    <div><dt>Looked at</dt><dd class="num">{{ r.searched.considered }}</dd></div>
+    <div><dt>Skipped</dt><dd><span class="num">{{ view.skipped.get("licence_not_allowed", 0) }}</span> licence doesn't allow text mining · <span class="num">{{ view.skipped.get("no_full_text", 0) }}</span> no full text · <span class="num">{{ view.skipped.get("not_in_europe_pmc", 0) }}</span> not in Europe PMC</dd></div>
+    <div><dt>Method</dt><dd>{{ r.config_version }} · {{ r.rubric_version }}</dd></div>
+  </dl>
+</section>
+
+<section class="card" aria-labelledby="limits-title">
+  <h2 class="card__title" id="limits-title">What could not be checked</h2>
+  <ul class="limits">
+    {% for item in r.limitations %}<li>{{ item }}</li>{% endfor %}
+    {% if r.quotes_dropped %}<li><span class="num">{{ r.quotes_dropped }}</span> quote{{ "s" if r.quotes_dropped != 1 }} from the language model {{ "were" if r.quotes_dropped != 1 else "was" }} dropped because {{ "they" if r.quotes_dropped != 1 else "it" }} could not be found word for word in the article.</li>{% endif %}
+  </ul>
+  {% if view.not_read %}
+  <details class="not-read">
+    <summary>Also found, not read in this version (<span class="num">{{ view.not_read|length }}</span>)</summary>
+    <ul>
+      {% for a in view.not_read %}
+      <li>{% if a.pubmed_url %}<a href="{{ a.pubmed_url }}" rel="noopener noreferrer" target="_blank">{{ a.title or ("PMID " ~ a.pmid) }}</a>{% else %}{{ a.title or ("PMID " ~ a.pmid) }}{% endif %}{% if a.year %} · <span class="num">{{ a.year }}</span>{% endif %}{% if a.skip_reason %} · {{ "licence doesn't allow text mining" if a.skip_reason == "licence_not_allowed" else "no full text" }}{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</section>
+
+<p class="close"><a class="button" href="/checks/new">Check another claim</a></p>
+{% endblock %}

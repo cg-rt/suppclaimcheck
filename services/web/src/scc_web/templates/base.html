@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{% endblock %} · SuppClaimCheck</title>
+<meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
+<link rel="preload" href="/static/fonts/nunito-sans-5.3.0-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/css/app.css">
+{% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+<header class="top">
+  <div class="top__inner">
+    <a class="top__name" href="/">SuppClaimCheck</a>
+    {% if session %}
+    <nav class="top__nav" aria-label="Main">
+      <ul>
+        <li><a href="/history"{% if nav == "history" %} aria-current="page"{% endif %}>History</a></li>
+        <li><a href="/account"{% if nav == "account" %} aria-current="page"{% endif %}>Account</a></li>
+        <li>
+          <form method="post" action="/sign-out">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="top__link" type="submit">Sign out</button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+    <a class="button button--small top__action" href="/checks/new"{% if nav == "new" %} aria-current="page"{% endif %}>New check</a>
+    {% endif %}
+  </div>
+</header>
+<main id="main" class="column{% block column_class %}{% endblock %}">
+{% block main %}{% endblock %}
+</main>
+<footer class="foot">
+  <p>SuppClaimCheck reads open-access research and shows what it says. It is not medical advice.</p>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

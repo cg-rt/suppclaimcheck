@@ -1,0 +1,23 @@
+{# Where you are in a check: one quiet line under the page heading. #}
+{% macro steps(current) -%}
+{% set names = {"enter": "Enter the claim", "confirm": "Confirm what to search", "search": "Search and read", "result": "Read the result"} %}
+{% set order = ["enter", "confirm", "search", "result"] %}
+<p class="step">Step <span class="num">{{ order.index(current) + 1 }}</span> of <span class="num">4</span>: {{ names[current] }}</p>
+{%- endmacro %}
+
+{# Drawn icons, one stroke weight, sized by the text around them. #}
+{% macro icon(name) -%}
+{% if name == "done" -%}
+<svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+{%- elif name == "current" -%}
+<svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="4.5" fill="currentColor"/></svg>
+{%- elif name == "out" -%}
+<svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6 3h7v7M13 3L4 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+{%- else -%}
+<svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+{%- endif %}
+{%- endmacro %}
+
+{% macro error_box(message) -%}
+{% if message %}<div class="notice notice--error" role="alert"><h2 class="notice__title">Something needs fixing</h2><p>{{ message }}</p></div>{% endif %}
+{%- endmacro %}

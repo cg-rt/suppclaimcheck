@@ -3,7 +3,13 @@ name = "scc-web"
 version = "0.1.0"
 description = "SuppClaimCheck web module"
 requires-python = ">=3.14"
-dependencies = ["scc-common"]
+dependencies = [
+    "argon2-cffi==25.1.0",
+    "jinja2==3.1.6",
+    "psycopg-pool==3.3.3",
+    "python-multipart==0.0.32",
+    "scc-common",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.4,<0.14"]

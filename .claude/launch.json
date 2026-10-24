@@ -6,6 +6,11 @@
       "runtimeExecutable": "uv",
       "runtimeArgs": ["run", "python", "-m", "http.server", "18090", "--bind", "127.0.0.1", "--directory", "docs/architecture/viewer"],
       "port": 18090
+    },
+    {
+      "name": "web-dev",
+      "url": "http://127.0.0.1:18080",
+      "port": 18080
     }
   ]
 }

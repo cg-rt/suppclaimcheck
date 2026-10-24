@@ -18,6 +18,8 @@ NAMES = [
     "db_web_password",
     "db_core_password",
     "db_gateway_password",
+    # Not a Docker secret: the password of the local test account that tools/dev_user.py creates.
+    "web_tester_password",
 ]
 # Compose needs every declared secret file to exist. These start as placeholders: the tunnel isn't used
 # in dev, and an empty API key file means "not configured" (LLM calls fail cleanly, PubMed runs at 3/s).

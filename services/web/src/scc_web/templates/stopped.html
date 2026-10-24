@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Check stopped{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">This check stopped</h1>
+  <div class="notice notice--error" role="status">
+    <p>{{ job.error or "The check could not be completed." }}</p>
+  </div>
+  <p>Your text: <q>{{ job.input_text }}</q></p>
+  <p>A stopped check doesn't repeat itself, so nothing is spent twice. Start a new one when you're ready.</p>
+  <p><a class="button" href="/checks/new">Start a new check</a></p>
+</section>
+{% endblock %}
