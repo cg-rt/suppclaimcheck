@@ -155,7 +155,11 @@ services:
       SCC_SERVICE: gateway
       SCC_DB_USER: scc_gateway_app
       SCC_DB_PASSWORD_FILE: /run/secrets/db_gateway_password
-    secrets: [db_gateway_password]
+      SCC_ANTHROPIC_API_KEY_FILE: /run/secrets/anthropic_api_key
+      SCC_NCBI_API_KEY_FILE: /run/secrets/ncbi_api_key
+      # Budget drill: lowers every cap, never raises one (empty = no override).
+      SCC_BUDGET_CAP_OVERRIDE_EUR: ${SCC_BUDGET_CAP_OVERRIDE_EUR:-}
+    secrets: [db_gateway_password, anthropic_api_key, ncbi_api_key]
     ports: ["127.0.0.1:18082:8000"]
     depends_on:
       gateway-migrate: {condition: service_completed_successfully}
@@ -193,3 +197,6 @@ secrets:
   db_core_password: {file: ../secrets/dev/db_core_password}
   db_gateway_password: {file: ../secrets/dev/db_gateway_password}
   tunnel_token: {file: ../secrets/dev/tunnel_token}
+  # Only the gateway holds outside API keys (D-011).
+  anthropic_api_key: {file: ../secrets/dev/anthropic_api_key}
+  ncbi_api_key: {file: ../secrets/dev/ncbi_api_key}

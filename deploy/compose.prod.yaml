@@ -144,7 +144,9 @@ services:
       SCC_SERVICE: gateway
       SCC_DB_USER: scc_gateway_app
       SCC_DB_PASSWORD_FILE: /run/secrets/db_gateway_password
-    secrets: [db_gateway_password]
+      SCC_ANTHROPIC_API_KEY_FILE: /run/secrets/anthropic_api_key
+      SCC_NCBI_API_KEY_FILE: /run/secrets/ncbi_api_key
+    secrets: [db_gateway_password, anthropic_api_key, ncbi_api_key]
     depends_on:
       gateway-migrate: {condition: service_completed_successfully}
     networks: [internal, egress]
@@ -175,3 +177,6 @@ secrets:
   db_core_password: {file: ./secrets/db_core_password}
   db_gateway_password: {file: ./secrets/db_gateway_password}
   tunnel_token: {file: ./secrets/tunnel_token}
+  # Only the gateway holds outside API keys (D-011).
+  anthropic_api_key: {file: ./secrets/anthropic_api_key}
+  ncbi_api_key: {file: ./secrets/ncbi_api_key}
