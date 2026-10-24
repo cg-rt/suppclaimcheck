@@ -1,4 +1,5 @@
-# Developer tools for the whole repo (D-032). Not a module: each module in services/ has its own project.
+# Developer tools for the whole repo (D-032), and the root of the uv workspace that holds every module (D-037).
+# `uv sync --all-packages` installs the modules too, for tests.
 [project]
 name = "suppclaimcheck-dev"
 version = "0.0.0"
@@ -13,15 +14,23 @@ dev = [
     "pyyaml==6.0.3",
 ]
 
+[tool.uv.workspace]
+members = ["libs/common", "services/web", "services/core", "services/gateway"]
+
 [tool.ruff]
 # Scripts in tools/ import each other as top-level modules.
 src = [".", "tools"]
 
 [tool.pytest.ini_options]
-testpaths = ["tools/tests"]
+testpaths = ["tools/tests", "libs/common/tests", "services/web/tests", "services/core/tests", "services/gateway/tests", "tests"]
 pythonpath = ["tools"]
+# Several modules have a tests/ folder; importlib mode keeps same-named test files apart.
+addopts = ["--import-mode=importlib"]
 
 [tool.uv]
 package = false
 # Only releases at least two weeks old, indirect dependencies included (AGENTS.md section 7).
 exclude-newer = "14 days"
+
+[tool.ruff.lint.isort]
+known-first-party = ["scc_common", "scc_web", "scc_core", "scc_gateway"]
