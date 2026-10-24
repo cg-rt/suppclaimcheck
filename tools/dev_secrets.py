@@ -19,18 +19,26 @@ NAMES = [
     "db_core_password",
     "db_gateway_password",
 ]
-# Compose needs every declared secret file to exist; the tunnel isn't used in dev, so this one stays a placeholder.
-PLACEHOLDERS = ["tunnel_token"]
+# Compose needs every declared secret file to exist. These start as placeholders: the tunnel isn't used
+# in dev, and an empty API key file means "not configured" (LLM calls fail cleanly, PubMed runs at 3/s).
+# To use a real key in dev, paste it into the file yourself; this script never overwrites a file.
+PLACEHOLDERS = {
+    "tunnel_token": "not-used-in-dev",
+    "anthropic_api_key": "",
+    "ncbi_api_key": "",
+}
 
 
 def main() -> int:
     FOLDER.mkdir(parents=True, exist_ok=True)
     created = []
-    for name in NAMES + PLACEHOLDERS:
+    for name in NAMES + list(PLACEHOLDERS):
         path = FOLDER / name
         if path.exists():
             continue
-        value = "not-used-in-dev" if name in PLACEHOLDERS else secrets.token_urlsafe(32)
+        value = (
+            PLACEHOLDERS[name] if name in PLACEHOLDERS else secrets.token_urlsafe(32)
+        )
         path.write_text(value + "\n", encoding="utf-8")
         created.append(name)
     print(

@@ -1,0 +1,18 @@
+{
+ "id": "msg_fixture_extract",
+ "type": "message",
+ "role": "assistant",
+ "model": "claude-haiku-5-5",
+ "content": [
+  {
+   "type": "text",
+   "text": "{\"claims\": [{\"supplement\": \"creatine\", \"effect\": \"increases muscle strength when combined with resistance training\", \"population\": \"older adults\", \"dose\": null, \"duration\": null, \"quote\": \"Taking creatine while doing resistance training makes older adults stronger\"}]}"
+  }
+ ],
+ "stop_reason": "end_turn",
+ "stop_sequence": null,
+ "usage": {
+  "input_tokens": 412,
+  "output_tokens": 96
+ }
+}

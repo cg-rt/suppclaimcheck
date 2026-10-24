@@ -1,0 +1,18 @@
+{
+ "id": "msg_fixture_assess",
+ "type": "message",
+ "role": "assistant",
+ "model": "claude-haiku-5-5",
+ "content": [
+  {
+   "type": "text",
+   "text": "{\"assessments\": [{\"passage_id\": \"PMC7871530-31\", \"label\": \"supports\", \"quote\": \"creatine supplementation doubled muscle strength in adults over 65\", \"reason\": \"Planted fabricated quote: it is not in the passage, so verification must drop it.\"}, {\"passage_id\": \"PMC7871530-22\", \"label\": \"supports\", \"quote\": \"There was an increase over time for lean tissue and strength with a decrease in fat mass.\", \"reason\": \"In adults aged 50-71, creatine with resistance training increased lean tissue and strength.\"}, {\"passage_id\": \"PMC7871530-25\", \"label\": \"not_relevant\", \"quote\": \"\", \"reason\": \"\"}, {\"passage_id\": \"PMC7871530-0\", \"label\": \"supports\", \"quote\": \"Accumulating evidence also suggests that creatine supplementation produces a variety of beneficial effects in older and patient populations.\", \"reason\": \"The review reports beneficial effects of creatine in older populations.\"}, {\"passage_id\": \"PMC7871530-17\", \"label\": \"not_relevant\", \"quote\": \"\", \"reason\": \"\"}, {\"passage_id\": \"PMC7871530-37\", \"label\": \"supports\", \"quote\": \"Furthermore, 5 g/day of creatine supplementation during 12 weeks of resistance training in postmenopausal females resulted in a significant increase in muscle mass and upper- and lower-body strength, compared to placebo [181].\", \"reason\": \"Creatine during resistance training increased strength in postmenopausal women compared to placebo.\"}]}"
+  }
+ ],
+ "stop_reason": "end_turn",
+ "stop_sequence": null,
+ "usage": {
+  "input_tokens": 4180,
+  "output_tokens": 610
+ }
+}

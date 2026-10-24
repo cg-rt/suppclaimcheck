@@ -34,10 +34,18 @@ async def run_checks(checks: Mapping[str, Check]) -> tuple[bool, dict[str, str]]
 
 
 def create_app(
-    service: str, title: str, checks: Mapping[str, Check] | None = None
+    service: str,
+    title: str,
+    checks: Mapping[str, Check] | None = None,
+    lifespan: Callable | None = None,
 ) -> FastAPI:
-    """`/health` says the process is up; `/health/deps` also checks the database and the next module."""
-    app = FastAPI(title=title, version=version_info(service)["version"])
+    """`/health` says the process is up; `/health/deps` also checks the database and the next module.
+
+    `lifespan` opens and closes the module's own resources, such as database pools.
+    """
+    app = FastAPI(
+        title=title, version=version_info(service)["version"], lifespan=lifespan
+    )
     app.add_middleware(CorrelationMiddleware)
     dependency_checks = dict(checks or {})
 
