@@ -41,7 +41,7 @@ window.ARCHITECTURE_MAP = {
       "status": "built",
       "version": "0.1.0",
       "phase_built": 1,
-      "technology": "cloudflared 2026.10.0 (official image, pinned by digest)",
+      "technology": "cloudflared 2026.10.3 (official image, pinned by digest)",
       "purpose": "The only way in from the internet. Holds an outbound tunnel to Cloudflare and forwards both hostnames to web.",
       "why_it_exists": "No open router ports. Cloudflare terminates TLS and applies Access to the admin hostname. A separate reverse proxy was dropped because cloudflared already routes by hostname (D-011).\n",
       "ports": {},
@@ -303,7 +303,7 @@ window.ARCHITECTURE_MAP = {
     },
     {
       "id": "ops",
-      "note": "Backups and host checks are systemd timers on the VM."
+      "note": "Backups (pg_dump, restic, Cloudflare R2) and the disk check are systemd timers on the VM, with Telegram alerts and healthchecks.io pings; deploy.sh and rollback.sh run there too (deploy/README.md)."
     },
     {
       "id": "observability",
