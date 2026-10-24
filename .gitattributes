@@ -17,3 +17,6 @@
 *.woff binary
 *.woff2 binary
 *.onnx binary
+
+# Recorded HTTP responses are kept byte for byte (tests/fixtures/canned_claim/README.md)
+tests/fixtures/**/literature/* -text
