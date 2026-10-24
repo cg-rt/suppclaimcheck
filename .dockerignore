@@ -1,0 +1,10 @@
+# Images get only what they need; everything else, private/ included, stays out of the build context.
+*
+!pyproject.toml
+!uv.lock
+!VERSION
+!libs/common/pyproject.toml
+!libs/common/src/
+!services/*/pyproject.toml
+!services/*/src/
+**/__pycache__

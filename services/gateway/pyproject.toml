@@ -1,0 +1,13 @@
+[project]
+name = "scc-gateway"
+version = "0.1.0"
+description = "SuppClaimCheck gateway module"
+requires-python = ">=3.14"
+dependencies = ["scc-common"]
+
+[build-system]
+requires = ["uv_build>=0.13.4,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+scc-common = { workspace = true }
