@@ -81,6 +81,35 @@ jobs:
       - name: Generated map files are up to date
         run: uv run python tools/map_build.py --check
       - name: Tool tests
-        run: uv run pytest
+        run: uv run pytest tools/tests
       - name: Claude Code hook tests
         run: node --test .claude/hooks/hooks.test.mjs
+
+  app-tests:
+    name: app tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # The same PostgreSQL + pgvector image as services/postgres/Dockerfile, pinned by digest.
+    # Trust auth is fine here: the server lives only for this job and has no data.
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      SCC_TEST_ADMIN_DSN: host=localhost port=5432 user=postgres dbname=postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          version: "0.13.4"
+      - run: uv sync --locked --all-packages
+      # Unit tests for every module, and the database tests (they fail rather than skip when CI is set).
+      - name: Module and database tests
+        run: uv run pytest libs services tests
