@@ -1,0 +1,23 @@
+# Web config v0 (P1.04). Versioned config, never constants in code (AGENTS.md section 8).
+version = "web-v0"
+
+[session]
+# Server-side sessions (D-016): an idle timeout and an absolute one; a new ID at every sign-in.
+idle_minutes = 60
+absolute_hours = 12
+
+[login]
+# Lockout: this many failed sign-ins for one account inside the window locks it for the window.
+max_failures_per_account = 5
+# Rate limit: sign-in attempts from one address inside the window, successful or not.
+max_attempts_per_address = 20
+window_minutes = 15
+
+[password]
+min_length = 12
+max_length = 128
+
+[progress]
+# How often the progress stream asks core for the job's state, and when it gives up.
+poll_seconds = 1.0
+max_minutes = 10

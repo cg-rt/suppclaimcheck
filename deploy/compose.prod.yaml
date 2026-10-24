@@ -88,6 +88,9 @@ services:
       SCC_DB_USER: scc_web_app
       SCC_DB_PASSWORD_FILE: /run/secrets/db_web_password
       SCC_CORE_URL: http://core-api:8000
+      # web is reachable only through edge (Cloudflare Tunnel), so the visitor's address for the
+      # sign-in rate limit comes from Cloudflare's CF-Connecting-IP header (P1.04).
+      SCC_TRUST_CLOUDFLARE: "1"
     secrets: [db_web_password]
     depends_on:
       web-migrate: {condition: service_completed_successfully}

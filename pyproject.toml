@@ -9,6 +9,8 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "axe-playwright-python==0.1.8",
+    "playwright==1.63.0",
     "pre-commit==4.6.2",
     "pytest==9.1.1",
     "pyyaml==6.0.3",
@@ -23,7 +25,7 @@ src = [".", "tools"]
 
 [tool.pytest.ini_options]
 testpaths = ["tools/tests", "libs/common/tests", "services/web/tests", "services/core/tests", "services/gateway/tests", "tests"]
-pythonpath = ["tools"]
+pythonpath = ["tools", "."]  # "." so any test can import tests.helpers and tests.web_samples
 # Several modules have a tests/ folder; importlib mode keeps same-named test files apart.
 addopts = ["--import-mode=importlib"]
 
