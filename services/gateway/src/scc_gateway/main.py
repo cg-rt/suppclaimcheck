@@ -6,7 +6,7 @@ Internal only. Holds every API key, so the budget cap can't be bypassed (P1.06, 
 import logging
 import os
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request
@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from scc_common.app import Check, create_app
 from scc_common.db import conninfo_from_env, db_check, read_secret
 from scc_gateway import budget, config
+from scc_gateway.alerts import AlertFailed, Alerts, AlertsNotConfigured
 from scc_gateway.literature import Literature, LiteratureUnavailable
 from scc_gateway.llm import (
     ClaudeProvider,
@@ -25,6 +26,7 @@ from scc_gateway.llm import (
     Provider,
     structured_call,
 )
+from scc_gateway.retry import Transient
 
 log = logging.getLogger("scc.gateway")
 
@@ -35,6 +37,7 @@ class Deps:
     provider: Provider
     literature: Literature
     config: dict
+    alerts: Alerts | None = field(default=None)
 
 
 class StructuredRequest(BaseModel):
@@ -59,6 +62,17 @@ class StructuredReply(BaseModel):
     output_tokens: int
     cost_eur: float
     call_id: int
+
+
+class NotifyRequest(BaseModel):
+    event: Literal["budget_cap_reached", "job_failed", "test"]
+    # A code, never user text: it goes to a phone outside this system.
+    code: str | None = Field(default=None, pattern=r"^[a-z0-9_]{1,40}$")
+    text: str = Field(min_length=1, max_length=500)
+
+
+class NotifyReply(BaseModel):
+    outcome: Literal["sent", "quiet", "deduplicated"]
 
 
 class SearchRequest(BaseModel):
@@ -135,6 +149,13 @@ async def llm_structured(body: StructuredRequest, request: Request) -> Structure
                 "cap_eur": exc.cap,
             },
         )
+        await _alert_quietly(
+            deps,
+            "budget_cap_reached",
+            f"The {exc.lane} lane reached its cap: EUR {exc.spent:.2f} of {exc.cap:.2f} spent this month. "
+            "New LLM calls are refused (RB-09).",
+            exc.lane,
+        )
         raise _error(
             "budget_cap_reached", "The monthly budget for this lane is used up."
         ) from None
@@ -148,6 +169,48 @@ async def llm_structured(body: StructuredRequest, request: Request) -> Structure
         cost_eur=round(cost, 6),
         call_id=call_id,
     )
+
+
+async def _alert_quietly(deps: Deps, event: str, text: str, code: str | None) -> None:
+    """An alert raised inside the gateway: a failure to send is logged, never passed to the caller."""
+    if deps.alerts is None:
+        return
+    try:
+        await deps.alerts.send(event, text, code)
+    except AlertsNotConfigured:
+        log.warning("alert not sent: alerts are not configured", extra={"event": event})
+    except Exception:
+        log.exception("alert not sent", extra={"event": event})
+
+
+@router.post(
+    "/notify",
+    tags=["alerts"],
+    responses={
+        502: {"description": "Telegram refused or failed"},
+        503: {"description": "Alerts are not configured"},
+    },
+)
+async def notify(body: NotifyRequest, request: Request) -> NotifyReply:
+    """Sends an alert to the owner's Telegram, unless it is a quiet event or a recent repeat."""
+    alerts = _deps(request).alerts
+    try:
+        if alerts is None:
+            raise AlertsNotConfigured("alerts are not set up")
+        outcome = await alerts.send(body.event, body.text, body.code)
+    except AlertsNotConfigured as exc:
+        raise HTTPException(
+            503, {"code": "alerts_not_configured", "message": str(exc)}
+        ) from None
+    except (AlertFailed, Transient) as exc:
+        log.warning(
+            "alert failed", extra={"event": body.event, "error": type(exc).__name__}
+        )
+        raise HTTPException(
+            502,
+            {"code": "alert_failed", "message": "Telegram did not accept the message."},
+        ) from None
+    return NotifyReply(outcome=outcome)
 
 
 @router.post("/literature/search", tags=["literature"])
@@ -209,6 +272,11 @@ def build_app(
             provider,
             Literature(cfg, _optional_secret("SCC_NCBI_API_KEY_FILE"), pool),
             cfg,
+            Alerts(
+                cfg,
+                _optional_secret("SCC_TELEGRAM_BOT_TOKEN_FILE"),
+                _optional_secret("SCC_TELEGRAM_CHAT_ID_FILE"),
+            ),
         )
 
     @asynccontextmanager

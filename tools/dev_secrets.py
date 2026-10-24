@@ -28,6 +28,8 @@ PLACEHOLDERS = {
     "tunnel_token": "not-used-in-dev",
     "anthropic_api_key": "",
     "ncbi_api_key": "",
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
 }
 
 

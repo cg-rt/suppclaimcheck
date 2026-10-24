@@ -38,6 +38,61 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "NotifyReply": {
+        "properties": {
+          "outcome": {
+            "enum": [
+              "sent",
+              "quiet",
+              "deduplicated"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "title": "NotifyReply",
+        "type": "object"
+      },
+      "NotifyRequest": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9_]{1,40}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "event": {
+            "enum": [
+              "budget_cap_reached",
+              "job_failed",
+              "test"
+            ],
+            "title": "Event",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event",
+          "text"
+        ],
+        "title": "NotifyRequest",
+        "type": "object"
+      },
       "SearchRequest": {
         "properties": {
           "max_results": {
@@ -419,6 +474,54 @@
         "summary": "Llm Structured",
         "tags": [
           "llm"
+        ]
+      }
+    },
+    "/notify": {
+      "post": {
+        "description": "Sends an alert to the owner's Telegram, unless it is a quiet event or a recent repeat.",
+        "operationId": "notify_notify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotifyReply"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "description": "Telegram refused or failed"
+          },
+          "503": {
+            "description": "Alerts are not configured"
+          }
+        },
+        "summary": "Notify",
+        "tags": [
+          "alerts"
         ]
       }
     },

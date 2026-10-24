@@ -87,3 +87,7 @@ class GatewayClient:
         return await self._post(
             "/literature/fetch", {"pmids": pmids, "full_texts": full_texts}
         )
+
+    async def notify(self, event: str, text: str, code: str | None = None) -> dict:
+        """Asks the gateway to alert the owner. Never send user text here: codes and IDs only."""
+        return await self._post("/notify", {"event": event, "text": text, "code": code})
