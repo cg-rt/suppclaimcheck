@@ -1,6 +1,6 @@
 # RUNBOOK
 
-What to do when something breaks. Rendered in the admin dashboard from this file (P3.10); admin failure types link to the `RB-nn` entries.
+What to do when something breaks. Linked from the admin dashboard (P3.10); admin failure types link to the `RB-nn` entries (D-035).
 Every entry has: **Symptoms → Checks → Commands → Fix → Verify.** After any incident, add an entry to the owner's private log (what happened, cause, fix, downtime, what to change).
 
 > **All entries are drafts written before the system exists.** Each one is marked verified only after it has been exercised (P1.15, P3.13). Do not trust an unverified command blindly.
@@ -141,8 +141,8 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 
 ## RB-13 Deploy and roll back
 **Status:** draft, verify in P1.12
-- **Deploy:** `./deploy/deploy.sh <module> <version>` pulls the image, runs migrations, restarts and runs the smoke test.
-- **Roll back:** `./deploy/rollback.sh <module>` returns to the previous version in `versions.env`. Migrations must be backward-compatible for one version, so a rollback never needs a down-migration.
+- **Deploy:** `./deploy/deploy.sh <version>` pulls the images, runs migrations, restarts and runs the smoke test.
+- **Roll back:** `./deploy/rollback.sh` returns the stack to the previous version in `versions.env`. Migrations must be backward-compatible for one version, so a rollback never needs a down-migration.
 - **Verify:** `/version` shows the expected version; smoke test passes.
 
 ---

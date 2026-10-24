@@ -25,7 +25,7 @@ Read this first, every session. It is the single source of agent instructions; `
 |---|---|
 | `private/` | Private repo, ignored here: `AGENTS.private.md`, `STATUS.md`, `PLAN.md`, `LOG.md`, `DECISIONS-private.md`, `OUTCOMES.md`, `lessons/`, `evidence/`, and `pii-patterns.txt` (the word list for the private-words check) |
 | `docs/DECISIONS.md` | Technical decision records (D-nnn). Project-management decisions are in `private/DECISIONS-private.md` and share the numbering, so gaps are expected |
-| `docs/RUNBOOK.md` | Incident procedures (RB-nn), release and weekly ops checklists. Rendered in admin |
+| `docs/RUNBOOK.md` | Incident procedures (RB-nn), release and weekly ops checklists. Linked from admin |
 | `docs/EVALS.md` | Eval set description and results table |
 | `docs/architecture/architecture.yaml` | Architecture map: single source for the viewer and the README diagram |
 | `services/<module>/` | One folder per module: `edge`, `web`, `core`, `gateway`, `postgres` (from Phase 1) |
@@ -39,18 +39,20 @@ Read this first, every session. It is the single source of agent instructions; `
 **Start**
 1. Read `AGENTS.md`. If `private/` exists, read `private/AGENTS.private.md`, then `private/STATUS.md`, the current phase in `private/PLAN.md` and the last five entries in `private/LOG.md`.
 2. Check what is running in dev: `docker compose -f deploy/compose.dev.yaml ps`. If production state matters, ask the owner for `docker compose ps` output from the VM.
-3. Tell the owner the current state and the next task in three lines. Confirm before starting.
+3. Tell the owner the current state and the next task in three lines. If the next task is the agreed next one, start it. Confirm first at a phase start, before changing the plan, and for anything the owner has to do.
 
 **During**
 - Work only on the current task. If the plan needs to change, propose it, get approval, then update `private/PLAN.md` and the right decisions file.
-- Use small commits on a feature branch (`feat/p1-quote-verification`) with conventional commit messages.
+- One pull request per milestone (a group of related tasks named in the plan), not per task. Inside it, use small commits on a feature branch (`feat/p1-skeleton`) with conventional commit messages. Small doc fixes ride along with the next PR.
+- Every PR body opens with **What to look at (10 min)**: three to five pointers into the diff, one command to try, and one thing that could go wrong.
+- Write a DECISIONS entry only for a choice a reviewer might question. Smaller choices get one line in the PR body.
 
 **End**
 1. Rewrite `private/STATUS.md`.
-2. Tick `private/PLAN.md` boxes, with evidence.
-3. Append to `private/LOG.md` with contributor tags. Record failures and their causes too.
+2. Tick `private/PLAN.md` tasks, with one line of evidence each (PR, test name, date).
+3. Append one entry for the session to `private/LOG.md`: five to eight bullets with contributor tags. Record failures and their causes too.
 4. Add lesson notes to `private/lessons/`, and new terms to `private/lessons/GLOSSARY.md`.
-5. Update `docs/architecture/architecture.yaml` if a module, port, dependency or version changed.
+5. Update `docs/architecture/architecture.yaml` once per milestone PR, if a module, port, dependency or version changed.
 6. Commit both repos: the public one on a feature branch, and the private one with `git -C private add -A` and `git -C private commit -F <message file>`.
 
 ## 6. Never
@@ -74,13 +76,14 @@ Read this first, every session. It is the single source of agent instructions; `
 ## 7. Engineering conventions
 
 - Python 3.14, FastAPI, Pydantic v2, Jinja2 + htmx with server-sent events, Procrastinate, Alembic, uv (commit the lockfile), ruff, pytest, Playwright. Pin exact versions when a module is created; prefer releases at least two weeks old.
-- Every module has its own folder, a Dockerfile (slim base pinned by digest, non-root user), a semantic version, `CHANGELOG.md`, `README.md`, `/health` and `/version`, and a committed OpenAPI spec. `edge` and `postgres` use their native health checks.
+- Every module has its own folder, a Dockerfile (slim base pinned by digest, non-root user), a short `README.md`, `/health` and `/version`, and a committed OpenAPI spec. `edge` and `postgres` use their native health checks.
+- The app has one semantic version for all modules, one root `CHANGELOG.md` and one tag `vX.Y.Z` (D-034). Each release builds every image.
 - Each module owns one database schema and a least-privilege database role. Migrations are versioned per module.
 - Logs are JSON to stdout plus the Postgres log sink. Every log line and internal HTTP call carries the correlation ID (`X-Correlation-ID`).
 - External calls always have timeouts. Retry with exponential backoff and jitter only on transient errors (429, 5xx, timeouts).
 - Idempotency keys on job submission and on internal side-effecting calls.
-- Tests: unit tests for deterministic logic, contract tests from OpenAPI, recorded fixtures for external APIs (no live calls in CI), and an end-to-end smoke test after every deploy.
-- Git: feature branches, PRs, CI green before merge, conventional commits, per-module tags `<module>/vX.Y.Z`, LF line endings. Commit as the owner's GitHub no-reply address (repo-local git config, in both repos).
+- Tests: unit tests for deterministic logic, a CI check that each committed OpenAPI spec matches the code plus a few API tests per module (D-035), recorded fixtures for external APIs (no live calls in CI), and an end-to-end smoke test after every deploy.
+- Git: feature branches, PRs, CI green before merge, conventional commits, app tags `vX.Y.Z`, LF line endings. Commit as the owner's GitHub no-reply address (repo-local git config, in both repos).
 - Pass commit messages and PR bodies as files (`git commit -F`, `gh pr create --body-file`). The command guard (`.claude/hooks/`) blocks any command that names a secret file, even in quoted text.
 - CI: pin every GitHub Action to a full commit SHA (D-023).
 - Dev on Windows: bind ports to 127.0.0.1 only and avoid 5432 and 5678, which another stack on this PC uses.
