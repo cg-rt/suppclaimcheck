@@ -1,0 +1,13 @@
+# Nightly database backup (P1.13). Started by scc-backup.timer; output goes to the journal:
+#   journalctl -u scc-backup --since today
+[Unit]
+Description=SuppClaimCheck nightly database backup to R2
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/suppclaimcheck
+ExecStart=/opt/suppclaimcheck/backup.sh nightly
+TimeoutStartSec=1h
+Nice=10

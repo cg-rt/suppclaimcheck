@@ -18,6 +18,10 @@ COPY services/web services/web
 RUN uv sync --locked --no-dev --no-editable --package scc-web
 
 FROM python:3.14.8-slim-trixie@sha256:fbecd461fc72d21b2143c6eaba25143738079154a6d0ea3da3aec724f50eed4a
+# pip is not needed at run time, and its vendored copies of urllib3, msgpack and setuptools are what
+# image scanners flag (P1.11), so the final image drops it.
+RUN rm -rf /usr/local/lib/python3.14/site-packages/pip /usr/local/lib/python3.14/site-packages/pip-* \
+    /usr/local/lib/python3.14/ensurepip /usr/local/bin/pip /usr/local/bin/pip3*
 RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin scc
 COPY --from=build /app/.venv /app/.venv
 COPY VERSION /app/VERSION

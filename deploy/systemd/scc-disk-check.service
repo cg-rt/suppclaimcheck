@@ -1,0 +1,7 @@
+# Disk-space check (P1.13, RB-06). Started by scc-disk-check.timer: journalctl -u scc-disk-check
+[Unit]
+Description=SuppClaimCheck disk-space check
+
+[Service]
+Type=oneshot
+ExecStart=/opt/suppclaimcheck/disk-check.sh

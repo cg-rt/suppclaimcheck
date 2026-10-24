@@ -4,6 +4,7 @@ Run inside the web container, which has the database settings:
     python -m scc_web.admin create-user someone@example.com [--admin]
     python -m scc_web.admin set-password someone@example.com
     python -m scc_web.admin disable someone@example.com
+    python -m scc_web.admin ensure-user smoke@example.com   (deploy.sh: create it, or match its password)
 
 The password is asked for twice at a hidden prompt, or read from stdin when it isn't a terminal,
 so it never lands in the shell history or the process list.
@@ -45,6 +46,23 @@ async def run(args: argparse.Namespace, conninfo: str, cfg: dict) -> str:
                 conn, args.email, passwords.hash_password(read_password(cfg)), role
             )
             return f"Created {role} account {user_id} for {args.email}."
+        if args.command == "ensure-user":
+            password = read_password(cfg)
+            if user is None:
+                await store.create_user(
+                    conn, args.email, passwords.hash_password(password), "user"
+                )
+                return f"Created user account for {args.email}."
+            if user.disabled:
+                raise SystemExit(
+                    f"{args.email} is disabled; enable it by hand if it should sign in."
+                )
+            if not passwords.verify(user.password_hash, password):
+                await store.set_password(
+                    conn, user.id, passwords.hash_password(password)
+                )
+                return f"Password updated for {args.email}."
+            return f"{args.email} is ready."
         if user is None:
             raise SystemExit(f"No account for {args.email}.")
         if args.command == "set-password":
@@ -75,6 +93,10 @@ def parser() -> argparse.ArgumentParser:
     ).add_argument("email")
     sub.add_parser(
         "disable", help="stop the account signing in and end its sessions"
+    ).add_argument("email")
+    sub.add_parser(
+        "ensure-user",
+        help="create a user account, or set its password to the one given",
     ).add_argument("email")
     return p
 

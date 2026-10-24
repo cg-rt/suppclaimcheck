@@ -36,7 +36,7 @@ modules:
     status: built            # planned | built | live
     version: 0.1.0
     phase_built: 1
-    technology: cloudflared 2026.10.0 (official image, pinned by digest)
+    technology: cloudflared 2026.10.3 (official image, pinned by digest)
     purpose: The only way in from the internet. Holds an outbound tunnel to Cloudflare and forwards both hostnames to web.
     why_it_exists: >
       No open router ports. Cloudflare terminates TLS and applies Access to the admin hostname.
@@ -148,5 +148,5 @@ deferred:
   - {id: admin, note: "Merged into web, served only on the admin hostname."}
   - {id: sources, note: "Merged into gateway."}
   - {id: embeddings, note: "Runs in-process in core-worker (fastembed). A TEI model server is in the backlog."}
-  - {id: ops, note: "Backups and host checks are systemd timers on the VM."}
+  - {id: ops, note: "Backups (pg_dump, restic, Cloudflare R2) and the disk check are systemd timers on the VM, with Telegram alerts and healthchecks.io pings; deploy.sh and rollback.sh run there too (deploy/README.md)."}
   - {id: observability, note: "Loki, Alloy, Jaeger and OpenTelemetry deferred to the backlog."}

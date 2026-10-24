@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass
 from uuid import UUID
 
+import httpx
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, ValidationError
 
@@ -118,6 +119,14 @@ async def _fail(rt: Runtime, job_id: UUID, code: str) -> None:
         code,
         error=MESSAGES.get(code, MESSAGES["provider_unavailable"]),
     )
+    # The gateway decides whether this code is worth a message (P1.14); an alert never fails the job twice.
+    try:
+        await rt.gateway.notify("job_failed", f"Job {job_id} stopped.", code)
+    except (GatewayError, httpx.HTTPError) as exc:
+        log.warning(
+            "failure alert not sent",
+            extra={"job_id": str(job_id), "error": type(exc).__name__},
+        )
 
 
 async def extract(rt: Runtime, job_id: UUID) -> None:

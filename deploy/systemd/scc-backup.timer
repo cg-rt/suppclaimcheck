@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the SuppClaimCheck backup every night
+
+[Timer]
+OnCalendar=*-*-* 03:30
+RandomizedDelaySec=15min
+# If the VM was off at 03:30, run the backup once it is back.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

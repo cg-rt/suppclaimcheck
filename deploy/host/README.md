@@ -7,6 +7,7 @@ How to build the production VM from nothing: Hyper-V on the Windows host, Ubuntu
 | `01-create-vm.ps1` | Windows, PowerShell as administrator | Creates the Hyper-V VM with the settings from D-007 |
 | `02-ssh-hardening.sh` | The VM, with `sudo` | Turns off password and root login over SSH, once key login works |
 | `03-docker-firewall-updates.sh` | The VM, with `sudo` | Updates, unattended-upgrades, ufw (SSH only), Docker Engine and Compose from Docker's repo |
+| `04-ops-timers.sh` | The VM, with `sudo`, after the app files are in `/opt/suppclaimcheck` | restic, the nightly backup and hourly disk-check timers, Docker log rotation ([../README.md](../README.md)) |
 
 Every script stops at the first error and changes nothing it can't check first.
 

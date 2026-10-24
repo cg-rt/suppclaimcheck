@@ -50,3 +50,6 @@ desktop.ini
 
 # impeccable review screenshots (local dev data)
 .impeccable/review/
+
+# Deploy rehearsal folder (tools/rehearse_deploy.py): copies of dev secret files
+.rehearsal/

@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 FILES = {name: ROOT / "deploy" / f"compose.{name}.yaml" for name in ("dev", "prod")}
 EGRESS_ALLOWED = {"edge", "gateway"}
 MIGRATE = {"web-migrate", "core-migrate", "gateway-migrate"}
+# One-off containers that run and exit: the migrate steps and the post-deploy smoke test (P1.12).
+ONE_OFF = MIGRATE | {"smoke"}
 
 
 def load(name: str) -> dict:
@@ -55,7 +57,7 @@ def test_dev_ports_bind_to_localhost_and_avoid_the_other_stack():
 
 def test_long_running_services_restart_and_migrate_steps_do_not(compose):
     for name, service in compose["services"].items():
-        expected = "no" if name in MIGRATE else "unless-stopped"
+        expected = "no" if name in ONE_OFF else "unless-stopped"
         assert service.get("restart", "no") == expected, name
 
 

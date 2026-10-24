@@ -41,3 +41,13 @@ backoff_base_s = 1.0
 backoff_max_s = 10.0
 # Licences that allow text mining for this non-commercial project (D-017), as Europe PMC writes them.
 licence_allowlist = ["cc0", "cc by", "cc by-sa", "cc by-nd", "cc by-nc", "cc by-nc-sa", "cc by-nc-nd"]
+
+[alerts]
+# Telegram alerts (P1.14, D-024). A repeat of the same event and code inside this window is held back.
+dedupe_minutes = 60
+# Job failures that are the user's input or already alerted elsewhere, not something to act on.
+quiet_job_failure_codes = ["no_claim", "budget_cap_reached"]
+timeout_s = 10
+max_attempts = 3
+backoff_base_s = 1.0
+backoff_max_s = 8.0

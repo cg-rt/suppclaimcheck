@@ -157,9 +157,11 @@ services:
       SCC_DB_PASSWORD_FILE: /run/secrets/db_gateway_password
       SCC_ANTHROPIC_API_KEY_FILE: /run/secrets/anthropic_api_key
       SCC_NCBI_API_KEY_FILE: /run/secrets/ncbi_api_key
+      SCC_TELEGRAM_BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
+      SCC_TELEGRAM_CHAT_ID_FILE: /run/secrets/telegram_chat_id
       # Budget drill: lowers every cap, never raises one (empty = no override).
       SCC_BUDGET_CAP_OVERRIDE_EUR: ${SCC_BUDGET_CAP_OVERRIDE_EUR:-}
-    secrets: [db_gateway_password, anthropic_api_key, ncbi_api_key]
+    secrets: [db_gateway_password, anthropic_api_key, ncbi_api_key, telegram_bot_token, telegram_chat_id]
     ports: ["127.0.0.1:18082:8000"]
     depends_on:
       gateway-migrate: {condition: service_completed_successfully}
@@ -200,3 +202,6 @@ secrets:
   # Only the gateway holds outside API keys (D-011).
   anthropic_api_key: {file: ../secrets/dev/anthropic_api_key}
   ncbi_api_key: {file: ../secrets/dev/ncbi_api_key}
+  # Telegram alerts (P1.14). Empty in dev = alerts not configured; paste a test bot's values to try them.
+  telegram_bot_token: {file: ../secrets/dev/telegram_bot_token}
+  telegram_chat_id: {file: ../secrets/dev/telegram_chat_id}
