@@ -5,7 +5,7 @@
 # Update at every phase gate and whenever a module, port, dependency or version changes.
 
 schema_version: 1
-updated: 2026-10-23
+updated: 2026-10-24
 
 system:
   name: SuppClaimCheck
@@ -22,7 +22,7 @@ system:
 networks:
   - id: internal
     internet: false
-    purpose: All service-to-service traffic. No route to the internet.
+    purpose: All service-to-service traffic. No route to the internet. (In dev only, modules with a 127.0.0.1 port also join a devhost network, because Docker can't publish ports from an internal network.)
   - id: egress
     internet: true
     purpose: Only for modules that must reach outside services (edge, gateway).
@@ -33,10 +33,10 @@ modules:
     role: tunnel in from Cloudflare
     folder: services/edge
     containers: [edge]
-    status: planned          # planned | built | live
-    version: 0.0.0
+    status: built            # planned | built | live
+    version: 0.1.0
     phase_built: 1
-    technology: cloudflared (official image, pinned by digest)
+    technology: cloudflared 2026.10.0 (official image, pinned by digest)
     purpose: The only way in from the internet. Holds an outbound tunnel to Cloudflare and forwards both hostnames to web.
     why_it_exists: >
       No open router ports. Cloudflare terminates TLS and applies Access to the admin hostname.
@@ -52,8 +52,8 @@ modules:
     role: site, admin, login
     folder: services/web
     containers: [web]
-    status: planned
-    version: 0.0.0
+    status: built
+    version: 0.1.0
     phase_built: 1
     technology: Python 3.14, FastAPI, Jinja2, htmx, server-sent events
     purpose: >
@@ -73,8 +73,8 @@ modules:
     role: jobs, pipeline, retrieval
     folder: services/core
     containers: [core-api, core-worker]
-    status: planned
-    version: 0.0.0
+    status: built
+    version: 0.1.0
     phase_built: 1
     technology: Python 3.14, FastAPI, Procrastinate, fastembed, pgvector
     purpose: >
@@ -94,8 +94,8 @@ modules:
     role: LLMs, sources, budget
     folder: services/gateway
     containers: [gateway]
-    status: planned
-    version: 0.0.0
+    status: built
+    version: 0.1.0
     phase_built: 1
     technology: Python 3.14, FastAPI, provider SDKs, httpx
     purpose: >
@@ -116,10 +116,10 @@ modules:
     kind: datastore          # drawn as a database
     folder: services/postgres
     containers: [postgres]
-    status: planned
-    version: 0.0.0
+    status: built
+    version: 0.1.0
     phase_built: 1
-    technology: PostgreSQL 18 + pgvector 0.8 (pinned by digest)
+    technology: PostgreSQL 18 + pgvector 0.8.7 (pinned by digest)
     purpose: All data, the job queue (Procrastinate), embeddings, the log sink and per-job traces. One schema and one least-privilege role per module.
     why_it_exists: One boring, well-understood store instead of separate database, queue, vector and log systems (D-014, D-015, D-019).
     ports: {internal: 5432}

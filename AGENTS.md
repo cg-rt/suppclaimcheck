@@ -29,6 +29,9 @@ Read this first, every session. It is the single source of agent instructions; `
 | `docs/EVALS.md` | Eval set description and results table |
 | `docs/architecture/architecture.yaml` | Architecture map: single source for the viewer and the README diagram |
 | `services/<module>/` | One folder per module: `edge`, `web`, `core`, `gateway`, `postgres` (from Phase 1) |
+| `libs/common/` | `scc_common`, shared by the Python modules: JSON logs, correlation IDs, ops endpoints, database roles and migrations (D-037) |
+| `tests/` | Tests that span modules, such as the database role tests |
+| `VERSION`, `CHANGELOG.md` | The one app version and its changelog (D-034) |
 | `deploy/` | Compose files, `versions.env`, deploy, rollback, backup and restore scripts; `deploy/host/` builds the production VM |
 | `evals/` | `cases/` (tuning) and `held_out/` (never used for tuning) |
 | `tools/` | Developer tools, such as `check-private-words.mjs` |

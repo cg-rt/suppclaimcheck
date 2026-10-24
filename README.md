@@ -69,7 +69,35 @@ Every commit then runs gitleaks, ruff, the whitespace and end-of-file fixers and
 
 After changing `docs/architecture/architecture.yaml`, regenerate the README diagram and the viewer data with `uv run python tools/map_build.py`; CI fails when they are out of date.
 
-CI (`.github/workflows/ci.yml`) runs the same hooks on every pull request, plus a gitleaks scan of the whole history, a check that the [architecture map](docs/architecture/architecture.yaml) matches `services/`, a check that nothing under `private/` is tracked, and the tests (`uv run pytest`, `node --test .claude/hooks/hooks.test.mjs`).
+### Run the stack locally
+
+Docker Desktop must be running. The first time, create random dev-only passwords (written to a git-ignored folder, never printed), then build and start everything:
+
+```bash
+uv run python tools/dev_secrets.py
+docker compose -f deploy/compose.dev.yaml up -d --build
+```
+
+The migrate steps run first and exit; the other containers should report `healthy` in `docker compose -f deploy/compose.dev.yaml ps`. Ports bind to 127.0.0.1 only: web on 18080, core-api on 18081, gateway on 18082. `curl http://127.0.0.1:18080/health/deps` walks web → core-api → gateway and checks each database login; the `X-Correlation-ID` it returns appears in all three modules' logs.
+
+### Tests
+
+```bash
+uv sync --all-packages
+uv run pytest
+```
+
+The database tests need a PostgreSQL superuser and are skipped without one. To run them, start a throwaway server (no data, 127.0.0.1 only) and point the tests at it:
+
+```bash
+docker run -d --rm --name scc-test-pg -p 127.0.0.1:15433:5432 -e POSTGRES_HOST_AUTH_METHOD=trust scc-postgres:dev
+```
+
+```bash
+SCC_TEST_ADMIN_DSN="host=127.0.0.1 port=15433 user=postgres dbname=postgres" uv run pytest
+```
+
+CI (`.github/workflows/ci.yml`) runs the same hooks on every pull request, plus a gitleaks scan of the whole history, a check that the [architecture map](docs/architecture/architecture.yaml) matches `services/`, a check that nothing under `private/` is tracked, the hook tests, and every module's tests against a real PostgreSQL + pgvector server (there the database tests fail instead of skipping).
 
 ## How it is built
 
