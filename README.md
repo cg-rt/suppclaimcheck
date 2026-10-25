@@ -2,7 +2,7 @@
 
 Checks claims about dietary supplements against open-access biomedical literature, and shows its working.
 
-> **Status:** Phase 0 (foundations) in progress. Nothing is live yet.
+> **Status:** Phase 1 (walking skeleton) is live at suppclaimcheck.com, version 0.1.2, invite-only. One article per check for now; evidence quality is the next phase.
 
 ## What it does
 

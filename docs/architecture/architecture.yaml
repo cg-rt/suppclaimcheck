@@ -5,7 +5,7 @@
 # Update at every phase gate and whenever a module, port, dependency or version changes.
 
 schema_version: 1
-updated: 2026-10-24
+updated: 2026-10-25
 
 system:
   name: SuppClaimCheck
@@ -33,7 +33,7 @@ modules:
     role: tunnel in from Cloudflare
     folder: services/edge
     containers: [edge]
-    status: built            # planned | built | live
+    status: live             # planned | built | live
     version: 0.1.2
     phase_built: 1
     technology: cloudflared 2026.10.3 (official image, pinned by digest)
@@ -52,7 +52,7 @@ modules:
     role: site, admin, login
     folder: services/web
     containers: [web]
-    status: built
+    status: live
     version: 0.1.2
     phase_built: 1
     technology: Python 3.14, FastAPI, Jinja2, htmx, server-sent events
@@ -73,7 +73,7 @@ modules:
     role: jobs, pipeline, retrieval
     folder: services/core
     containers: [core-api, core-worker]
-    status: built
+    status: live
     version: 0.1.2
     phase_built: 1
     technology: Python 3.14, FastAPI, Procrastinate, fastembed, pgvector
@@ -94,7 +94,7 @@ modules:
     role: LLMs, sources, budget
     folder: services/gateway
     containers: [gateway]
-    status: built
+    status: live
     version: 0.1.2
     phase_built: 1
     technology: Python 3.14, FastAPI, provider SDKs, httpx
@@ -116,7 +116,7 @@ modules:
     kind: datastore          # drawn as a database
     folder: services/postgres
     containers: [postgres]
-    status: built
+    status: live
     version: 0.1.2
     phase_built: 1
     technology: PostgreSQL 18 + pgvector 0.8.7 (pinned by digest)
