@@ -20,7 +20,7 @@ Everything production runs. The VM keeps no source code: `/opt/suppclaimcheck` h
 2. Tag the merge commit `vX.Y.Z` and push the tag. The **Release** workflow checks the tag matches `VERSION`, builds all five images, scans them with Trivy (fixable critical or high findings fail it), pushes them to `ghcr.io/cg-rt/suppclaimcheck-<module>:X.Y.Z` and attaches a build provenance attestation.
 3. Check an image's attestation from any machine with the GitHub CLI:
    ```bash
-   gh attestation verify oci://ghcr.io/cg-rt/suppclaimcheck-web:0.1.0 --owner cg-rt
+   gh attestation verify oci://ghcr.io/cg-rt/suppclaimcheck-web:0.1.1 --owner cg-rt
    ```
 
 Accepted scan findings live in `.trivyignore.yaml`, each with a reason and an expiry date, after which the release fails again until it is dealt with.
@@ -57,7 +57,7 @@ After `host/03-docker-firewall-updates.sh`:
 
 4. **First deploy** (C1.3):
    ```bash
-   cd /opt/suppclaimcheck && sudo ./deploy.sh 0.1.0
+   cd /opt/suppclaimcheck && sudo ./deploy.sh 0.1.1
    ```
    Then create your own admin account:
    ```bash
