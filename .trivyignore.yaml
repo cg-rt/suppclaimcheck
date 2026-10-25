@@ -1,12 +1,5 @@
 # Findings the release scan (P1.11) accepts for now. Each entry says why, and expires so it can't linger.
 vulnerabilities:
-  - id: GHSA-6q48-6c7w-9gw2
-    paths:
-      - "app/.venv/lib/python3.14/site-packages/certifi-2026.7.22.dist-info/METADATA"
-    statement: >
-      certifi's CA bundle update (2026.10.19) is newer than the two-week rule for new releases
-      (AGENTS.md section 7, exclude-newer in pyproject.toml). Update the lock once it is two weeks old.
-    expired_at: 2026-11-03
   - id: CVE-2026-63209
     paths:
       - "usr/local/bin/cloudflared"

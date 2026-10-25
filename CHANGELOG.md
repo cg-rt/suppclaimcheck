@@ -4,7 +4,10 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
-## [0.1.1] - not yet released
+### Security
+- certifi 2026.10.19 (CA bundle, GHSA-6q48-6c7w-9gw2) in the web, core and gateway images, taken before it is two weeks old (D-041); its scan exception is removed.
+
+## [0.1.1] - 2026-10-25
 
 The first release. `v0.1.0` was tagged but never released: its workflow logged out of GHCR before the attestation step, so only an unsigned edge image was pushed (`suppclaimcheck-edge:0.1.0`); do not deploy it.
 
