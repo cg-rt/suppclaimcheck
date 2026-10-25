@@ -4,8 +4,20 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
+## [0.1.2] - not yet released
+
+The first upgrade of the live site, with fixes found during the first production deploy.
+
 ### Security
 - certifi 2026.10.19 (CA bundle, GHSA-6q48-6c7w-9gw2) in the web, core and gateway images, taken before it is two weeks old (D-041); its scan exception is removed.
+
+### Fixed
+- `backup.sh` alerts (Telegram and healthchecks.io) when `secrets/restic.env` is missing or not valid shell. Before, bash stopped on the syntax error before the alert was set up, so the backup failed silently. The alert text is fixed, because bash's own message quotes the bad line, which may hold a secret.
+- `/health` answers `HEAD` with 200 instead of 405, for uptime monitors that probe with HEAD.
+- core-worker's job start and end log lines carry the job's correlation ID in the `correlation_id` field, not only inside the message.
+
+### Changed
+- `deploy/README.md`: the `restic.env` example has no bracket placeholders to paste by mistake, and notes the EU endpoint for EU-jurisdiction buckets; the Telegram row says to press Start in the bot's chat first.
 
 ## [0.1.1] - 2026-10-25
 

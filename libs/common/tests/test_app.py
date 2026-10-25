@@ -19,6 +19,12 @@ def test_health():
     assert response.json() == {"status": "ok"}
 
 
+def test_health_answers_head_for_uptime_monitors():
+    response = TestClient(create_app("svc", "t")).head("/health")
+    assert response.status_code == 200
+    assert response.content == b""
+
+
 def test_version_reports_the_app_version_and_sha(monkeypatch):
     monkeypatch.setenv("SCC_GIT_SHA", "abc1234")
     body = TestClient(create_app("svc", "t")).get("/version").json()

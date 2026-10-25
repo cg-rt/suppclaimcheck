@@ -1,6 +1,6 @@
 [project]
 name = "scc-web"
-version = "0.1.1"
+version = "0.1.2"
 description = "SuppClaimCheck web module"
 requires-python = ">=3.14"
 dependencies = [

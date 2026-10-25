@@ -18,11 +18,6 @@ if [ -n "${SCC_COMPOSE_EXTRA:-}" ]; then compose+=(-f "$SCC_COMPOSE_EXTRA"); fi
 . ./versions.env
 export SCC_VERSION="${SCC_VERSION:-0.0.0}"
 
-set -a
-# shellcheck source=/dev/null
-. secrets/restic.env
-set +a
-export RESTIC_PASSWORD_FILE="$dir/secrets/restic_password"
 hc_url="$(tr -d '[:space:]' 2> /dev/null < secrets/healthchecks_backup_url || true)"
 ping_hc() { if [ -n "$hc_url" ]; then curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "${2:-}" "$hc_url$1" || true; fi; }
 
@@ -38,6 +33,18 @@ on_error() {
 trap on_error ERR
 
 if [ "$label" = nightly ]; then ping_hc /start; fi
+
+# A syntax error in a sourced file ends bash without running the ERR trap, so check the file first.
+# bash's own message quotes the bad line, which may hold a secret, so the alert gets a fixed text.
+if ! bash -n secrets/restic.env 2> /dev/null; then
+  echo "secrets/restic.env is missing or is not valid shell; check it with: sudo bash -n secrets/restic.env" >> "$log"
+  on_error
+fi
+set -a
+# shellcheck source=/dev/null
+. secrets/restic.env
+set +a
+export RESTIC_PASSWORD_FILE="$dir/secrets/restic_password"
 
 # Creates the restic repository on the very first run.
 restic cat config > /dev/null 2>> "$log" || restic init >> "$log" 2>&1
