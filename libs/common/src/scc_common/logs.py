@@ -12,6 +12,15 @@ from scc_common.version import version_info
 _STANDARD = set(logging.makeLogRecord({}).__dict__) | {"message", "asctime", "taskName"}
 
 
+def _job_correlation_id(record: logging.LogRecord) -> str | None:
+    """Procrastinate logs a job's start and end outside the task, so the ID comes from the job's arguments."""
+    job = getattr(record, "job", None)
+    if isinstance(job, dict) and isinstance(job.get("task_kwargs"), dict):
+        value = job["task_kwargs"].get("correlation_id")
+        return value if isinstance(value, str) else None
+    return None
+
+
 class JsonFormatter(logging.Formatter):
     def __init__(self, service: str):
         super().__init__()
@@ -25,7 +34,7 @@ class JsonFormatter(logging.Formatter):
             ),
             "level": record.levelname.lower(),
             **self.static,
-            "correlation_id": correlation.current(),
+            "correlation_id": correlation.current() or _job_correlation_id(record),
             "logger": record.name,
             "msg": record.getMessage(),
         }

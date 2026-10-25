@@ -20,7 +20,7 @@ Everything production runs. The VM keeps no source code: `/opt/suppclaimcheck` h
 2. Tag the merge commit `vX.Y.Z` and push the tag. The **Release** workflow checks the tag matches `VERSION`, builds all five images, scans them with Trivy (fixable critical or high findings fail it), pushes them to `ghcr.io/cg-rt/suppclaimcheck-<module>:X.Y.Z` and attaches a build provenance attestation.
 3. Check an image's attestation from any machine with the GitHub CLI:
    ```bash
-   gh attestation verify oci://ghcr.io/cg-rt/suppclaimcheck-web:0.1.1 --owner cg-rt
+   gh attestation verify oci://ghcr.io/cg-rt/suppclaimcheck-web:0.1.2 --owner cg-rt
    ```
 
 Accepted scan findings live in `.trivyignore.yaml`, each with a reason and an expiry date, after which the release fails again until it is dealt with.
@@ -50,14 +50,14 @@ After `host/03-docker-firewall-updates.sh`:
    | `smoke_password` | The smoke account's password; `deploy.sh` creates the account `smoke@suppclaimcheck.com` from it |
    | `anthropic_api_key`, `ncbi_api_key` | API keys (the gateway only) |
    | `tunnel_token` | Cloudflare Tunnel token (C1.2) |
-   | `telegram_bot_token`, `telegram_chat_id` | Alerts (P1.14) |
-   | `restic.env` | Three lines: `RESTIC_REPOSITORY=s3:https://<account-id>.r2.cloudflarestorage.com/scc-backups`, `AWS_ACCESS_KEY_ID=...`, `AWS_SECRET_ACCESS_KEY=...` (the R2 token) |
-   | `restic_password` | The backup encryption password. **Without it the backups can't be read: keep a copy in the password manager.** |
+   | `telegram_bot_token`, `telegram_chat_id` | Alerts (P1.14). Press Start in the bot's chat first: a bot can't open a conversation, and Telegram answers 403 until you do. The chat ID is your own, not the number at the start of the bot token |
+   | `restic.env` | Three lines of `NAME=value`, with no quotes, spaces or brackets around the value: `RESTIC_REPOSITORY=s3:https://ACCOUNT_ID.r2.cloudflarestorage.com/scc-backups`, `AWS_ACCESS_KEY_ID=…`, `AWS_SECRET_ACCESS_KEY=…` (the R2 token). A bucket in the EU jurisdiction needs `ACCOUNT_ID.eu.r2.cloudflarestorage.com`; the wrong one answers Access Denied. Check the file with `sudo bash -n` |
+   | `restic_password` | The backup encryption password, 32 random characters or more. **Without it the backups can't be read: keep a copy in the password manager.** |
    | `healthchecks_backup_url`, `healthchecks_disk_url` | Ping URLs of the two healthchecks.io checks (C1.7) |
 
 4. **First deploy** (C1.3):
    ```bash
-   cd /opt/suppclaimcheck && sudo ./deploy.sh 0.1.1
+   cd /opt/suppclaimcheck && sudo ./deploy.sh 0.1.2
    ```
    Then create your own admin account:
    ```bash

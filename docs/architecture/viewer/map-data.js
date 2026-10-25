@@ -39,7 +39,7 @@ window.ARCHITECTURE_MAP = {
         "edge"
       ],
       "status": "built",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "phase_built": 1,
       "technology": "cloudflared 2026.10.3 (official image, pinned by digest)",
       "purpose": "The only way in from the internet. Holds an outbound tunnel to Cloudflare and forwards both hostnames to web.",
@@ -66,7 +66,7 @@ window.ARCHITECTURE_MAP = {
         "web"
       ],
       "status": "built",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "phase_built": 1,
       "technology": "Python 3.14, FastAPI, Jinja2, htmx, server-sent events",
       "purpose": "Public pages (sign in, submit, confirm, progress, result, history, method, privacy), the admin dashboard on its own hostname, and login (accounts, sessions, CSRF, lockout) as a separate package with its own schema and database role.\n",
@@ -97,7 +97,7 @@ window.ARCHITECTURE_MAP = {
         "core-worker"
       ],
       "status": "built",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "phase_built": 1,
       "technology": "Python 3.14, FastAPI, Procrastinate, fastembed, pgvector",
       "purpose": "core-api: jobs, confirmation, config versions, eval runs (REST with OpenAPI). core-worker: the pipeline: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring.\n",
@@ -127,7 +127,7 @@ window.ARCHITECTURE_MAP = {
         "gateway"
       ],
       "status": "built",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "phase_built": 1,
       "technology": "Python 3.14, FastAPI, provider SDKs, httpx",
       "purpose": "The single door to the outside world: the LLM provider (Anthropic Claude for v1, D-033, behind a swappable interface; prompts, token and cost accounting, budget guard), PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts.\n",
@@ -165,7 +165,7 @@ window.ARCHITECTURE_MAP = {
         "postgres"
       ],
       "status": "built",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "phase_built": 1,
       "technology": "PostgreSQL 18 + pgvector 0.8.7 (pinned by digest)",
       "purpose": "All data, the job queue (Procrastinate), embeddings, the log sink and per-job traces. One schema and one least-privilege role per module.",

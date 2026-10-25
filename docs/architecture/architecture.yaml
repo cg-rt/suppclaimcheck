@@ -34,7 +34,7 @@ modules:
     folder: services/edge
     containers: [edge]
     status: built            # planned | built | live
-    version: 0.1.1
+    version: 0.1.2
     phase_built: 1
     technology: cloudflared 2026.10.3 (official image, pinned by digest)
     purpose: The only way in from the internet. Holds an outbound tunnel to Cloudflare and forwards both hostnames to web.
@@ -53,7 +53,7 @@ modules:
     folder: services/web
     containers: [web]
     status: built
-    version: 0.1.1
+    version: 0.1.2
     phase_built: 1
     technology: Python 3.14, FastAPI, Jinja2, htmx, server-sent events
     purpose: >
@@ -74,7 +74,7 @@ modules:
     folder: services/core
     containers: [core-api, core-worker]
     status: built
-    version: 0.1.1
+    version: 0.1.2
     phase_built: 1
     technology: Python 3.14, FastAPI, Procrastinate, fastembed, pgvector
     purpose: >
@@ -95,7 +95,7 @@ modules:
     folder: services/gateway
     containers: [gateway]
     status: built
-    version: 0.1.1
+    version: 0.1.2
     phase_built: 1
     technology: Python 3.14, FastAPI, provider SDKs, httpx
     purpose: >
@@ -117,7 +117,7 @@ modules:
     folder: services/postgres
     containers: [postgres]
     status: built
-    version: 0.1.1
+    version: 0.1.2
     phase_built: 1
     technology: PostgreSQL 18 + pgvector 0.8.7 (pinned by digest)
     purpose: All data, the job queue (Procrastinate), embeddings, the log sink and per-job traces. One schema and one least-privilege role per module.

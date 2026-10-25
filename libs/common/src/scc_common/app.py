@@ -5,7 +5,7 @@ import logging
 from collections.abc import Awaitable, Callable, Mapping
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from scc_common.correlation import CorrelationMiddleware
 from scc_common.http import internal_client
@@ -52,6 +52,11 @@ def create_app(
     @app.get("/health", tags=["ops"])
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    # Some uptime monitors probe with HEAD; FastAPI answers 405 to HEAD on a GET-only route.
+    @app.head("/health", include_in_schema=False)
+    async def health_head() -> Response:
+        return Response()
 
     @app.get(
         "/health/deps",
