@@ -34,5 +34,11 @@ package = false
 # Only releases at least two weeks old, indirect dependencies included (AGENTS.md section 7).
 exclude-newer = "14 days"
 
+# Security fixes newer than two weeks (D-041): a fixed cutoff just after the patched release.
+# A fixed date gets stricter than "14 days" once it is two weeks old, so delete each entry then.
+[tool.uv.exclude-newer-package]
+filelock = "2026-10-18T00:00:00Z"    # 4.2.1 fixes GHSA-v4x8-3wr5-3wq8 and two more; delete on 2026-11-01
+virtualenv = "2026-10-18T00:00:00Z"  # 21.14.9 fixes GHSA-vxj4-q4g9-crj7 and 13 more; delete on 2026-11-01
+
 [tool.ruff.lint.isort]
 known-first-party = ["scc_common", "scc_web", "scc_core", "scc_gateway"]
