@@ -65,4 +65,4 @@ echo
 echo "Row counts: live database vs restored copy (differences are expected for rows added since the backup)"
 LC_ALL=C join -a1 -a2 -e 0 -o 0,1.2,2.2 <(counts scc) <(counts "$target") | awk '{ printf "%-36s %8s %8s%s\n", $1, $2, $3, ($2 == $3 ? "" : "  differs") }'
 echo
-echo "Drop the scratch copy when done: docker compose --project-name $project -f compose.prod.yaml exec postgres dropdb -U postgres $target"
+echo "Drop the scratch copy when done: sudo docker compose --project-name $project -f compose.prod.yaml exec postgres dropdb -U postgres $target"

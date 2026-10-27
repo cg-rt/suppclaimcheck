@@ -144,7 +144,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   systemctl status scc-backup.service --no-pager
   journalctl -u scc-backup.service --since yesterday --no-pager
   ```
-- **Fix:** the usual causes are expired R2 credentials (`secrets/restic.env`), a full disk (RB-06), or the database being down (RB-04). Fix the cause, then run the backup again:
+- **Fix:** the usual causes are expired R2 credentials (`secrets/restic.env`), a full disk (RB-06), the database being down (RB-04), or DNS not working on the VM: the alert then says the storage host did not resolve. `backup.sh` waits up to 10 minutes for DNS, because a backup missed while the host was off runs right at boot and the Hyper-V Default Switch can take minutes to answer DNS (seen 2026-10-26). Check with `resolvectl query cloudflare.com`. Fix the cause, then run the backup again:
   ```bash
   sudo systemctl start scc-backup.service
   ```
