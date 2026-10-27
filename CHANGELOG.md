@@ -4,7 +4,11 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
-## [0.1.2] - not yet released
+### Fixed
+- `backup.sh` waits up to 10 minutes for the backup storage host to resolve before starting. A nightly backup missed while the host PC was off runs right at boot, and on 2026-10-26 it failed because DNS through the Hyper-V Default Switch was not answering yet. Host script only: copy it to the VM; no new images.
+- `restore.sh` prints the scratch-database drop command with `sudo`, which the VM needs.
+
+## [0.1.2] - 2026-10-25
 
 The first upgrade of the live site, with fixes found during the first production deploy.
 

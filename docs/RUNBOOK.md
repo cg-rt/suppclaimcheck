@@ -137,21 +137,21 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** no new flags from that account; costs back to normal.
 
 ## RB-11 Backup failed
-**Status:** rehearsed in dev on 2026-10-24 against a local restic repository: with the database stopped, `backup.sh` failed, kept no snapshot (3 before, 3 after) and raised the alert. Verify on the VM with C1.5 and C1.7.
+**Status:** rehearsed in dev on 2026-10-24 against a local restic repository: with the database stopped, `backup.sh` failed, kept no snapshot (3 before, 3 after) and raised the alert. Seen on the VM on 2026-10-26: a backup failed (DNS at boot) and both the Telegram alert and the healthchecks.io email reached the owner.
 - **Symptoms:** a Telegram alert "Backup (nightly) FAILED" with the last log lines, or healthchecks.io reports the backup check as late or failed.
 - **Commands:**
   ```bash
   systemctl status scc-backup.service --no-pager
   journalctl -u scc-backup.service --since yesterday --no-pager
   ```
-- **Fix:** the usual causes are expired R2 credentials (`secrets/restic.env`), a full disk (RB-06), or the database being down (RB-04). Fix the cause, then run the backup again:
+- **Fix:** the usual causes are expired R2 credentials (`secrets/restic.env`), a full disk (RB-06), the database being down (RB-04), or DNS not working on the VM: the alert then says the storage host did not resolve. `backup.sh` waits up to 10 minutes for DNS, because a backup missed while the host was off runs right at boot and the Hyper-V Default Switch can take minutes to answer DNS (seen 2026-10-26). Check with `resolvectl query cloudflare.com`. Fix the cause, then run the backup again:
   ```bash
   sudo systemctl start scc-backup.service
   ```
 - **Verify:** the journal ends with `backup (nightly) done: <snapshot id> ...`; healthchecks.io is green.
 
 ## RB-12 Restore from backup
-**Status:** rehearsed in dev on 2026-10-24: a scratch restore compared row counts (all equal except the one row added after the backup), and a full replace restored a pinned snapshot, reran the migrate steps and passed the smoke test. The VM drill is C1.5.
+**Status:** rehearsed in dev on 2026-10-24: a scratch restore compared row counts (all equal except the one row added after the backup), and a full replace restored a pinned snapshot, reran the migrate steps and passed the smoke test. Verified on the VM on 2026-10-27 (drill C1.5): snapshot `212196ee` restored into a scratch database, row counts equal in all 16 tables.
 - **When:** data loss, corruption, or a restore drill (monthly).
 - **Drill (no downtime):** restores the latest snapshot into a new scratch database and prints row counts, live vs restored, per table:
   ```bash

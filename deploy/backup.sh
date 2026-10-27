@@ -46,6 +46,25 @@ set -a
 set +a
 export RESTIC_PASSWORD_FILE="$dir/secrets/restic_password"
 
+# A timer that missed its slot while the host was off fires right at boot, and DNS through the Hyper-V
+# Default Switch can lag behind the boot by minutes (26 Oct 2026). Wait for the storage host to resolve.
+# The alert text leaves the host name out, since it holds the Cloudflare account ID.
+case "$RESTIC_REPOSITORY" in
+  s3:http*://*)
+    store_host="${RESTIC_REPOSITORY#s3:http*://}"
+    store_host="${store_host%%/*}"
+    dns_wait="${SCC_DNS_WAIT:-600}"
+    until getent hosts "$store_host" > /dev/null; do
+      if [ "$dns_wait" -le 0 ]; then
+        echo "The backup storage host did not resolve; DNS on the VM is not working (RB-11)." >> "$log"
+        on_error
+      fi
+      sleep 10
+      dns_wait=$((dns_wait - 10))
+    done
+    ;;
+esac
+
 # Creates the restic repository on the very first run.
 restic cat config > /dev/null 2>> "$log" || restic init >> "$log" 2>&1
 
