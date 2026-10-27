@@ -137,7 +137,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** no new flags from that account; costs back to normal.
 
 ## RB-11 Backup failed
-**Status:** rehearsed in dev on 2026-10-24 against a local restic repository: with the database stopped, `backup.sh` failed, kept no snapshot (3 before, 3 after) and raised the alert. Verify on the VM with C1.5 and C1.7.
+**Status:** rehearsed in dev on 2026-10-24 against a local restic repository: with the database stopped, `backup.sh` failed, kept no snapshot (3 before, 3 after) and raised the alert. Seen on the VM on 2026-10-26: a backup failed (DNS at boot) and both the Telegram alert and the healthchecks.io email reached the owner.
 - **Symptoms:** a Telegram alert "Backup (nightly) FAILED" with the last log lines, or healthchecks.io reports the backup check as late or failed.
 - **Commands:**
   ```bash
@@ -151,7 +151,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** the journal ends with `backup (nightly) done: <snapshot id> ...`; healthchecks.io is green.
 
 ## RB-12 Restore from backup
-**Status:** rehearsed in dev on 2026-10-24: a scratch restore compared row counts (all equal except the one row added after the backup), and a full replace restored a pinned snapshot, reran the migrate steps and passed the smoke test. The VM drill is C1.5.
+**Status:** rehearsed in dev on 2026-10-24: a scratch restore compared row counts (all equal except the one row added after the backup), and a full replace restored a pinned snapshot, reran the migrate steps and passed the smoke test. Verified on the VM on 2026-10-27 (drill C1.5): snapshot `212196ee` restored into a scratch database, row counts equal in all 16 tables.
 - **When:** data loss, corruption, or a restore drill (monthly).
 - **Drill (no downtime):** restores the latest snapshot into a new scratch database and prints row counts, live vs restored, per table:
   ```bash
