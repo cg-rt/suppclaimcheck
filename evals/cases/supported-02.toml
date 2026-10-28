@@ -1,0 +1,19 @@
+id = "supported-02"
+category = "well_supported"
+input = "Caffeine taken about an hour before exercise improves endurance performance in trained athletes."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Supported"]
+score_range = [60, 100]
+supplement = ["caffeine"]
+
+[label]
+rationale = """
+Systematic reviews report a small but consistent improvement in endurance performance after acute
+caffeine intake (Southward et al. 2018), including running time trials and time to exhaustion
+(2022 review, open access).
+"""
+pmids = ["29876876", "36615805"]
+status = "draft"
+drafted_on = 2026-10-28

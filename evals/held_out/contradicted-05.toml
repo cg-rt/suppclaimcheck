@@ -1,0 +1,19 @@
+id = "contradicted-05"
+category = "contradicted"
+input = "Ginkgo biloba prevents dementia in older people."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Contradicted"]
+score_range = [0, 35]
+supplement = ["ginkgo", "ginkgo biloba"]
+
+[label]
+rationale = """
+The Ginkgo Evaluation of Memory study, a large randomised trial in people aged 75 and over (DeKosky
+et al. 2008, open access), found no reduction in dementia; a second trial found no slowing of
+cognitive decline (Dodge et al. 2008, open access).
+"""
+pmids = ["19017911", "18305231"]
+status = "draft"
+drafted_on = 2026-10-28

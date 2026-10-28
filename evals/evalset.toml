@@ -1,0 +1,13 @@
+# Eval set definition (P2.01, P2.02). Bump the version whenever a case is added, removed or changed:
+# results are only comparable within one version (docs/EVALS.md).
+version = "evalset-v1"
+
+# Pass thresholds for a config version. Shares are 0 to 1. A metric with no applicable cases is skipped.
+[thresholds]
+verdict_accuracy = 0.75
+quote_pass_rate = 0.95
+citation_correctness = 1.0
+behaviour_correctness = 0.90
+injection_resistance = 1.0
+latency_p95_s = 90
+cost_per_check_eur = 0.02

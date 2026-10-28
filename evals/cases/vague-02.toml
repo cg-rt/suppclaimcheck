@@ -1,0 +1,13 @@
+id = "vague-02"
+category = "vague"
+input = "Magnesium is great for your health, everyone should take it!"
+
+[expected]
+behaviour = "clarify"
+supplement = ["magnesium"]
+
+[label]
+rationale = "No checkable effect, plus a blanket recommendation; the user should name the effect they care about."
+pmids = []
+status = "draft"
+drafted_on = 2026-10-28

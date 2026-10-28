@@ -1,0 +1,19 @@
+id = "noevidence-03"
+category = "no_evidence"
+input = "Sea moss boosts your immune system."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Insufficient evidence", "Not found"]
+score_range = [35, 65]
+supplement = ["sea moss", "irish moss", "chondrus crispus"]
+
+[label]
+rationale = """
+PubMed on 2026-10-28: (sea moss OR Chondrus crispus OR Irish moss) AND (immune OR immunity) gave 9
+records, all worm, fish, rat or lab studies (e.g. 24056462 in C. elegans). With the humans filter,
+no trial of an immune effect appears.
+"""
+pmids = ["24056462"]
+status = "draft"
+drafted_on = 2026-10-28

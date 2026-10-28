@@ -1,0 +1,18 @@
+id = "supported-05"
+category = "well_supported"
+input = "Daily iron supplements reduce anaemia in menstruating women."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Supported"]
+score_range = [60, 100]
+supplement = ["iron"]
+
+[label]
+rationale = """
+The Cochrane review of daily iron supplementation in menstruating women (Low et al. 2016, open access)
+found less anaemia and higher haemoglobin with iron than with placebo or no treatment.
+"""
+pmids = ["27087396"]
+status = "draft"
+drafted_on = 2026-10-28

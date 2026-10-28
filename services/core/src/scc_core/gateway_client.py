@@ -26,10 +26,15 @@ class GatewayError(Exception):
 
 class GatewayClient:
     def __init__(
-        self, base_url: str, transport: httpx.AsyncBaseTransport | None = None
+        self,
+        base_url: str,
+        transport: httpx.AsyncBaseTransport | None = None,
+        lane: str = "live",
     ):
         self.base_url = base_url
         self.transport = transport
+        # The budget lane every LLM call is charged to: "live" for users, "eval" for the eval runner (D-021).
+        self.lane = lane
 
     async def _post(self, path: str, body: dict) -> dict:
         async with internal_client(self.base_url, TIMEOUT, self.transport) as client:
@@ -67,7 +72,7 @@ class GatewayClient:
                 "stage": stage,
                 "job_id": str(job_id),
                 "user_id": user_id,
-                "lane": "live",
+                "lane": self.lane,
                 "model": model,
                 "max_tokens": settings["max_tokens"],
                 "effort": settings["effort"],

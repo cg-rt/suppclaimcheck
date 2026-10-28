@@ -1,0 +1,13 @@
+id = "vague-03"
+category = "vague"
+input = "Collagen is amazing, you should be taking it."
+
+[expected]
+behaviour = "clarify"
+supplement = ["collagen"]
+
+[label]
+rationale = "No checkable effect: amazing for skin, joints, hair or something else?"
+pmids = []
+status = "draft"
+drafted_on = 2026-10-28

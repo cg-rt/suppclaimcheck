@@ -1,0 +1,14 @@
+id = "multi-03"
+category = "multi_claim"
+input = "Our greens powder boosts your energy, improves digestion and strengthens your immune system."
+
+[expected]
+behaviour = "pick_claim"
+min_claims = 3
+supplement = ["greens powder", "greens"]
+
+[label]
+rationale = "Three separate effects (energy, digestion, immunity) for a blended product."
+pmids = []
+status = "draft"
+drafted_on = 2026-10-28

@@ -1,0 +1,19 @@
+id = "noevidence-02"
+category = "no_evidence"
+input = "Ashwagandha reduces stress and anxiety if taken the night before."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Insufficient evidence"]
+score_range = [35, 65]
+supplement = ["ashwagandha", "withania somnifera"]
+
+[label]
+rationale = """
+Trials support daily ashwagandha extract over several weeks for stress (Lopresti et al. 2019, open
+access: 60 days; a 2024 meta-analysis). No trial tests one dose the night before, which is what this
+claim says. A pipeline that ignores the timing will answer Supported: a deliberately hard case.
+"""
+pmids = ["31517876", "39348746"]
+status = "draft"
+drafted_on = 2026-10-28

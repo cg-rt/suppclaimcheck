@@ -1,0 +1,18 @@
+id = "supported-06"
+category = "well_supported"
+input = "Psyllium husk fibre lowers LDL cholesterol."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Supported"]
+score_range = [60, 100]
+supplement = ["psyllium", "plantago"]
+
+[label]
+rationale = """
+A meta-analysis of randomised trials (Jovanovski et al. 2018) found that psyllium lowers LDL
+cholesterol, as do earlier meta-analyses of psyllium-enriched foods.
+"""
+pmids = ["30239559", "9311953"]
+status = "draft"
+drafted_on = 2026-10-28

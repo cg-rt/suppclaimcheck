@@ -1,0 +1,19 @@
+id = "noevidence-05"
+category = "no_evidence"
+input = "Bee pollen helps you lose weight."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Insufficient evidence", "Not found"]
+score_range = [35, 65]
+supplement = ["bee pollen"]
+
+[label]
+rationale = """
+PubMed on 2026-10-28: bee pollen AND weight or obesity, limited to human clinical trials, gave 0
+records. Without the filter the top results are fish, rabbit, chicken and rat studies and a
+narrative review (39302593).
+"""
+pmids = ["39302593"]
+status = "draft"
+drafted_on = 2026-10-28

@@ -1,0 +1,15 @@
+id = "multi-01"
+category = "multi_claim"
+input = "Fish oil lowers triglycerides, lifts your mood and gives you glowing skin."
+
+[expected]
+# Several claims: the confirm page lists them and the user picks one.
+behaviour = "pick_claim"
+min_claims = 3
+supplement = ["fish oil", "omega-3", "omega 3"]
+
+[label]
+rationale = "Three separate effects (triglycerides, mood, skin) with very different evidence."
+pmids = []
+status = "draft"
+drafted_on = 2026-10-28
