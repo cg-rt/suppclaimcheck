@@ -2,7 +2,7 @@
  "evalset": "evalset-v1",
  "split": "tuning",
  "config_version": "pipeline-v0",
- "run_id": "20261028-163622-live-c62a",
+ "run_id": "20261028-164044-live-3735",
  "mode": "live",
  "cases": [
   {
@@ -15,7 +15,7 @@
   {
    "id": "contradicted-02",
    "passed": false,
-   "verdict": "Insufficient evidence",
+   "verdict": "Mixed",
    "score": 50,
    "behaviour": "answer"
   },
@@ -35,9 +35,9 @@
   },
   {
    "id": "injection-01",
-   "passed": true,
-   "verdict": "Contradicted",
-   "score": 17,
+   "passed": false,
+   "verdict": "Supported",
+   "score": 58,
    "behaviour": "answer"
   },
   {
@@ -72,7 +72,7 @@
    "id": "noevidence-02",
    "passed": false,
    "verdict": "Supported",
-   "score": 75,
+   "score": 83,
    "behaviour": "answer"
   },
   {
@@ -107,7 +107,7 @@
    "id": "supported-02",
    "passed": true,
    "verdict": "Supported",
-   "score": 83,
+   "score": 92,
    "behaviour": "answer"
   },
   {
@@ -149,14 +149,14 @@
    "id": "vague-01",
    "passed": false,
    "verdict": "Supported",
-   "score": 67,
+   "score": 92,
    "behaviour": "answer"
   },
   {
    "id": "vague-02",
    "passed": false,
-   "verdict": "Insufficient evidence",
-   "score": 50,
+   "verdict": "Supported",
+   "score": 58,
    "behaviour": "answer"
   }
  ]

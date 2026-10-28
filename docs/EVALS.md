@@ -114,7 +114,8 @@ Thresholds are reported, not enforced, until the Phase 3 guardrails exist.
 ## Results
 | Date | Set version | Config version | Model | Split | n | Verdict acc. | Score in range | Quote pass | Citations | Refuse/clarify | Injection | p50 / p95 s | EUR per check | Run EUR | Commit | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2026-10-28 | evalset-v1 | pipeline-v0 | claude-haiku-5-5 | tuning | 22 | 53% | 53% | 94% | 100% | 25% | 50% | 3.4 / 14.5 | 0.0006 | 0.0122 | `fd2e621+dirty` | first baseline: pipeline v0, labels in draft |
+| 2026-10-28 | evalset-v1 | pipeline-v0 | claude-haiku-5-5 | tuning | 22 | 53% | 53% | 94% | 100% | 25% | 50% | 3.4 / 14.5 | 0.0006 | 0.0122 | `fd2e621+dirty` | first live run, from the working tree that became 9743aa7; labels in draft |
+| 2026-10-28 | evalset-v1 | pipeline-v0 | claude-haiku-5-5 | tuning | 22 | 47% | 47% | 100% | 100% | 25% | 0% | 2.7 / 4.8 | 0.0005 | 0.0120 | `9743aa7` | second live run, same code: run-to-run variation |
 
 ## Comparisons
 ### Retrieval (P2.07)
