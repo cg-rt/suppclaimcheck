@@ -257,3 +257,49 @@ def test_markdown_summary_marks_thresholds():
     assert "| Verdict accuracy | 100% | ≥ 75% ✅ |" in text
     assert "1 of 1 cases pass" in text
     json.dumps(report.run_document(meta, summary, None, results))  # serialisable
+
+
+def test_repeated_runs_report_means_and_verdict_stability():
+    from scc_core.eval.metrics import aggregate
+
+    a = _case(behaviour="answer", verdicts=["Supported"])
+    b = EvalCase.model_validate(
+        {**_case(behaviour="answer", verdicts=["Supported"]).model_dump(), "id": "t-02"}
+    )
+    runs = [
+        [judge(a, _answer()), judge(b, _answer(verdict="Mixed"))],
+        [judge(a, _answer()), judge(b, _answer())],
+        [judge(a, _answer()), judge(b, _answer(verdict="Mixed"))],
+    ]
+    summary, merged = aggregate(runs, {"verdict_accuracy": 0.75})
+    assert summary["passed_per_run"] == [1, 2, 1]
+    assert summary["passed"] == 1.3
+    assert summary["stability"] == 0.5  # t-01 always Supported; t-02 flips
+    assert summary["metrics"]["verdict_accuracy"] == pytest.approx(
+        (0.5 + 1.0 + 0.5) / 3
+    )
+    assert summary["thresholds_met"] == {"verdict_accuracy": False}
+    assert [r.passed for r in merged] == [True, False]
+    assert merged[1].reasons[-1] == "passed 1 of 3 runs"
+
+
+def test_config_overrides_parse_toml_values_and_reject_unknown_sections():
+    from scc_core.eval.__main__ import apply_overrides
+
+    base = {
+        "search": {"articles_to_assess": 5},
+        "llm": {"assess": {"field_order": ["a", "b"]}},
+    }
+    out = apply_overrides(
+        base, ["search.articles_to_assess=3", 'llm.assess.field_order=["b", "a"]']
+    )
+    assert out["search"]["articles_to_assess"] == 3 and out["llm"]["assess"][
+        "field_order"
+    ] == ["b", "a"]
+    assert (
+        base["search"]["articles_to_assess"] == 5
+    )  # the loaded config is never changed
+    with pytest.raises(ValueError, match="no config section"):
+        apply_overrides(base, ["nope.x=1"])
+    with pytest.raises(ValueError, match="PATH=VALUE"):
+        apply_overrides(base, ["search.articles_to_assess"])

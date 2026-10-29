@@ -65,7 +65,32 @@ def _clock(value: str | datetime) -> str:
     return moment.strftime("%H:%M:%S")
 
 
+TIER_NAMES = {
+    "systematic_review": "Systematic review or meta-analysis",
+    "rct": "Randomised controlled trial",
+    "human_trial": "Other human trial",
+    "observational": "Observational study",
+    "human_other": "Human study, design not stated",
+    "narrative_review": "Narrative review",
+    "unclassified": "Study type unknown",
+    "animal": "Animal study",
+    "in_vitro": "Lab study (cells)",
+    "other": "Editorial, letter or case report",
+}
+
+
+def _v1(result: dict) -> bool:
+    return result.get("rubric_version") == "rubric-v1"
+
+
 def explain(result: dict) -> str:
+    if _v1(result):
+        n = result["articles_assessed"]
+        if n == 0:
+            return "No open-access article that could be read was found for this claim."
+        found = sum(1 for a in result["breakdown"] if a["counted"])
+        articles = f"{n} article" + ("" if n == 1 else "s")
+        return f"{result['rule']} {found} of the {articles} read reported a finding about this claim."
     verdict, s, c, n = (
         result["verdict"],
         result["supporting"],
@@ -90,6 +115,8 @@ def explain(result: dict) -> str:
 
 def score_steps(result: dict, full_strength: int | None = None) -> list[str]:
     """The score worked out in the open, line by line, from the rubric's own numbers."""
+    if _v1(result):
+        return _score_steps_v1(result)
     s, c = result["supporting"], result["contradicting"]
     if s + c == 0:
         return [
@@ -100,6 +127,29 @@ def score_steps(result: dict, full_strength: int | None = None) -> list[str]:
         f"Strength: {s + c} verified passages, {result['strength']:.2f} of full strength",
         f"Score: 50 + 50 × {result['direction']:+.2f} × {result['strength']:.2f} = {result['score']}",
     ]
+
+
+def _score_steps_v1(result: dict) -> list[str]:
+    counted = [a for a in result["breakdown"] if a["counted"]]
+    if not counted:
+        return [
+            "No verified passage supports or contradicts the claim, so the score stays at 50."
+        ]
+    steps = [
+        f"{TIER_NAMES.get(a['tier'], a['tier'])}, weight {a['weight']:.2f}: "
+        f"{a['supporting']} for, {a['contradicting']} against, stance {a['stance']:+.2f}"
+        for a in counted
+    ]
+    total = sum(a["weight"] for a in counted)
+    w_for, w_against = result["weight_for"], result["weight_against"]
+    d, s, full = result["direction"], result["strength"], result["full_strength_weight"]
+    steps += [
+        f"Direction: weighted for {w_for:.2f} − against {w_against:.2f}, ÷ total weight {total:.2f} = {d:+.2f}",
+        f"Strength: total weight {total:.2f} ÷ {full:.2f} for full strength = {s:.2f} (at most 1)",
+        f"Score: 50 + 50 × {d:+.2f} × {s:.2f} = {result['score']}",
+        f"Verdict: {result['rule']}",
+    ]
+    return steps
 
 
 def citation(article: dict) -> str:

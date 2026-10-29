@@ -5,6 +5,7 @@ The LLM only extracts claims and labels passages; code builds the query, ranks p
 every quote and computes the verdict (AGENTS.md sections 6 and 8).
 """
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass
@@ -17,10 +18,13 @@ from pydantic import BaseModel, ValidationError
 from scc_core import jobs
 from scc_core.gateway_client import GatewayClient, GatewayError
 from scc_core.models import Assessment, Claim, Extraction, JobState
-from scc_core.pipeline import jats, query, rubric
+from scc_core.pipeline import evidence, jats, query, rubric
 from scc_core.pipeline.quotes import verify_quote
 
 log = logging.getLogger("scc.pipeline")
+
+# The most articles one check may read (P2.05): cost and latency grow with each one.
+MAX_ARTICLES = 10
 
 # Messages users see when a job fails; no stack traces or internal detail (AGENTS.md section 8).
 MESSAGES = {
@@ -63,6 +67,24 @@ def strict_schema(model: type[BaseModel]) -> dict:
     return resolve(schema)
 
 
+def ordered(schema: dict, order: list[str]) -> dict:
+    """The schema with each object that has exactly these fields listing them in this order.
+
+    Structured output writes fields in schema order, so the order decides what the model commits to
+    first: with "reason" before "label", it explains a passage before it labels it (P2.04, D-044).
+    """
+    if isinstance(schema, list):
+        return [ordered(v, order) for v in schema]
+    if not isinstance(schema, dict):
+        return schema
+    node = {k: ordered(v, order) for k, v in schema.items()}
+    props = node.get("properties")
+    if isinstance(props, dict) and set(props) == set(order):
+        node["properties"] = {k: props[k] for k in order}
+        node["required"] = list(order)
+    return node
+
+
 async def _structured(
     rt: Runtime,
     stage: str,
@@ -73,6 +95,9 @@ async def _structured(
 ):
     """One LLM call with schema-checked output; an unusable answer is retried once, then the stage fails."""
     settings = rt.config["llm"][stage]
+    schema = strict_schema(output)
+    if settings.get("field_order"):
+        schema = ordered(schema, settings["field_order"])
     for attempt in (1, 2):
         try:
             reply = await rt.gateway.structured(
@@ -83,7 +108,7 @@ async def _structured(
                 model=rt.config["llm"]["model"],
                 instructions=rt.config["prompts"][stage],
                 data=data,
-                schema=strict_schema(output),
+                schema=schema,
             )
             return output.model_validate(reply["output"])
         except ValidationError as exc:
@@ -193,61 +218,148 @@ async def _run(rt: Runtime, job_id: UUID, user_id: int, claim: Claim) -> dict:
     }
 
     await _set(rt, job_id, JobState.retrieving, f"{len(found['pmids'])} PubMed IDs")
-    fetched = await rt.gateway.fetch(found["pmids"], cfg["search"]["articles_to_assess"]) if found["pmids"] else {
-        "articles": [], "full_texts": {}, "counts": {}
-    }  # fmt: skip
-    searched["skipped"] = fetched["counts"]
+    n = cfg["search"]["articles_to_assess"]
+    if not 1 <= n <= MAX_ARTICLES:
+        raise ValueError(f"articles_to_assess must be 1-{MAX_ARTICLES}, not {n}")
+    mode = cfg["search"].get("ranking", "relevance")
+    weights = cfg.get("evidence", {}).get("weights")
+    if not found["pmids"]:
+        listed = fetched = {"articles": [], "full_texts": {}, "counts": {}}
+    elif mode == "relevance":
+        # Pipeline v0: full texts for the first N readable articles in PubMed's order.
+        listed = fetched = await rt.gateway.fetch(found["pmids"], n)
+    else:
+        # Metadata for every candidate first (the gateway caches it), so code can rank by evidence tier;
+        # then full texts for the best N, in that order, skipping any without full text.
+        listed = await rt.gateway.fetch(found["pmids"], 0)
+        order = [a["pmid"] for a in evidence.rank(listed["articles"], weights, mode)]
+        fetched = await rt.gateway.fetch(order, n) if order else listed
+    ranked_articles = evidence.rank(fetched["articles"], weights, mode)
     assessed_articles = [
-        a for a in fetched["articles"] if a["pmcid"] in fetched["full_texts"]
+        a for a in ranked_articles if a["pmcid"] in fetched["full_texts"]
     ]
+    searched["skipped"] = {
+        **listed["counts"],
+        "no_full_text": fetched["counts"].get("no_full_text", 0),
+    }
+    searched["ranking"] = mode
     if not assessed_articles:
         await _set(rt, job_id, JobState.scoring)
         return _result(
-            rubric.score(0, 0, 0, cfg["rubric"]),
-            searched,
-            [],
-            [],
-            fetched["articles"],
-            0,
-            cfg,
+            _score(cfg, [], []), searched, [], [], listed["articles"], 0, cfg
         )
 
-    ranked: list[dict] = []
+    passages: dict[str, list[dict]] = {}
     for article in assessed_articles:
-        ranked += await _rank_passages(
+        passages[article["pmcid"]] = await _rank_passages(
             rt, job_id, claim, article, fetched["full_texts"][article["pmcid"]]
         )
-
-    await _set(rt, job_id, JobState.assessing, f"{len(ranked)} passages")
-    by_id = {p["passage_id"]: p for p in ranked}
-    data = json.dumps(
-        {
-            "claim": claim.model_dump(),
-            "passages": [
-                {
-                    "passage_id": p["passage_id"],
-                    "section": p["section"],
-                    "text": p["text"],
-                }
-                for p in ranked
-            ],
-        },
-        ensure_ascii=False,
-        indent=1,
+    total = sum(len(p) for p in passages.values())
+    await _set(
+        rt,
+        job_id,
+        JobState.assessing,
+        f"{total} passages in {len(passages)} article(s)",
     )
-    assessment = await _structured(rt, "assess", job_id, user_id, data, Assessment)
+    assessments, unusable = await _assess(rt, job_id, user_id, claim, passages)
+    assessed_articles = [a for a in assessed_articles if a["pmcid"] not in unusable]
 
     await _set(rt, job_id, JobState.verifying)
-    quotes, dropped = await _verify(rt, job_id, assessment, by_id)
+    by_id = {p["passage_id"]: p for ps in passages.values() for p in ps}
+    quotes, dropped = await _verify(rt, job_id, assessments, by_id)
 
     await _set(rt, job_id, JobState.scoring)
-    supporting = sum(1 for q in quotes if q["label"] == "supports")
-    contradicting = sum(1 for q in quotes if q["label"] == "contradicts")
-    score = rubric.score(
-        len(assessed_articles), supporting, contradicting, cfg["rubric"]
+    result = _result(
+        _score(cfg, assessed_articles, quotes),
+        searched,
+        assessed_articles,
+        quotes,
+        listed["articles"],
+        dropped,
+        cfg,
     )
-    return _result(
-        score, searched, assessed_articles, quotes, fetched["articles"], dropped, cfg
+    if unusable:
+        result["limitations"].insert(
+            0,
+            f"{len(unusable)} article(s) could not be assessed: the model's answer was not usable.",
+        )
+    return result
+
+
+async def _assess(
+    rt: Runtime,
+    job_id: UUID,
+    user_id: int,
+    claim: Claim,
+    passages: dict[str, list[dict]],
+) -> tuple[Assessment, set[str]]:
+    """One assess call per article, a few at a time. An article whose answer stays unusable is left out;
+    any other failure (budget, provider down) fails the job."""
+    limit = asyncio.Semaphore(rt.config["llm"]["assess"].get("concurrency", 1))
+
+    async def one(items: list[dict]) -> Assessment:
+        data = json.dumps(
+            {
+                "claim": claim.model_dump(),
+                "passages": [
+                    {
+                        "passage_id": p["passage_id"],
+                        "section": p["section"],
+                        "text": p["text"],
+                    }
+                    for p in items
+                ],
+            },
+            ensure_ascii=False,
+            indent=1,
+        )
+        async with limit:
+            return await _structured(rt, "assess", job_id, user_id, data, Assessment)
+
+    pmcids = list(passages)
+    outcomes = await asyncio.gather(
+        *(one(passages[p]) for p in pmcids), return_exceptions=True
+    )
+    merged: list = []
+    unusable: set[str] = set()
+    for pmcid, outcome in zip(pmcids, outcomes, strict=True):
+        if isinstance(outcome, StageFailed) and outcome.code == "invalid_output":
+            unusable.add(pmcid)
+        elif isinstance(outcome, BaseException):
+            raise outcome
+        else:
+            merged += outcome.assessments
+    if len(unusable) == len(pmcids):
+        raise StageFailed("invalid_output")
+    return Assessment(assessments=merged), unusable
+
+
+def _score(cfg: dict, assessed: list[dict], quotes: list[dict]):
+    """Counts each article's verified quotes and hands them to the configured rubric."""
+    if cfg["rubric"]["version"] == "rubric-v0":
+        supporting = sum(1 for q in quotes if q["label"] == "supports")
+        contradicting = sum(1 for q in quotes if q["label"] == "contradicts")
+        return rubric.score(len(assessed), supporting, contradicting, cfg["rubric"])
+    return rubric.score_v1(
+        [
+            rubric.ArticleEvidence(
+                pmcid=a["pmcid"],
+                tier=a["tier"],
+                weight=a["weight"],
+                supporting=sum(
+                    1
+                    for q in quotes
+                    if q["pmcid"] == a["pmcid"] and q["label"] == "supports"
+                ),
+                contradicting=sum(
+                    1
+                    for q in quotes
+                    if q["pmcid"] == a["pmcid"] and q["label"] == "contradicts"
+                ),
+            )
+            for a in assessed
+        ],
+        {**cfg["rubric"], "human_tiers": cfg["evidence"]["human_tiers"]},
     )
 
 
@@ -351,14 +463,21 @@ def _result(score, searched, assessed, quotes, considered, dropped, cfg) -> dict
         "config_version": cfg["version"],
         "articles": assessed,
         "found_not_assessed": [
-            a for a in considered if a.get("pmcid") not in assessed_ids
+            {**a, "tier": evidence.tier(a)}
+            for a in considered
+            if a.get("pmcid") not in assessed_ids
         ],
         "quotes": quotes,
         "quotes_dropped": dropped,
         "searched": searched,
         "limitations": [
             "Only open-access articles whose licence allows text mining are read.",
-            f"This version reads up to {cfg['search']['articles_to_assess']} article(s) per claim.",
+            f"This version reads up to {cfg['search']['articles_to_assess']} article(s) per claim"
+            + (
+                ", choosing the strongest study types first."
+                if searched.get("ranking") == "tier"
+                else "."
+            ),
             "This is not medical advice.",
         ],
     }

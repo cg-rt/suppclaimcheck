@@ -37,7 +37,7 @@
   <details class="workings">
     <summary>How the score was worked out</summary>
     <ol class="workings__steps">{% for step in view.steps %}<li class="num">{{ step }}</li>{% endfor %}</ol>
-    <p class="small">Code computes the verdict and score from {{ r.rubric_version }}; the language model never does. This version gives full strength from six verified passages.</p>
+    <p class="small">Code computes the verdict and score from {{ r.rubric_version }}; the language model never does. {% if r.rubric_version == "rubric-v1" %}Each article counts once, weighted by its type of study.{% else %}This version gives full strength from six verified passages.{% endif %}</p>
   </details>
 </section>
 

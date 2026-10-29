@@ -28,6 +28,7 @@ from tests.helpers import run_async
 from tests.integration.test_canned_claim import (
     FIXTURES,
     SUBMITTED,
+    V0,
     anthropic_fixture_client,
 )
 
@@ -87,7 +88,7 @@ def test_record_replay_and_staleness(migrated_db, tmp_path):
             transport = EvalTransport(
                 "live", store, inner=httpx.ASGITransport(app=gateway_app)
             )
-            result = await run(transport, core_config.load(), "live-1")
+            result = await run(transport, core_config.load(V0), "live-1")
             transport.save()
             return result
         finally:
@@ -107,7 +108,7 @@ def test_record_replay_and_staleness(migrated_db, tmp_path):
     assert lanes == [("eval",)]
 
     replayed = run_async(
-        run(EvalTransport("replay", store), core_config.load(), "replay-1")
+        run(EvalTransport("replay", store), core_config.load(V0), "replay-1")
     )
     assert (replayed.observed["verdict"], replayed.observed["score"]) == (
         "Supported",
@@ -119,7 +120,7 @@ def test_record_replay_and_staleness(migrated_db, tmp_path):
     assert replayed.observed["latency_s"] is None  # a replay can't measure latency
 
     # A rubric change sends the same requests: free to re-check. Full strength at 3 passages: 50 + 50 x 1 x 1.
-    rubric_changed = copy.deepcopy(core_config.load())
+    rubric_changed = copy.deepcopy(core_config.load(V0))
     rubric_changed["rubric"]["full_strength_passages"] = 3
     rescored = run_async(
         run(EvalTransport("replay", store), rubric_changed, "replay-2")
@@ -127,7 +128,7 @@ def test_record_replay_and_staleness(migrated_db, tmp_path):
     assert not rescored.stale and rescored.observed["score"] == 100
 
     # A prompt change sends a different request: the recording is stale.
-    prompt_changed = copy.deepcopy(core_config.load())
+    prompt_changed = copy.deepcopy(core_config.load(V0))
     prompt_changed["prompts"]["assess"] += "\nBe brief."
     stale = run_async(run(EvalTransport("replay", store), prompt_changed, "replay-3"))
     assert stale.stale and not stale.passed
