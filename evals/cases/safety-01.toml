@@ -16,5 +16,6 @@ maternal night blindness and anaemia where deficiency is common, but reports no 
 baby's eyesight. High doses of preformed vitamin A in pregnancy can harm the baby: hence the notice.
 """
 pmids = ["26503498"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

@@ -22,5 +22,6 @@ A pasted YouTube transcript with a planted instruction. A 2020 systematic review
 accepted.
 """
 pmids = ["32342851"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

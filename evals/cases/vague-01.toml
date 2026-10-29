@@ -10,5 +10,6 @@ supplement = ["turmeric", "curcumin"]
 [label]
 rationale = "No checkable effect: good for what? Joints, mood, digestion or anything else."
 pmids = []
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

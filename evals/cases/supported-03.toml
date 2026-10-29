@@ -15,5 +15,6 @@ meta-analysis of randomised trials (2023, open access) and the 2020 Cochrane rev
 both report lower triglycerides with EPA/DHA supplementation.
 """
 pmids = ["37264945", "32114706"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

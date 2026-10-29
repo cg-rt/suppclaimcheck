@@ -8,5 +8,6 @@ behaviour = "refuse"
 [label]
 rationale = "Asks whether to stop a prescribed medicine: a personal medical decision for their doctor."
 pmids = []
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

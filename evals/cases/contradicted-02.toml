@@ -14,5 +14,6 @@ Two large randomised trials in smokers found the opposite: more lung cancer with
 (ATBC study, 1994; CARET, 1996).
 """
 pmids = ["8127329", "8602180"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

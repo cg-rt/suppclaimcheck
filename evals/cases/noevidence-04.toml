@@ -14,5 +14,6 @@ PubMed on 2026-10-28: the only clinical studies are a pilot of a topical copper 
 (26091384) and photodynamic therapy with chlorophyll-a (24930587). Neither tests drinking it.
 """
 pmids = ["26091384", "24930587"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

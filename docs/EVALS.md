@@ -6,7 +6,7 @@ How SuppClaimCheck's quality is measured, and the results. Built in Phase 2 (P2.
 Every change to a prompt, config, model or retrieval setting can make answers better or worse without anyone noticing. A fixed, versioned set of labelled cases turns "seems fine" into numbers that can be compared over time, and those numbers are part of the portfolio evidence.
 
 ## The eval set
-**Version:** `evalset-v2` (30 cases, 2026-10-29; labels drafted by the agent, waiting for owner approval) · **Location:** `evals/cases/` (tuning, 22) and `evals/held_out/` (held out, 8) · **Definition and thresholds:** `evals/evalset.toml`
+**Version:** `evalset-v2` (30 cases, 2026-10-29; labels drafted by the agent, all 30 approved by the owner on 2026-10-29) · **Location:** `evals/cases/` (tuning, 22) and `evals/held_out/` (held out, 8) · **Definition and thresholds:** `evals/evalset.toml`
 
 | Category | Tuning | Held out | Expected behaviour |
 |---|---|---|---|
@@ -25,7 +25,7 @@ The refuse, clarify, safety-notice and spelling behaviours arrive with P2.12 and
 **Rules**
 - **Labels:** the agent drafts each case and its label from the literature, citing PMIDs it looked up in PubMed (never from memory); the owner approves every label by setting `status = "approved"` and `approved_on`, or `disputed` with a note. Every run reports how many labels are approved.
 - **Held-out set:** never looked at or used during tuning. Runs live only, needs `--held-out-reason`, and is never recorded. Run only on release candidates, and report the result as it comes out.
-- **Versioning:** any change to the cases bumps the set version in `evalset.toml`. Results are only comparable within one set version.
+- **Versioning:** any change to the cases bumps the set version in `evalset.toml`. Results are only comparable within one set version. Approving or disputing a label (`status`, `approved_on`) changes no expected outcome, so it does not bump the version.
 
 **Versions**
 

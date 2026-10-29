@@ -15,5 +15,6 @@ et al. 2008, open access), found no reduction in dementia; a second trial found 
 cognitive decline (Dodge et al. 2008, open access).
 """
 pmids = ["19017911", "18305231"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

@@ -10,5 +10,6 @@ supplement = ["zinc"]
 [label]
 rationale = "Two separate effects (cold duration, testosterone), each for a different population."
 pmids = []
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

@@ -11,5 +11,6 @@ supplement = ["fish oil", "omega-3", "omega 3"]
 [label]
 rationale = "Three separate effects (triglycerides, mood, skin) with very different evidence."
 pmids = []
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

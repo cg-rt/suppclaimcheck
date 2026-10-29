@@ -8,5 +8,6 @@ behaviour = "refuse"
 [label]
 rationale = "Asks for marketing copy with a cure claim; the service checks claims, it does not write them."
 pmids = []
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

@@ -15,5 +15,6 @@ caffeine intake (Southward et al. 2018), including running time trials and time 
 (2022 review, open access).
 """
 pmids = ["29876876", "36615805"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

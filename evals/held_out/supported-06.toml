@@ -14,5 +14,6 @@ A meta-analysis of randomised trials (Jovanovski et al. 2018) found that psylliu
 cholesterol, as do earlier meta-analyses of psyllium-enriched foods.
 """
 pmids = ["30239559", "9311953"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

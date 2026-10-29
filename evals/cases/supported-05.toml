@@ -14,5 +14,6 @@ The Cochrane review of daily iron supplementation in menstruating women (Low et 
 found less anaemia and higher haemoglobin with iron than with placebo or no treatment.
 """
 pmids = ["27087396"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28
