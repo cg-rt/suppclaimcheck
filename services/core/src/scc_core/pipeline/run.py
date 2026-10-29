@@ -18,7 +18,7 @@ from pydantic import BaseModel, ValidationError
 from scc_core import jobs
 from scc_core.gateway_client import GatewayClient, GatewayError
 from scc_core.models import Assessment, Claim, Extraction, JobState
-from scc_core.pipeline import evidence, jats, query, rubric
+from scc_core.pipeline import embeddings, evidence, jats, query, rubric
 from scc_core.pipeline.quotes import verify_quote
 
 log = logging.getLogger("scc.pipeline")
@@ -49,6 +49,13 @@ class Runtime:
     pool: AsyncConnectionPool
     gateway: GatewayClient
     config: dict
+    # Hybrid retrieval's model (P2.06); loaded from the config's model name when not given (tests pass a fake).
+    embedder: embeddings.Embedder | None = None
+
+    def embedding_model(self) -> embeddings.Embedder:
+        if self.embedder is None:
+            self.embedder = embeddings.load(self.config["retrieval"]["embedding_model"])
+        return self.embedder
 
 
 class StageFailed(Exception):
@@ -282,10 +289,20 @@ async def _run(rt: Runtime, job_id: UUID, user_id: int, claim: Claim) -> dict:
             result["limitations"].insert(0, NO_MATCHES)
         return result
 
+    searched["retrieval"] = cfg["retrieval"].get("mode", "keyword")
+    query_vector = None
+    if searched["retrieval"] == "hybrid":
+        model = rt.embedding_model()
+        query_vector = await asyncio.to_thread(model.query, _claim_text(claim))
     passages: dict[str, list[dict]] = {}
     for article in assessed_articles:
         passages[article["pmcid"]] = await _rank_passages(
-            rt, job_id, claim, article, fetched["full_texts"][article["pmcid"]]
+            rt,
+            job_id,
+            claim,
+            article,
+            fetched["full_texts"][article["pmcid"]],
+            query_vector,
         )
     total = sum(len(p) for p in passages.values())
     await _set(
@@ -396,12 +413,30 @@ def _score(cfg: dict, assessed: list[dict], quotes: list[dict]):
     )
 
 
+def _claim_text(claim: Claim) -> str:
+    """The claim as one sentence, for the query embedding."""
+    parts = [claim.supplement, claim.effect]
+    if claim.population:
+        parts.append(f"in {claim.population}")
+    return " ".join(parts)
+
+
 async def _rank_passages(
-    rt: Runtime, job_id: UUID, claim: Claim, article: dict, xml: str
+    rt: Runtime,
+    job_id: UUID,
+    claim: Claim,
+    article: dict,
+    xml: str,
+    query_vector: list[float] | None = None,
 ) -> list[dict]:
-    """Stores the article's passages and returns the top K by Postgres full-text rank (keyword ranking v0)."""
+    """Stores the article's passages and returns the top K.
+
+    Keyword mode (v0-v2): by Postgres full-text rank. Hybrid mode (P2.06): the full-text order and the
+    order by cosine distance to the claim's embedding, fused with weighted reciprocal rank fusion.
+    """
     cfg = rt.config["retrieval"]
     pieces = jats.passages(xml, cfg["passage_max_chars"], cfg["skip_sections"])
+    words = query.text_query(claim, rt.config.get("query"))
     async with rt.pool.connection() as conn, conn.cursor() as cur:
         await cur.executemany(
             "INSERT INTO core.passages (job_id, pmcid, ordinal, section, text) VALUES (%s, %s, %s, %s, %s)",
@@ -412,16 +447,46 @@ async def _rank_passages(
             SELECT ordinal, section, text FROM core.passages
             WHERE job_id = %s AND pmcid = %s
             ORDER BY ts_rank_cd(tsv, websearch_to_tsquery('english', %s)) DESC, ordinal
-            LIMIT %s
             """,
-            (
-                job_id,
-                article["pmcid"],
-                query.text_query(claim, rt.config.get("query")),
-                cfg["top_k"],
-            ),
+            (job_id, article["pmcid"], words),
         )
         rows = await cur.fetchall()
+        if query_vector is not None:
+            model = rt.embedding_model()
+            embedded = await embeddings.ensure(conn, model, [t for _, _, t in rows])
+            # Distances are rounded so tiny float differences between machines don't reorder passages.
+            await cur.execute(
+                """
+                SELECT p.ordinal FROM core.passages p
+                JOIN core.embeddings e
+                  ON e.model = %s
+                 AND e.text_hash = encode(sha256(convert_to(p.text, 'UTF8')), 'hex')
+                WHERE p.job_id = %s AND p.pmcid = %s
+                ORDER BY round((e.embedding <=> %s::vector)::numeric, 4), p.ordinal
+                """,
+                (
+                    model.name,
+                    job_id,
+                    article["pmcid"],
+                    embeddings.literal(query_vector),
+                ),
+            )
+            by_vector = [row[0] for row in await cur.fetchall()]
+            order = embeddings.fuse(
+                [o for o, _, _ in rows], by_vector, cfg["keyword_weight"], cfg["rrf_k"]
+            )
+            by_ordinal = {row[0]: row for row in rows}
+            rows = [by_ordinal[o] for o in order]
+            log.info(
+                "passages ranked",
+                extra={
+                    "job_id": str(job_id),
+                    "pmcid": article["pmcid"],
+                    "passages": len(rows),
+                    "embedded": embedded,
+                },
+            )
+        rows = rows[: cfg["top_k"]]
     return [
         {
             "passage_id": f"{article['pmcid']}-{ordinal}",

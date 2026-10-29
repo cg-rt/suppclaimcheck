@@ -110,6 +110,14 @@ jobs:
         with:
           version: "0.13.4"
       - run: uv sync --locked --all-packages
+      # The embedding model for hybrid retrieval (P2.06, D-046): pinned revision and SHA-256 in the tool,
+      # cached between runs. The tests and the eval replay load it from this folder, offline.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: .cache/models
+          key: embedding-model-${{ hashFiles('tools/fetch_embedding_model.py') }}
+      - name: Embedding model
+        run: uv run python tools/fetch_embedding_model.py
       # Unit tests for every module, and the database tests (they fail rather than skip when CI is set).
       - name: Module and database tests
         run: uv run pytest libs services tests
