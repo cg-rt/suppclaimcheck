@@ -115,6 +115,46 @@
         "title": "SearchRequest",
         "type": "object"
       },
+      "SpellReply": {
+        "properties": {
+          "suggestion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestion"
+          },
+          "term": {
+            "title": "Term",
+            "type": "string"
+          }
+        },
+        "required": [
+          "term",
+          "suggestion"
+        ],
+        "title": "SpellReply",
+        "type": "object"
+      },
+      "SpellRequest": {
+        "properties": {
+          "term": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Term",
+            "type": "string"
+          }
+        },
+        "required": [
+          "term"
+        ],
+        "title": "SpellRequest",
+        "type": "object"
+      },
       "StructuredReply": {
         "properties": {
           "call_id": {
@@ -427,6 +467,48 @@
           }
         },
         "summary": "Literature Search",
+        "tags": [
+          "literature"
+        ]
+      }
+    },
+    "/literature/spell": {
+      "post": {
+        "description": "PubMed's spelling suggestion for a supplement name; `suggestion` is null when there is none.",
+        "operationId": "literature_spell_literature_spell_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpellRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpellReply"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Literature Spell",
         "tags": [
           "literature"
         ]

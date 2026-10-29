@@ -6,7 +6,7 @@ from functools import cache
 from pathlib import Path
 
 FOLDER = Path(__file__).parent
-ACTIVE = "pipeline-v1"
+ACTIVE = "pipeline-v2"
 
 
 @cache

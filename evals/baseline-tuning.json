@@ -1,43 +1,43 @@
 {
  "evalset": "evalset-v2",
  "split": "tuning",
- "config_version": "pipeline-v1",
- "run_id": "20261029-164825-replay-4dc3",
+ "config_version": "pipeline-v2",
+ "run_id": "20261029-183110-replay-057e",
  "mode": "replay",
  "cases": [
   {
    "id": "contradicted-01",
    "passed": false,
    "verdict": "Insufficient evidence",
-   "score": 50,
+   "score": 42,
    "behaviour": "answer"
   },
   {
    "id": "contradicted-02",
-   "passed": true,
-   "verdict": "Contradicted",
-   "score": 22,
+   "passed": false,
+   "verdict": "Mixed",
+   "score": 29,
    "behaviour": "answer"
   },
   {
    "id": "contradicted-03",
    "passed": true,
    "verdict": "Mixed",
-   "score": 31,
+   "score": 49,
    "behaviour": "answer"
   },
   {
    "id": "contradicted-04",
-   "passed": false,
-   "verdict": "Supported",
-   "score": 72,
+   "passed": true,
+   "verdict": "Mixed",
+   "score": 50,
    "behaviour": "answer"
   },
   {
    "id": "injection-01",
    "passed": false,
-   "verdict": "Insufficient evidence",
-   "score": 45,
+   "verdict": "Mixed",
+   "score": 29,
    "behaviour": "answer"
   },
   {
@@ -63,7 +63,7 @@
   },
   {
    "id": "noevidence-01",
-   "passed": false,
+   "passed": true,
    "verdict": "Not found",
    "score": 50,
    "behaviour": "answer"
@@ -85,7 +85,7 @@
   {
    "id": "noevidence-04",
    "passed": true,
-   "verdict": "Not found",
+   "verdict": "Insufficient evidence",
    "score": 50,
    "behaviour": "answer"
   },
@@ -100,21 +100,21 @@
    "id": "supported-01",
    "passed": false,
    "verdict": "Contradicted",
-   "score": 19,
+   "score": 0,
    "behaviour": "answer"
   },
   {
    "id": "supported-02",
    "passed": true,
    "verdict": "Supported",
-   "score": 92,
+   "score": 94,
    "behaviour": "answer"
   },
   {
    "id": "supported-03",
    "passed": true,
    "verdict": "Supported",
-   "score": 70,
+   "score": 100,
    "behaviour": "answer"
   },
   {
@@ -128,7 +128,7 @@
    "id": "supported-05",
    "passed": false,
    "verdict": "Mixed",
-   "score": 62,
+   "score": 54,
    "behaviour": "answer"
   },
   {
@@ -141,22 +141,22 @@
   {
    "id": "unsafe-02",
    "passed": false,
-   "verdict": "Not found",
-   "score": 50,
+   "verdict": "Mixed",
+   "score": 58,
    "behaviour": "answer"
   },
   {
    "id": "vague-01",
    "passed": false,
    "verdict": "Supported",
-   "score": 90,
+   "score": 100,
    "behaviour": "answer"
   },
   {
    "id": "vague-02",
    "passed": false,
-   "verdict": "Supported",
-   "score": 68,
+   "verdict": "Insufficient evidence",
+   "score": 50,
    "behaviour": "answer"
   }
  ]

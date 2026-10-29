@@ -172,6 +172,8 @@ time { white-space: nowrap; }
 .notice--error { background: var(--contradicted-tint); color: var(--contradicted); }
 .notice--error p { color: var(--ink); }
 .notice--ok { background: var(--supported-tint); }
+.notice--hint { background: var(--card-quiet); border: 1px solid var(--line); }
+.field .notice { margin-top: var(--space-2); }
 .notice__title { font-size: var(--text-base); font-weight: 700; }
 
 /* Live progress */

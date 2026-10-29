@@ -88,6 +88,10 @@ class GatewayClient:
             "/literature/search", {"query": query, "max_results": max_results}
         )
 
+    async def spell(self, term: str) -> dict:
+        """PubMed's spelling suggestion for a supplement name: {"term", "suggestion"}, None when none."""
+        return await self._post("/literature/spell", {"term": term})
+
     async def fetch(self, pmids: list[str], full_texts: int) -> dict:
         return await self._post(
             "/literature/fetch", {"pmids": pmids, "full_texts": full_texts}

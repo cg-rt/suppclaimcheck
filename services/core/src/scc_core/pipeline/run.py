@@ -1,4 +1,4 @@
-"""Pipeline v0 (P1.08): extract, then (after the user confirms) search, retrieve, assess, verify, score.
+"""The pipeline (P1.08, P2.04, P2.12): extract, then (after the user confirms) search, retrieve, assess, verify, score.
 
 Each step records the job's state, so progress is visible and a failure says where it happened.
 The LLM only extracts claims and labels passages; code builds the query, ranks passages, checks
@@ -35,6 +35,13 @@ MESSAGES = {
     "invalid_output": "The check could not be completed because the model's answer was not usable.",
     "no_claim": "No claim about a dietary supplement was found in the text.",
 }
+
+# Shown when PubMed matched nothing at all (P2.12): the search missed, which is not the same as
+# research saying nothing.
+NO_MATCHES = (
+    "The search found no articles at all. That doesn't mean no research exists: check the spelling "
+    "of the supplement name, or try another name for it, in a new check."
+)
 
 
 @dataclass
@@ -174,13 +181,36 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
     if not extraction.claims:
         await _fail(rt, job_id, "no_claim")
         return
+    claims = [c.model_dump() for c in extraction.claims]
+    if rt.config.get("query", {}).get("spelling_check"):
+        await _spelling(rt, job_id, claims)
     await _set(
         rt,
         job_id,
         JobState.awaiting_confirmation,
         f"{len(extraction.claims)} claim(s)",
-        extracted_claims=[c.model_dump() for c in extraction.claims],
+        extracted_claims=claims,
     )
+
+
+async def _spelling(rt: Runtime, job_id: UUID, claims: list[dict]) -> None:
+    """Adds PubMed's spelling suggestion for each supplement name (P2.12), for the confirm page to offer.
+
+    Only a suggestion: the user decides. A spelling check that fails leaves the claims as they are.
+    """
+    checked: dict[str, str | None] = {}
+    for claim in claims:
+        name = claim["supplement"].strip()
+        if name not in checked:
+            try:
+                checked[name] = (await rt.gateway.spell(name))["suggestion"]
+            except (GatewayError, httpx.HTTPError) as exc:
+                log.warning(
+                    "spelling check failed",
+                    extra={"job_id": str(job_id), "error": type(exc).__name__},
+                )
+                checked[name] = None
+        claim["spelling_suggestion"] = checked[name]
 
 
 async def run(rt: Runtime, job_id: UUID) -> None:
@@ -207,11 +237,11 @@ async def run(rt: Runtime, job_id: UUID) -> None:
 
 async def _run(rt: Runtime, job_id: UUID, user_id: int, claim: Claim) -> dict:
     cfg = rt.config
-    search_query = query.build(claim)
+    search_query = query.build(claim, cfg.get("query"))
     found = await rt.gateway.search(search_query, cfg["search"]["pubmed_max_results"])
     searched = {
         "query": search_query,
-        "query_version": query.VERSION,
+        "query_version": query.version(cfg.get("query")),
         "database": "PubMed (open-access filter)",
         "matches": found["count"],
         "considered": len(found["pmids"]),
@@ -245,9 +275,12 @@ async def _run(rt: Runtime, job_id: UUID, user_id: int, claim: Claim) -> dict:
     searched["ranking"] = mode
     if not assessed_articles:
         await _set(rt, job_id, JobState.scoring)
-        return _result(
+        result = _result(
             _score(cfg, [], []), searched, [], [], listed["articles"], 0, cfg
         )
+        if found["count"] == 0 and "query" in cfg:
+            result["limitations"].insert(0, NO_MATCHES)
+        return result
 
     passages: dict[str, list[dict]] = {}
     for article in assessed_articles:
@@ -381,7 +414,12 @@ async def _rank_passages(
             ORDER BY ts_rank_cd(tsv, websearch_to_tsquery('english', %s)) DESC, ordinal
             LIMIT %s
             """,
-            (job_id, article["pmcid"], query.text_query(claim), cfg["top_k"]),
+            (
+                job_id,
+                article["pmcid"],
+                query.text_query(claim, rt.config.get("query")),
+                cfg["top_k"],
+            ),
         )
         rows = await cur.fetchall()
     return [

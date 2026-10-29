@@ -80,6 +80,15 @@ class SearchRequest(BaseModel):
     max_results: Annotated[int, Field(ge=1, le=100)] = 20
 
 
+class SpellRequest(BaseModel):
+    term: str = Field(min_length=1, max_length=200)
+
+
+class SpellReply(BaseModel):
+    term: str
+    suggestion: str | None
+
+
 class FetchRequest(BaseModel):
     pmids: list[str] = Field(max_length=100)
     full_texts: Annotated[int, Field(ge=0, le=10)] = 1
@@ -218,6 +227,17 @@ async def literature_search(body: SearchRequest, request: Request) -> dict:
     """PubMed search with the open-access filter; PMIDs in relevance order."""
     try:
         return await _deps(request).literature.search(body.query, body.max_results)
+    except LiteratureUnavailable as exc:
+        raise HTTPException(
+            503, {"code": "literature_unavailable", "message": str(exc)}
+        ) from None
+
+
+@router.post("/literature/spell", tags=["literature"])
+async def literature_spell(body: SpellRequest, request: Request) -> SpellReply:
+    """PubMed's spelling suggestion for a supplement name; `suggestion` is null when there is none."""
+    try:
+        return SpellReply(**await _deps(request).literature.spell(body.term))
     except LiteratureUnavailable as exc:
         raise HTTPException(
             503, {"code": "literature_unavailable", "message": str(exc)}

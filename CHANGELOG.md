@@ -9,7 +9,8 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - The gateway keeps each article's MeSH headings, which tell human from animal and lab studies; article metadata cached before this release is fetched again once.
 
 ### Added
-- Eval set v1 (30 labelled claims, drafts awaiting owner approval) and the eval runner, `python -m scc_core.eval`, with a free replay of the recorded run in CI (D-043). Development tooling: nothing changes for users.
+- Query v1 (D-042, D-045): the confirm page offers PubMed's spelling when a supplement name looks misspelled ("ashwaganda" → "ashwagandha"), applied only if you choose it; searches include a supplement's other names (ashwagandha also finds *Withania somnifera*); and when PubMed matches nothing, the result says the search found no articles instead of implying there is no evidence. Pipeline v2.
+- Eval set v1 (30 labelled claims, all approved by the owner) and the eval runner, `python -m scc_core.eval`, with a free replay of the recorded run in CI (D-043). Development tooling: nothing changes for users.
 
 ### Fixed
 - `backup.sh` waits up to 10 minutes for the backup storage host to resolve before starting. A nightly backup missed while the host PC was off runs right at boot, and on 2026-10-26 it failed because DNS through the Hyper-V Default Switch was not answering yet. Host script only: copy it to the VM; no new images.

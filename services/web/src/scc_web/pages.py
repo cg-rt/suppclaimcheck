@@ -95,12 +95,17 @@ async def _own_job(request: Request, job_id: str) -> dict:
 
 
 @router.get("/checks/{job_id}")
-async def show_check(request: Request, job_id: str) -> Response:
+async def show_check(
+    request: Request, job_id: str, spelling: int | None = None
+) -> Response:
     job = await _own_job(request, job_id)
     state = job["state"]
     if state == "awaiting_confirmation":
         return render(
-            request, "confirm.html", job=job, claims=job["extracted_claims"] or []
+            request,
+            "confirm.html",
+            job=job,
+            claims=views.with_spelling(job["extracted_claims"] or [], spelling),
         )
     if state == "done":
         return render(request, "result.html", job=job, view=views.result_view(job))
