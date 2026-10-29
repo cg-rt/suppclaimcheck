@@ -145,3 +145,62 @@ def test_progress_marks_done_current_and_waiting():
     ]
     assert rows[0]["at"] == "10:00:05"
     assert all(r["status"] == "done" for r in views.progress("done", events))
+
+
+RESULT_V1 = {
+    "verdict": "Supported",
+    "score": 86,
+    "rubric_version": "rubric-v1",
+    "rule": "The weighted evidence supports the claim.",
+    "articles_assessed": 3,
+    "supporting": 2,
+    "contradicting": 1,
+    "direction": 0.714,
+    "strength": 1.0,
+    "weight_for": 1.8,
+    "weight_against": 0.3,
+    "full_strength_weight": 2.0,
+    "breakdown": [
+        {
+            "tier": "systematic_review",
+            "weight": 1.0,
+            "supporting": 1,
+            "contradicting": 0,
+            "stance": 1.0,
+            "counted": True,
+        },
+        {
+            "tier": "rct",
+            "weight": 0.8,
+            "supporting": 1,
+            "contradicting": 0,
+            "stance": 1.0,
+            "counted": True,
+        },
+        {
+            "tier": "narrative_review",
+            "weight": 0.3,
+            "supporting": 0,
+            "contradicting": 1,
+            "stance": -1.0,
+            "counted": True,
+        },
+    ],
+}
+
+
+def test_rubric_v1_results_are_explained_by_article():
+    assert views.explain(RESULT_V1) == (
+        "The weighted evidence supports the claim. 3 of the 3 articles read reported a finding about this claim."
+    )
+    steps = views.score_steps(RESULT_V1)
+    assert (
+        steps[0]
+        == "Systematic review or meta-analysis, weight 1.00: 1 for, 0 against, stance +1.00"
+    )
+    assert (
+        steps[3]
+        == "Direction: weighted for 1.80 − against 0.30, ÷ total weight 2.10 = +0.71"
+    )
+    assert steps[-2] == "Score: 50 + 50 × +0.71 × 1.00 = 86"
+    assert steps[-1] == "Verdict: The weighted evidence supports the claim."

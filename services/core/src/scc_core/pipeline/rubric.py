@@ -95,6 +95,7 @@ class ScoreV1:
     weight_for: float
     weight_against: float
     human_weight: float
+    full_strength_weight: float
     breakdown: list[dict]
 
     def as_dict(self) -> dict:
@@ -163,6 +164,7 @@ def score_v1(articles: list[ArticleEvidence], config: dict) -> ScoreV1:
         weight_for=round(weight_for, 3),
         weight_against=round(weight_against, 3),
         human_weight=round(human_weight, 3),
+        full_strength_weight=config["full_strength_weight"],
         breakdown=[
             {**asdict(a), "stance": round(a.stance, 3), "counted": a.has_finding}
             for a in articles
