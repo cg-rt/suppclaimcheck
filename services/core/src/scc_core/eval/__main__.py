@@ -37,7 +37,9 @@ def _commit() -> str:
             capture_output=True, text=True, check=True, cwd=REPO,
         ).stdout.strip()  # fmt: skip
         dirty = subprocess.run(
-            ["git", "status", "--porcelain", "--untracked-files=no"],
+            # Files the runner itself writes don't make the code dirty.
+            ["git", "status", "--porcelain", "--untracked-files=no", "--", ".",
+             ":!docs/EVALS.md", ":!evals"],
             capture_output=True, text=True, check=True, cwd=REPO,
         ).stdout.strip()  # fmt: skip
     except OSError, subprocess.CalledProcessError:
