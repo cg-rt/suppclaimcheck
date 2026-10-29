@@ -2,7 +2,7 @@
 
 The fake answers core's gateway calls the way the real gateway does, so the test can check what core
 asks for and in what order: metadata for every candidate first, then full texts for the best N by
-evidence tier, then one assess call per article with the reason written before the label.
+evidence tier, then one assess call per article.
 """
 
 import json
@@ -155,14 +155,15 @@ def test_pipeline_v1_ranks_by_tier_and_scores_by_article(migrated_db):
         ("44", "systematic_review")
     ]
 
-    # One assess call per article, each asking for the reason before the label.
+    # One assess call per article, each with the fields in the configured order.
     assess = [body for path, body in calls if path == "/llm/structured"]
     assert len(assess) == 3
+    order = core_config.load("pipeline-v1")["llm"]["assess"]["field_order"]
     for body in assess:
         item = body["schema"]["properties"]["assessments"]["items"]
-        assert list(item["properties"]) == ["passage_id", "reason", "label", "quote"]
+        assert list(item["properties"]) == order
 
-    # Rubric v1: for 1.0 + 0.8, against 0.3 (12.5% of the evidence, under the Mixed share).
+    # Rubric v1: for 1.0 + 0.8, against 0.3 (14% of the evidence, under the Mixed share).
     assert (result["verdict"], result["rubric_version"]) == ("Supported", "rubric-v1")
     assert (result["weight_for"], result["weight_against"], result["strength"]) == (
         1.8,
