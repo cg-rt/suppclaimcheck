@@ -53,3 +53,6 @@ desktop.ini
 
 # Deploy rehearsal folder (tools/rehearse_deploy.py): copies of dev secret files
 .rehearsal/
+
+# Embedding model files (tools/fetch_embedding_model.py)
+.cache/

@@ -135,11 +135,19 @@ Thresholds are reported, not enforced, until the Phase 3 guardrails exist.
 | 2026-10-29 | evalset-v2 | pipeline-v2 | claude-haiku-5-5 | tuning | 22 | 47% | 60% | 100% | 100% | 38% | 0% | 7.7 / 19.5 | 0.0028 | 0.0618 | `f57b4da+dirty` | pipeline v2: query v1 (P2.12), run 1 of 3 (before the spelling check ignored hyphen-only changes; no query differs) |
 | 2026-10-29 | evalset-v2 | pipeline-v2 | claude-haiku-5-5 | tuning | 22 | 47% | 60% | 100% | 100% | 38% | 0% | 6.7 / 8.8 | 0.0028 | 0.0611 | `f57b4da+dirty` | pipeline v2: query v1 (P2.12), run 2 of 3 |
 | 2026-10-29 | evalset-v2 | pipeline-v2 | claude-haiku-5-5 | tuning | 22 | 53% | 67% | 100% | 100% | 38% | 0% | 6.2 / 8.0 | 0.0028 | 0.0611 | `f57b4da+dirty` | pipeline v2: query v1 (P2.12), run 3 of 3 |
+| 2026-10-29 | evalset-v2 | pipeline-v3 | claude-haiku-5-5 | tuning | 22 | 51% | 71% | 99% | 100% | 38% | 50% | 12.8 / 29.5 | 0.0027 | 0.1802 | `fe1ef46+dirty` | P2.06/P2.07 arm: hybrid retrieval, default settings (keyword weight 0.5, k 60); 3 runs; mean of 3 runs |
 
 ## Comparisons
 ### Retrieval (P2.07)
-| Setting | Verdict acc. | Quote pass | Notes |
-|---|---|---|---|
+Same eval set (`evalset-v2`, tuning, 22 cases), Claude Haiku 5.5, three live runs per arm. Hybrid retrieval arrives in P2.06 (D-046); the chosen setting is decided here once the variant arm has run.
+
+| Setting | Config | Commit | Cases passing | Verdict acc. | Quote pass | Stability | Latency p50 / p95 (s) |
+|---|---|---|---|---|---|---|---|
+| Keyword only (Postgres full-text) | pipeline-v2 | `f57b4da+dirty` | 9, 9, 10 | 49% | 100% | 95% | 6.9 / 12.1 |
+| Hybrid, keyword weight 0.5, k 60 | pipeline-v3 | `fe1ef46+dirty` | 8, 10, 11 | 51% | 99% | 73% | 12.8 / 29.5 |
+| Variant (weight or passage size) | – | – | – | – | – | – | – |
+
+**First reading (P2.06).** Hybrid ranking picks different passages: injection-02 (melatonin) now passes in all three runs, supported-01 (creatine) still reads muscle-size passages as against the claim. Accuracy is about the same, stability falls back to 73%, and each check takes about 6 s longer, because eval runs start from an empty embedding cache and embed every passage they read. Too close to call on one setting: P2.07 adds the variant arm before choosing.
 
 ### Pipeline v1 and the assess field order (P2.04, D-044)
 Same eval set (`evalset-v1`, tuning, 22 cases), Claude Haiku 5.5, live runs. Pass counts are per run; stability is the share of cases with the same outcome in every run of an arm.

@@ -7,4 +7,5 @@
 !libs/common/src/
 !services/*/pyproject.toml
 !services/*/src/
+!tools/fetch_embedding_model.py
 **/__pycache__
