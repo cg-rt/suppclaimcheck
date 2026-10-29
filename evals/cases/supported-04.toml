@@ -5,15 +5,20 @@ input = "Melatonin helps adults with insomnia fall asleep faster."
 [expected]
 behaviour = "answer"
 verdicts = ["Supported"]
-score_range = [55, 90]
+score_range = [60, 100]
 supplement = ["melatonin"]
 
 [label]
 rationale = """
 A meta-analysis of trials in primary sleep disorders (Ferracioli-Oda et al. 2013, open access) found
-that melatonin shortens the time to fall asleep, by about 7 minutes on average. The effect is real but
-modest, hence the lower bounds of the score range.
+that melatonin shortens the time to fall asleep, by about 7 minutes on average. The effect is modest,
+but the score measures the strength of the evidence, not the size of the effect.
 """
 pmids = ["23691095"]
 status = "draft"
 drafted_on = 2026-10-28
+notes = """
+evalset-v2 (2026-10-29, owner's instruction): score range 55-90 became 60-100. The score measures how
+strong and consistent the evidence is (D-002), not how big the effect is, so consistent evidence for a
+modest effect can score 100.
+"""

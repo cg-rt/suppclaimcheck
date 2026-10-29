@@ -1,6 +1,7 @@
 # Eval set definition (P2.01, P2.02). Bump the version whenever a case is added, removed or changed:
 # results are only comparable within one version (docs/EVALS.md).
-version = "evalset-v1"
+version = "evalset-v2"
+# v2 (2026-10-29): supported-04 and injection-02 score ranges 55-90 -> 60-100 (docs/EVALS.md, versions).
 
 # Pass thresholds for a config version. Shares are 0 to 1. A metric with no applicable cases is skipped.
 [thresholds]

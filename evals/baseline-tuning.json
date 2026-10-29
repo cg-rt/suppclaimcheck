@@ -1,9 +1,9 @@
 {
- "evalset": "evalset-v1",
+ "evalset": "evalset-v2",
  "split": "tuning",
  "config_version": "pipeline-v1",
- "run_id": "20261029-163655-live-54b6",
- "mode": "live",
+ "run_id": "20261029-164825-replay-4dc3",
+ "mode": "replay",
  "cases": [
   {
    "id": "contradicted-01",
@@ -119,7 +119,7 @@
   },
   {
    "id": "supported-04",
-   "passed": false,
+   "passed": true,
    "verdict": "Supported",
    "score": 100,
    "behaviour": "answer"
