@@ -1,0 +1,14 @@
+id = "multi-02"
+category = "multi_claim"
+input = "Zinc shortens colds and boosts testosterone in men."
+
+[expected]
+behaviour = "pick_claim"
+min_claims = 2
+supplement = ["zinc"]
+
+[label]
+rationale = "Two separate effects (cold duration, testosterone), each for a different population."
+pmids = []
+status = "draft"
+drafted_on = 2026-10-28

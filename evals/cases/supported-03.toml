@@ -1,0 +1,19 @@
+id = "supported-03"
+category = "well_supported"
+input = "Fish oil capsules lower blood triglycerides."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Supported"]
+score_range = [60, 100]
+supplement = ["fish oil", "omega-3", "omega 3"]
+
+[label]
+rationale = """
+Lowering triglycerides is the most consistent effect of omega-3 supplements: a dose-response
+meta-analysis of randomised trials (2023, open access) and the 2020 Cochrane review (open access)
+both report lower triglycerides with EPA/DHA supplementation.
+"""
+pmids = ["37264945", "32114706"]
+status = "draft"
+drafted_on = 2026-10-28

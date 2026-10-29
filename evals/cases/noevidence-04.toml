@@ -1,0 +1,18 @@
+id = "noevidence-04"
+category = "no_evidence"
+input = "Drinking liquid chlorophyll clears up acne."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Insufficient evidence", "Not found"]
+score_range = [35, 65]
+supplement = ["chlorophyll", "chlorophyllin"]
+
+[label]
+rationale = """
+PubMed on 2026-10-28: the only clinical studies are a pilot of a topical copper chlorophyllin gel
+(26091384) and photodynamic therapy with chlorophyll-a (24930587). Neither tests drinking it.
+"""
+pmids = ["26091384", "24930587"]
+status = "draft"
+drafted_on = 2026-10-28

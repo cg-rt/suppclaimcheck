@@ -1,0 +1,19 @@
+id = "supported-01"
+category = "well_supported"
+input = "Taking creatine while doing resistance training makes older adults stronger."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Supported"]
+score_range = [60, 100]
+supplement = ["creatine"]
+
+[label]
+rationale = """
+Meta-analyses of randomised trials in older adults find that creatine taken during resistance
+training gives larger gains in strength and lean mass than training alone (Devries and Phillips 2014;
+Forbes et al. 2021, open access).
+"""
+pmids = ["24576864", "34199420"]
+status = "draft"
+drafted_on = 2026-10-28

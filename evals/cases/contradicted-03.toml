@@ -1,0 +1,20 @@
+id = "contradicted-03"
+category = "contradicted"
+input = "Glucosamine relieves knee arthritis pain."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Contradicted", "Mixed"]
+score_range = [0, 55]
+supplement = ["glucosamine"]
+
+[label]
+rationale = """
+The large GAIT trial (Clegg et al. 2006) found glucosamine no better than placebo for knee
+osteoarthritis pain overall, and a 2018 meta-analysis of supplements for osteoarthritis found no
+clinically important effect. Some trials of crystalline glucosamine sulfate report small benefits,
+so Mixed is also accepted.
+"""
+pmids = ["16495392", "29018060"]
+status = "draft"
+drafted_on = 2026-10-28

@@ -1,0 +1,434 @@
+{
+ "POST /literature/fetch 243b58b50b1b6b9099644b3d": [
+  {
+   "file": "0abf0f9369f5907b.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch 37c16a105d8a3c473e82de1e": [
+  {
+   "file": "affd55d3363be9cc.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch 4adaa9479e26ad9608e9af40": [
+  {
+   "file": "102d6f8089e17658.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch 6b0052f0f6d64bc8cac8934f": [
+  {
+   "file": "46efd4da2fc4faf5.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch 774c437c7a9a7fd788110592": [
+  {
+   "file": "652429ddf55df823.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch 801eab9a91da69555856d2c3": [
+  {
+   "file": "ed993f4848f0088c.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch 933da0d61741d897d8f7fa21": [
+  {
+   "file": "12f0343b04cfbde2.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch a07e981e4183e29d3a0deebf": [
+  {
+   "file": "cbd0b8a807217a95.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch a36dbacc402fda56838b0dd6": [
+  {
+   "file": "bd9c5427e4b0fdc1.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch b65774183a4000f1549e4647": [
+  {
+   "file": "553a6b07c0d97e9d.json.gz",
+   "status": 200
+  },
+  {
+   "file": "59585819ce277aad.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch cf334b5bbd6edb1a1697b8da": [
+  {
+   "file": "7d219287a1bc358f.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch d60a851bcacad182a2398643": [
+  {
+   "file": "291a214a63694c67.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch e2ab08d87859d84828186b2d": [
+  {
+   "file": "846232cc9f6f2e78.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch e3ca5f80f534ba932e073356": [
+  {
+   "file": "f3bd0496f475e7b4.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/fetch f731a578c404eb6af4851100": [
+  {
+   "file": "05d3810d8cab4a62.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 2b7b20b9817da6264d7e3eb3": [
+  {
+   "file": "a7848dffd7c4054f.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 3d2a0e6771eaf6ea947839a8": [
+  {
+   "file": "35568bc9ea92772d.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 4d2a4abbbc2bf1907ab7ee93": [
+  {
+   "file": "f3b1817bf1a8c7b8.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 54ba94f74cd493404bafc86f": [
+  {
+   "file": "d0a64e2fbdcf8b75.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 552827eda2d5ccb946f506bc": [
+  {
+   "file": "700ae552e231b893.json.gz",
+   "status": 200
+  },
+  {
+   "file": "700ae552e231b893.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 5d7f60438364809eebd71b8d": [
+  {
+   "file": "5724d95c914d1a44.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 735a7faf732c565c0a2342a8": [
+  {
+   "file": "aa6f9b5e92da1896.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 7eb2f90055a0e02a3d635581": [
+  {
+   "file": "109000cb9ac249b3.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 7f57dbc3fc378951d412d6b1": [
+  {
+   "file": "26c85aae9bf6cbea.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search 80ab1e7a411845090ca8497d": [
+  {
+   "file": "3b5e39a269a57fc4.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search a2d8057d88b0d5e68a894e97": [
+  {
+   "file": "36c80466d8cf5999.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search bf3722a4be5656fc53343a14": [
+  {
+   "file": "0450a1c17f98df71.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search c3f2e096236461107f1076ae": [
+  {
+   "file": "d5a1c58505ce12c9.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search c56266682b01e8d224e9d2b5": [
+  {
+   "file": "c1702ff50d92564f.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search ca8880e742c572e8f91a5dd6": [
+  {
+   "file": "8d18835a5a875408.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search d0a3bf1040529da57eed4bc5": [
+  {
+   "file": "7c4b7e1cc201d30e.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search e99e9b239d6a908879afbce1": [
+  {
+   "file": "daf26529a0cf861a.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /literature/search f01acf703d51e1e160d3acfd": [
+  {
+   "file": "1549364c0e506043.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 011b3593b9d7de6c75fadf32": [
+  {
+   "file": "3d28605d6d9b8616.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 072fe557a65adf5a356df8ee": [
+  {
+   "file": "284783744f72d59c.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 08ebdc4b15e5eb93db9a5600": [
+  {
+   "file": "67c7a74dbddd3f27.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 1217e1c30c0d5f7d97522da9": [
+  {
+   "file": "e10bc3e7855bbbc2.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 198d7e960f07b34c0fbbf861": [
+  {
+   "file": "822733177b83ab11.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 1cde748838b45d7c932f26e3": [
+  {
+   "file": "a34832a665c4a562.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 207e71c44247855992f0e484": [
+  {
+   "file": "704cc1a38f0f3f80.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 28c18cee90f2ce7af70496b7": [
+  {
+   "file": "7c9c9afaf0b59fc6.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 35513c99fb835f051d518bad": [
+  {
+   "file": "f81a8c3f91ad312f.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 3df72b6cabf5d07a20dc3155": [
+  {
+   "file": "cbc7a19f2cb85dbf.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 4a5c7d5d0566139a334d1a8b": [
+  {
+   "file": "3b3befb15e1cc281.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 4c9a05e69924ad38d3d09f27": [
+  {
+   "file": "7bb95c87af492e5a.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 51a3e54cc0843c394770dd2a": [
+  {
+   "file": "9ac93d1d60b31414.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 68929c341c68c36c99169584": [
+  {
+   "file": "8d44ff8a59e96e1c.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 6b7ab39b1d0f571fb43c642d": [
+  {
+   "file": "c777a8d0919ccc08.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 6df7bcbf1616e5cd9a3b1ea8": [
+  {
+   "file": "b8d6f35718cb909f.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 95872f3c929bdd30e476ce00": [
+  {
+   "file": "6a5660b6fdf77875.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 97f4abaedd89f6113d14d9a3": [
+  {
+   "file": "7db9f07db387e46f.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 9a852a077a51708fc79c0bb5": [
+  {
+   "file": "0d794992fb07ff6b.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured 9c88ed8e5f70210a72b97883": [
+  {
+   "file": "941bd3ba090825ca.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured a294e39be4308123af2164eb": [
+  {
+   "file": "3fc331bc43e2991e.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured a2e7fce2fb9dce8cf5bb4545": [
+  {
+   "file": "61c738b1c2234c58.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured a821afffc9ce088a35ef7a9e": [
+  {
+   "file": "3503bdcec148455f.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured af3157d90362d98f43d91724": [
+  {
+   "file": "e4d0fac19b94b269.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured b067e0f600467eb674407078": [
+  {
+   "file": "0fc5ecb3ba5444b6.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured b3ab0f22ae16ff81b1a82f8a": [
+  {
+   "file": "bad04c4f2816a5a1.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured b6690f7f8c286988f7962166": [
+  {
+   "file": "91affd5884f31c02.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured bad39d0c3b778ec83fe50a55": [
+  {
+   "file": "913be87e39bbefe0.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured bd323a5dbc0421ef82caa1de": [
+  {
+   "file": "83865ec69a8f646a.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured d0062e2e361151bad4323de0": [
+  {
+   "file": "143e9e7a3410bdf4.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured d5ffc3187afcf1029f7d471c": [
+  {
+   "file": "91517b0e25ed532a.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured dd77d6991afc3e44b418f157": [
+  {
+   "file": "c0b82e4930e99ab3.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured e00347a5d007c014bf163af0": [
+  {
+   "file": "8a6e6232820ed3cb.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured e0aca5ba3abebe85af89163f": [
+  {
+   "file": "788e2c8d2d7dc74f.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured e961b8610fc81cf1128a5b1f": [
+  {
+   "file": "723985c5453d18be.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured ee34f98c2a136056bf4c8b1e": [
+  {
+   "file": "34f86f2001855800.json.gz",
+   "status": 200
+  },
+  {
+   "file": "2624e335dfb2f0d3.json.gz",
+   "status": 200
+  }
+ ],
+ "POST /llm/structured f67e52c7a7feef2f6c5e440c": [
+  {
+   "file": "2ca979e82654a3ac.json.gz",
+   "status": 200
+  }
+ ]
+}

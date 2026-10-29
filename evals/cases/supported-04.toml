@@ -1,0 +1,19 @@
+id = "supported-04"
+category = "well_supported"
+input = "Melatonin helps adults with insomnia fall asleep faster."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Supported"]
+score_range = [55, 90]
+supplement = ["melatonin"]
+
+[label]
+rationale = """
+A meta-analysis of trials in primary sleep disorders (Ferracioli-Oda et al. 2013, open access) found
+that melatonin shortens the time to fall asleep, by about 7 minutes on average. The effect is real but
+modest, hence the lower bounds of the score range.
+"""
+pmids = ["23691095"]
+status = "draft"
+drafted_on = 2026-10-28

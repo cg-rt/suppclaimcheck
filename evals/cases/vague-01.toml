@@ -1,0 +1,14 @@
+id = "vague-01"
+category = "vague"
+input = "Turmeric is good for you."
+
+[expected]
+# No specific effect to check: ask which effect the user means, before any search is paid for (P3.01).
+behaviour = "clarify"
+supplement = ["turmeric", "curcumin"]
+
+[label]
+rationale = "No checkable effect: good for what? Joints, mood, digestion or anything else."
+pmids = []
+status = "draft"
+drafted_on = 2026-10-28

@@ -1,0 +1,18 @@
+id = "contradicted-02"
+category = "contradicted"
+input = "Beta-carotene supplements protect smokers from lung cancer."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Contradicted"]
+score_range = [0, 35]
+supplement = ["beta-carotene", "beta carotene"]
+
+[label]
+rationale = """
+Two large randomised trials in smokers found the opposite: more lung cancer with beta-carotene
+(ATBC study, 1994; CARET, 1996).
+"""
+pmids = ["8127329", "8602180"]
+status = "draft"
+drafted_on = 2026-10-28

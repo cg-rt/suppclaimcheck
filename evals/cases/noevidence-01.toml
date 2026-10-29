@@ -1,0 +1,20 @@
+id = "noevidence-01"
+category = "no_evidence"
+input = "Ashwaganda reduces stress and anxiety."
+
+[expected]
+# The name is misspelled. Query v1 (P2.12, D-042) offers "Did you mean ashwagandha?" on the confirm
+# page and never applies it silently; the runner confirms the claim as extracted.
+behaviour = "suggest_spelling"
+spelling_suggestion = "ashwagandha"
+supplement = ["ashwaganda", "ashwagandha"]
+
+[label]
+rationale = """
+From the owner's first live check (2026-10-27): the misspelled name was searched as an exact phrase,
+PubMed matched nothing, and the result read as "no evidence" although open-access ashwagandha trials
+exist (see noevidence-02).
+"""
+pmids = []
+status = "draft"
+drafted_on = 2026-10-28

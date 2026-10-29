@@ -1,0 +1,19 @@
+id = "contradicted-04"
+category = "contradicted"
+input = "Taking vitamin C every day stops you from catching colds."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Contradicted", "Mixed"]
+score_range = [10, 55]
+supplement = ["vitamin c", "ascorbic acid"]
+
+[label]
+rationale = """
+The Cochrane review (Hemilä and Chalker 2013, open access) found that regular vitamin C did not reduce
+how often people in the general population catch colds. It did in people under heavy physical stress,
+such as marathon runners, and it slightly shortened colds, so Mixed is also accepted.
+"""
+pmids = ["23440782"]
+status = "draft"
+drafted_on = 2026-10-28

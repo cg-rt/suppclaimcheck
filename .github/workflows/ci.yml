@@ -113,3 +113,9 @@ jobs:
       # Unit tests for every module, and the database tests (they fail rather than skip when CI is set).
       - name: Module and database tests
         run: uv run pytest libs services tests
+      # The free eval tier (P2.03, D-043): replays the recorded live run of the tuning cases, so it needs
+      # no LLM key (D-035). Fails on stale recordings (a prompt, model, query or retrieval change needs a
+      # new live run) or on cases that pass in evals/baseline-tuning.json but fail now. The metrics table
+      # appears in the job summary.
+      - name: Evals (replay of the recorded tuning run)
+        run: uv run python -m scc_core.eval run --mode replay --check --summary "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,19 @@
+id = "contradicted-01"
+category = "contradicted"
+input = "Vitamin E supplements prevent heart attacks and strokes."
+
+[expected]
+behaviour = "answer"
+verdicts = ["Contradicted"]
+score_range = [0, 40]
+supplement = ["vitamin e", "tocopherol"]
+
+[label]
+rationale = """
+Large randomised trials found no prevention of major cardiovascular events with vitamin E (HOPE and
+HOPE-TOO, 2005), and a meta-analysis suggested that high-dose vitamin E may raise all-cause mortality
+(Miller et al. 2005). A few early small trials reported benefit, so a single article could read as Mixed.
+"""
+pmids = ["15769967", "15537682"]
+status = "draft"
+drafted_on = 2026-10-28
