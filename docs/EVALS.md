@@ -118,6 +118,8 @@ Thresholds are reported, not enforced, until the Phase 3 guardrails exist.
 | 2026-10-28 | evalset-v1 | pipeline-v0 | claude-haiku-5-5 | tuning | 22 | 47% | 47% | 100% | 100% | 25% | 0% | 2.7 / 4.8 | 0.0005 | 0.0120 | `9743aa7` | second live run, same code: run-to-run variation |
 | 2026-10-29 | evalset-v1 | pipeline-v1+set | claude-haiku-5-5 | tuning | 22 | 60% | 67% | 100% | 100% | 25% | 67% | 6.6 / 18.6 | 0.0023 | 0.1490 | `99cb324` | experiment arm A: label before reason; mean of 3 runs; llm.assess.field_order=["passage_id", "label", "quote", "reason"] |
 | 2026-10-29 | evalset-v1 | pipeline-v1 | claude-haiku-5-5 | tuning | 22 | 53% | 60% | 100% | 100% | 25% | 50% | 6.6 / 9.3 | 0.0022 | 0.1457 | `99cb324+dirty` | experiment arm B: reason before label (v1 as designed); mean of 3 runs |
+| 2026-10-29 | evalset-v1 | pipeline-v1 | claude-haiku-5-5 | tuning | 22 | 44% | 51% | 100% | 100% | 25% | 0% | 6.3 / 9.4 | 0.0023 | 0.1490 | `0d3b104` | experiment arm C: exact-effect prompt, reason before label; mean of 3 runs |
+| 2026-10-29 | evalset-v1 | pipeline-v1+set | claude-haiku-5-5 | tuning | 22 | 47% | 67% | 100% | 100% | 25% | 50% | 6.5 / 10.7 | 0.0023 | 0.1526 | `0d3b104` | experiment arm D: exact-effect prompt, label before reason; mean of 3 runs; llm.assess.field_order=["passage_id", "label", "quote", "reason"] |
 
 ## Comparisons
 ### Retrieval (P2.07)
