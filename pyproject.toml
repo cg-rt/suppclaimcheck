@@ -39,7 +39,7 @@ exclude-newer = "14 days"
 [tool.uv.exclude-newer-package]
 certifi = "2026-10-21T00:00:00Z"     # 2026.10.19 fixes GHSA-6q48-6c7w-9gw2 (in the images); delete on 2026-11-04
 filelock = "2026-10-18T00:00:00Z"    # 4.2.1 fixes GHSA-v4x8-3wr5-3wq8 and two more; delete on 2026-11-01
-virtualenv = "2026-10-18T00:00:00Z"  # 21.14.9 fixes GHSA-vxj4-q4g9-crj7 and 11 more; delete on 2026-11-01
+virtualenv = "2026-10-23T00:00:00Z"  # 21.14.13 fixes GHSA-cx6f-vjhg-g3cc (and 21.14.9 GHSA-vxj4-q4g9-crj7); delete on 2026-11-06
 
 [tool.ruff.lint.isort]
 known-first-party = ["scc_common", "scc_web", "scc_core", "scc_gateway"]
