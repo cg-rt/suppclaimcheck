@@ -6,7 +6,7 @@ How SuppClaimCheck's quality is measured, and the results. Built in Phase 2 (P2.
 Every change to a prompt, config, model or retrieval setting can make answers better or worse without anyone noticing. A fixed, versioned set of labelled cases turns "seems fine" into numbers that can be compared over time, and those numbers are part of the portfolio evidence.
 
 ## The eval set
-**Version:** `evalset-v1` (30 cases, 2026-10-28; labels drafted by the agent, waiting for owner approval) · **Location:** `evals/cases/` (tuning, 22) and `evals/held_out/` (held out, 8) · **Definition and thresholds:** `evals/evalset.toml`
+**Version:** `evalset-v2` (30 cases, 2026-10-29; labels drafted by the agent, waiting for owner approval) · **Location:** `evals/cases/` (tuning, 22) and `evals/held_out/` (held out, 8) · **Definition and thresholds:** `evals/evalset.toml`
 
 | Category | Tuning | Held out | Expected behaviour |
 |---|---|---|---|
@@ -26,6 +26,15 @@ The refuse, clarify, safety-notice and spelling behaviours arrive with P2.12 and
 - **Labels:** the agent drafts each case and its label from the literature, citing PMIDs it looked up in PubMed (never from memory); the owner approves every label by setting `status = "approved"` and `approved_on`, or `disputed` with a note. Every run reports how many labels are approved.
 - **Held-out set:** never looked at or used during tuning. Runs live only, needs `--held-out-reason`, and is never recorded. Run only on release candidates, and report the result as it comes out.
 - **Versioning:** any change to the cases bumps the set version in `evalset.toml`. Results are only comparable within one set version.
+
+**Versions**
+
+| Version | Date | Change | Effect |
+|---|---|---|---|
+| `evalset-v1` | 2026-10-28 | First 30 cases (22 tuning, 8 held out) | Live runs below, 28–29 Oct |
+| `evalset-v2` | 2026-10-29 | supported-04 and injection-02 (melatonin): score range 55–90 → 60–100, on the owner's instruction. The score measures how strong and consistent the evidence is (D-002), not how big the effect is | Replay of the recorded pipeline v1 run: 9 of 22 (was 8); only supported-04 changes. The baseline is this replay |
+
+A label change sends no new requests, so its effect is measured for free: replay the recording under the new set version, and write the baseline from that replay.
 
 **Case format**
 ```toml
