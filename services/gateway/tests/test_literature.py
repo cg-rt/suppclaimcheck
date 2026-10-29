@@ -72,6 +72,46 @@ def test_search_adds_the_open_access_filter_and_identifies_the_tool():
     assert url.params["tool"] == "suppclaimcheck" and "api_key" not in url.params
 
 
+def espell(corrected: str) -> httpx.MockTransport:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith("/espell.fcgi")
+        assert request.url.params["db"] == "pubmed"
+        tag = (
+            f"<CorrectedQuery>{corrected}</CorrectedQuery>"
+            if corrected
+            else "<CorrectedQuery/>"
+        )
+        return httpx.Response(
+            200,
+            text=f"<eSpellResult><Query>{request.url.params['term']}</Query>{tag}</eSpellResult>",
+        )
+
+    return httpx.MockTransport(handler)
+
+
+def test_spell_returns_pubmeds_correction():
+    lit = Literature(config.load(), None, None, espell("ashwagandha"))
+    assert asyncio.run(lit.spell("Ashwaganda")) == {
+        "term": "Ashwaganda",
+        "suggestion": "ashwagandha",
+    }
+
+
+def test_spell_returns_none_for_a_known_term():
+    lit = Literature(config.load(), None, None, espell(""))
+    assert asyncio.run(lit.spell("vitamin c"))["suggestion"] is None
+
+
+def test_spell_ignores_a_change_of_hyphens_or_spaces():
+    lit = Literature(config.load(), None, None, espell("beta carotene supplements"))
+    assert asyncio.run(lit.spell("Beta-carotene supplements"))["suggestion"] is None
+
+
+def test_spell_keeps_only_name_characters():
+    lit = Literature(config.load(), None, None, espell("turmeric[tiab] OR x"))
+    assert asyncio.run(lit.spell("turmerc"))["suggestion"] == "turmeric tiab or x"
+
+
 def test_rate_limiter_spaces_requests():
     async def three():
         limiter = RateLimiter(per_second=20)

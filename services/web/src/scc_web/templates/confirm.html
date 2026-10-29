@@ -17,7 +17,15 @@
     {% if claim.quote %}<p class="from-text">From your text: <q>{{ claim.quote }}</q></p>{% endif %}
     <div class="field">
       <label for="supplement-{{ n }}">Supplement or ingredient</label>
-      <input id="supplement-{{ n }}" name="supplement" required maxlength="200" value="{{ claim.supplement or '' }}">
+      <input id="supplement-{{ n }}" name="supplement" required maxlength="200" value="{{ claim.supplement or '' }}"{% if claim.spelling_suggestion or claim.spelling_applied_from %} aria-describedby="spelling-{{ n }}"{% endif %}>
+      {% if claim.spelling_suggestion %}
+      <div class="notice notice--hint" id="spelling-{{ n }}">
+        <p>PubMed spells this <strong>{{ claim.spelling_suggestion }}</strong>. A misspelled name can make the search miss every article.</p>
+        <p><a class="button button--secondary button--small" href="/checks/{{ job.id }}?spelling={{ n }}">Use &ldquo;{{ claim.spelling_suggestion }}&rdquo;</a></p>
+      </div>
+      {% elif claim.spelling_applied_from %}
+      <p class="notice notice--ok" id="spelling-{{ n }}" role="status">Changed from &ldquo;{{ claim.spelling_applied_from }}&rdquo; to PubMed's spelling. Nothing has been searched yet.</p>
+      {% endif %}
     </div>
     <div class="field">
       <label for="effect-{{ n }}">Claimed effect</label>

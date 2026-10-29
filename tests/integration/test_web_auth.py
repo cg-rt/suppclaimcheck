@@ -311,6 +311,38 @@ def test_confirming_sends_the_edited_claim_to_core(migrated_db):
     }
 
 
+def test_spelling_suggestion_is_offered_never_applied_silently(migrated_db):
+    """P2.12: the confirm page offers PubMed's spelling; only the user's click puts it in the field."""
+    claim = {
+        "supplement": "ashwaganda",
+        "effect": "reduces stress",
+        "population": None,
+        "dose": None,
+        "duration": None,
+        "quote": "Ashwaganda reduces stress",
+        "spelling_suggestion": "ashwagandha",
+    }
+
+    async def steps(client, ctx):
+        j = ctx["core"].add(
+            job(ctx["user"], "awaiting_confirmation", extracted_claims=[claim])
+        )
+        await sign_in(client)
+        offered = (await client.get(f"/checks/{j['id']}")).text
+        chosen = (await client.get(f"/checks/{j['id']}?spelling=1")).text
+        ignored = (await client.get(f"/checks/{j['id']}?spelling=9")).text
+        return offered, chosen, ignored
+
+    offered, chosen, ignored = with_web(migrated_db, steps)
+    assert 'value="ashwaganda"' in offered
+    assert "PubMed spells this <strong>ashwagandha</strong>" in offered
+    assert 'href="/checks/' in offered and "?spelling=1" in offered
+    assert 'value="ashwagandha"' in chosen
+    assert "Changed from &ldquo;ashwaganda&rdquo; to PubMed's spelling" in chosen
+    assert "?spelling=1" not in chosen
+    assert 'value="ashwaganda"' in ignored
+
+
 def test_password_change_ends_other_sessions(migrated_db):
     async def steps(client, ctx):
         async with ctx["pool"].connection() as conn:

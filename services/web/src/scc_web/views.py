@@ -83,7 +83,27 @@ def _v1(result: dict) -> bool:
     return result.get("rubric_version") == "rubric-v1"
 
 
+def with_spelling(claims: list[dict], chosen: int | None) -> list[dict]:
+    """The extracted claims for the confirm page, with PubMed's spelling applied to claim `chosen`
+    (1-based) when the user picked it (P2.12). Nothing changes without that choice."""
+    shown = [dict(c) for c in claims]
+    if chosen is not None and 1 <= chosen <= len(shown):
+        claim = shown[chosen - 1]
+        if claim.get("spelling_suggestion"):
+            claim["spelling_applied_from"] = claim["supplement"]
+            claim["supplement"] = claim["spelling_suggestion"]
+            claim["spelling_suggestion"] = None
+    return shown
+
+
 def explain(result: dict) -> str:
+    if (
+        result.get("articles_assessed") == 0
+        and (result.get("searched") or {}).get("matches") == 0
+    ):
+        return (
+            "The search found no articles for this claim, so there was nothing to read."
+        )
     if _v1(result):
         n = result["articles_assessed"]
         if n == 0:

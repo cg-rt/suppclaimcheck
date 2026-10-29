@@ -23,11 +23,22 @@ from scc_gateway.retry import Transient, with_retries
 log = logging.getLogger("scc.literature")
 
 ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+ESPELL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/espell.fcgi"
 EPMC_SEARCH = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 EPMC_FULLTEXT = "https://www.ebi.ac.uk/europepmc/webservices/rest/{pmcid}/fullTextXML"
 OPEN_ACCESS_FILTER = "pubmed pmc open access[filter]"
 _TAGS = re.compile(r"<[^>]+>")
 _PMID = re.compile(r"^\d{1,9}$")
+_CORRECTED = re.compile(r"<CorrectedQuery>([^<]*)</CorrectedQuery>")
+# A suggestion reaches the user and the next query, so it keeps only what a supplement name needs.
+_NOT_NAME = re.compile(r"[^a-z0-9\- ]+")
+
+
+def _same_name(a: str, b: str) -> bool:
+    def squash(text: str) -> str:
+        return "".join(_NOT_NAME.sub(" ", text.lower()).replace("-", " ").split())
+
+    return squash(a) == squash(b)
 
 
 class LiteratureUnavailable(Exception):
@@ -177,6 +188,31 @@ class Literature:
             "pmids": [p for p in result.get("idlist", []) if _PMID.match(p)],
             "query_translation": result.get("querytranslation"),
         }
+
+    async def spell(self, term: str) -> dict:
+        """NCBI ESpell's correction for a term (P2.12), or None when PubMed knows the term as written."""
+        params = {
+            "db": "pubmed",
+            "term": term,
+            "tool": self.cfg["tool"],
+            "email": self.cfg["email"],
+        }
+        if self.api_key:
+            params["api_key"] = self.api_key
+        async with self._client() as client:
+            response = await self._get(
+                client, ESPELL, params, limiter=self.ncbi_limiter
+            )
+        match = _CORRECTED.search(response.text)
+        suggestion = " ".join(
+            _NOT_NAME.sub(" ", html.unescape(match.group(1)).lower()).split()
+            if match
+            else []
+        )
+        # A suggestion that only drops a hyphen or a space ("beta-carotene") names the same thing.
+        if not suggestion or _same_name(suggestion, term):
+            suggestion = None
+        return {"term": term, "suggestion": suggestion}
 
     async def _cached(self, pmids: list[str]) -> dict[str, dict]:
         if self.pool is None or not pmids:
