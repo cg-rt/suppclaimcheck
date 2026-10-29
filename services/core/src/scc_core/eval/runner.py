@@ -96,6 +96,17 @@ def observe(
         quotes=result.get("quotes", []),
         quotes_dropped=result.get("quotes_dropped", 0),
         article_ids={a["pmcid"]: a.get("pmid") for a in result.get("articles", [])},
+        rubric={
+            k: result[k]
+            for k in (
+                "rule",
+                "breakdown",
+                "weight_for",
+                "weight_against",
+                "human_weight",
+            )
+            if k in result
+        },
         # Query v1 (P2.12) adds the spelling suggestion; until then no case can observe one.
         spelling_suggestion=None,
         latency_s=round(latency_s, 2) if latency_s is not None else None,

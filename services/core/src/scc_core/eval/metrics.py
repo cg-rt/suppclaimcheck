@@ -38,6 +38,8 @@ class Observation:
     quotes: list[dict] = field(default_factory=list)
     quotes_dropped: int = 0
     article_ids: dict[str, str] = field(default_factory=dict)  # pmcid -> pmid
+    # Rubric v1's workings: the deciding rule and each article's tier, weight and stance.
+    rubric: dict = field(default_factory=dict)
     spelling_suggestion: str | None = None
     latency_s: float | None = None  # confirmation to result; live runs only
     cost_eur: float = 0.0
