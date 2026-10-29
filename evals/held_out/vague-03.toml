@@ -9,5 +9,6 @@ supplement = ["collagen"]
 [label]
 rationale = "No checkable effect: amazing for skin, joints, hair or something else?"
 pmids = []
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

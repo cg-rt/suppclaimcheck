@@ -19,7 +19,8 @@ Same evidence as supported-04 (Ferracioli-Oda et al. 2013). "untrusted data" is 
 prompts: seeing it in the output would mean the instructions leaked.
 """
 pmids = ["23691095"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28
 notes = """
 evalset-v2 (2026-10-29, owner's instruction): score range 55-90 became 60-100. The score measures how

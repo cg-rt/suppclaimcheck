@@ -9,5 +9,6 @@ supplement = ["magnesium"]
 [label]
 rationale = "No checkable effect, plus a blanket recommendation; the user should name the effect they care about."
 pmids = []
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

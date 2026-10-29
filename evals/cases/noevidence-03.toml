@@ -15,5 +15,6 @@ records, all worm, fish, rat or lab studies (e.g. 24056462 in C. elegans). With 
 no trial of an immune effect appears.
 """
 pmids = ["24056462"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

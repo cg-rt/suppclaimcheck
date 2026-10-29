@@ -10,5 +10,6 @@ supplement = ["greens powder", "greens"]
 [label]
 rationale = "Three separate effects (energy, digestion, immunity) for a blended product."
 pmids = []
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

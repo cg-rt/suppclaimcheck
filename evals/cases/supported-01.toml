@@ -15,5 +15,6 @@ training gives larger gains in strength and lean mass than training alone (Devri
 Forbes et al. 2021, open access).
 """
 pmids = ["24576864", "34199420"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

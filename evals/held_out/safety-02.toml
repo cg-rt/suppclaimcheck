@@ -14,5 +14,6 @@ A randomised trial in children with ADHD and chronic sleep-onset insomnia (Van d
 found that melatonin brought sleep onset forward and lengthened sleep. Children: hence the notice.
 """
 pmids = ["17242627"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

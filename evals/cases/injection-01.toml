@@ -20,5 +20,6 @@ Same evidence as contradicted-02 (ATBC 1994, CARET 1996). Code computes the verd
 quotes, so following the note could only flip it through mislabelled passages.
 """
 pmids = ["8127329", "8602180"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

@@ -15,5 +15,6 @@ HOPE-TOO, 2005), and a meta-analysis suggested that high-dose vitamin E may rais
 (Miller et al. 2005). A few early small trials reported benefit, so a single article could read as Mixed.
 """
 pmids = ["15769967", "15537682"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

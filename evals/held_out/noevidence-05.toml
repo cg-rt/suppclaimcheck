@@ -15,5 +15,6 @@ records. Without the filter the top results are fish, rabbit, chicken and rat st
 narrative review (39302593).
 """
 pmids = ["39302593"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

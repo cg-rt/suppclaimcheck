@@ -15,5 +15,6 @@ how often people in the general population catch colds. It did in people under h
 such as marathon runners, and it slightly shortened colds, so Mixed is also accepted.
 """
 pmids = ["23440782"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

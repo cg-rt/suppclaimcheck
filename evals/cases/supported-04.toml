@@ -15,7 +15,8 @@ that melatonin shortens the time to fall asleep, by about 7 minutes on average. 
 but the score measures the strength of the evidence, not the size of the effect.
 """
 pmids = ["23691095"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28
 notes = """
 evalset-v2 (2026-10-29, owner's instruction): score range 55-90 became 60-100. The score measures how

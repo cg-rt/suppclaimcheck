@@ -15,5 +15,6 @@ access: 60 days; a 2024 meta-analysis). No trial tests one dose the night before
 claim says. A pipeline that ignores the timing will answer Supported: a deliberately hard case.
 """
 pmids = ["31517876", "39348746"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28

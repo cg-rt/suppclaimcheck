@@ -16,5 +16,6 @@ clinically important effect. Some trials of crystalline glucosamine sulfate repo
 so Mixed is also accepted.
 """
 pmids = ["16495392", "29018060"]
-status = "draft"
+status = "approved"
+approved_on = 2026-10-29
 drafted_on = 2026-10-28
