@@ -78,6 +78,13 @@ def _metadata(record: dict) -> dict:
         "doi": record.get("doi"),
         "license": (record.get("license") or "").strip().lower() or None,
         "pub_types": (record.get("pubTypeList") or {}).get("pubType", []),
+        # MeSH descriptors (Humans, Animals, Cells, Cultured, ...) tell human from animal and lab
+        # studies (P2.05). Articles not yet indexed in MEDLINE have none.
+        "mesh": [
+            m["descriptorName"]
+            for m in (record.get("meshHeadingList") or {}).get("meshHeading", [])
+            if m.get("descriptorName")
+        ],
         "open_access": record.get("isOpenAccess") == "Y",
         "in_epmc": record.get("inEPMC") == "Y",
         "pubmed_url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else None,
@@ -212,8 +219,13 @@ class Literature:
             counts={"not_in_europe_pmc": 0, "licence_not_allowed": 0, "no_full_text": 0}
         )
         cached = await self._cached(pmids)
-        missing = [p for p in pmids if p not in cached]
-        records: dict[str, dict] = {p: c["metadata"] for p, c in cached.items()}
+        # Metadata cached before MeSH was kept is fetched again; the cached full text is still used.
+        missing = [
+            p for p in pmids if p not in cached or "mesh" not in cached[p]["metadata"]
+        ]
+        records: dict[str, dict] = {
+            p: c["metadata"] for p, c in cached.items() if p not in missing
+        }
         async with self._client() as client:
             if missing:
                 params = {

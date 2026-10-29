@@ -10,18 +10,20 @@ The held-out split runs live only, is never recorded and needs a reason: it is f
 
 import argparse
 import asyncio
+import copy
 import datetime
 import json
 import os
 import secrets
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 from scc_core import config as core_config
 from scc_core.eval import cases as eval_cases
 from scc_core.eval import report
-from scc_core.eval.metrics import compare, summarize
+from scc_core.eval.metrics import aggregate, compare, summarize
 from scc_core.eval.replay import EvalTransport
 from scc_core.eval.runner import RunAborted, run_cases, scratch_database
 
@@ -87,7 +89,40 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument(
         "--check", action="store_true", help="exit 1 on stale cases or new failures"
     )
+    run.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        help="live mode: run the split this many times; reports means and verdict stability",
+    )
+    run.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="PATH=VALUE",
+        help="experiment override of one config value, e.g. search.articles_to_assess=3 (TOML value)",
+    )
     return parser
+
+
+def apply_overrides(config: dict, overrides: list[str]) -> dict:
+    """A copy of the config with each `dotted.path=value` set; the value is parsed as TOML."""
+    config = copy.deepcopy(config)
+    for item in overrides:
+        path, _, raw = item.partition("=")
+        if not raw:
+            raise ValueError(f"--set needs PATH=VALUE, got {item!r}")
+        *parents, leaf = path.strip().split(".")
+        node = config
+        for key in parents:
+            child = node.get(key)
+            if not hasattr(
+                child, "items"
+            ):  # a missing key, or a value where a section was expected
+                raise ValueError(f"--set: no config section {key!r} in {path!r}")
+            node = child
+        node[leaf] = tomllib.loads(f"v = {raw}")["v"]
+    return config
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -107,6 +142,17 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
+    if args.repeat < 1 or (args.repeat > 1 and args.mode != "live"):
+        print(
+            "--repeat needs live mode: a replay repeats the same answers.",
+            file=sys.stderr,
+        )
+        return 2
+    if (args.repeat > 1 or args.set) and args.write_baseline:
+        print(
+            "A baseline comes from one plain run of a config version.", file=sys.stderr
+        )
+        return 2
     if held_out and not args.held_out_reason:
         print(
             "Held-out runs are for release candidates: give --held-out-reason.",
@@ -119,9 +165,16 @@ def main(argv: list[str] | None = None) -> int:
         c for c in evalset.cases if not args.cases or c.id in args.cases.split(",")
     ]
     partial = len(selected) != len(evalset.cases)
-    config = core_config.load(args.config)
+    config = apply_overrides(core_config.load(args.config), args.set)
     store = args.evals / "recordings" / "tuning"
-    record = args.mode == "live" and not held_out and not partial
+    # A recording belongs to one real config version: never from repeats or overrides.
+    record = (
+        args.mode == "live"
+        and not held_out
+        and not partial
+        and args.repeat == 1
+        and not args.set
+    )
     transport = EvalTransport(
         args.mode, store if (record or args.mode == "replay") else None
     )
@@ -134,12 +187,23 @@ def main(argv: list[str] | None = None) -> int:
         "mode": args.mode,
         "split": args.split,
         "evalset": evalset.version,
-        "config_version": config["version"],
+        "config_version": config["version"] + ("+set" if args.set else ""),
+        "overrides": args.set,
+        "repeats": args.repeat,
         "model": config["llm"]["model"],
         "commit": _commit(),
         "thresholds": evalset.thresholds,
         "partial": partial,
-        "notes": args.held_out_reason or args.notes,
+        "notes": "; ".join(
+            filter(
+                None,
+                [
+                    args.held_out_reason or args.notes,
+                    f"mean of {args.repeat} runs" if args.repeat > 1 else "",
+                    *args.set,
+                ],
+            )
+        ),
     }
     print(
         f"Eval {run_id}: {len(selected)} {args.split} case(s), {meta['config_version']}, {args.mode}"
@@ -148,18 +212,35 @@ def main(argv: list[str] | None = None) -> int:
     loop_factory = asyncio.SelectorEventLoop if sys.platform == "win32" else None
     try:
         with scratch_database(args.admin_dsn) as conninfo:
-            results = asyncio.run(
-                run_cases(selected, config, transport, conninfo, run_id, args.gateway),
-                loop_factory=loop_factory,
-            )
+            repeats = []
+            for i in range(args.repeat):
+                if args.repeat > 1:
+                    print(f" run {i + 1} of {args.repeat}")
+                repeats.append(
+                    asyncio.run(
+                        run_cases(
+                            selected,
+                            config,
+                            transport,
+                            conninfo,
+                            f"{run_id}-r{i + 1}" if args.repeat > 1 else run_id,
+                            args.gateway,
+                        ),
+                        loop_factory=loop_factory,
+                    )
+                )
     except RunAborted as exc:
         print(f"Run aborted: {exc}", file=sys.stderr)
         return 2
 
-    summary = summarize(results, evalset.thresholds)
+    if args.repeat > 1:
+        summary, results = aggregate(repeats, evalset.thresholds)
+    else:
+        results = repeats[0]
+        summary = summarize(results, evalset.thresholds)
     baseline_path = args.evals / f"baseline-{args.split}.json"
     comparison = None
-    if baseline_path.exists():
+    if baseline_path.exists() and args.repeat == 1 and not args.set:
         baseline = json.loads(baseline_path.read_text("utf-8"))
         if baseline["evalset"] == evalset.version:
             comparison = compare(results, baseline)
@@ -172,12 +253,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.out:
         report.write_json(
-            args.out, report.run_document(meta, summary, comparison, results)
+            args.out, report.run_document(meta, summary, comparison, results, repeats)
         )
     if args.mode == "live" and not partial:
         report.write_json(
             args.evals / "runs" / f"{run_id}.json",
-            report.run_document(meta, summary, comparison, results),
+            report.run_document(meta, summary, comparison, results, repeats),
         )
         report.append_evals_md(
             REPO / "docs" / "EVALS.md", report.evals_md_row(meta, summary)

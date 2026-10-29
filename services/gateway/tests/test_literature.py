@@ -84,3 +84,17 @@ def test_rate_limiter_spaces_requests():
     assert (
         asyncio.run(three()) >= 0.09
     )  # 3 requests at 20/s need at least two 50 ms gaps
+
+
+def test_metadata_keeps_publication_types_and_mesh_headings():
+    rec = {
+        **record("1", "PMC1", "cc by"),
+        "pubTypeList": {"pubType": ["Randomized Controlled Trial", "Journal Article"]},
+        "meshHeadingList": {
+            "meshHeading": [{"descriptorName": "Humans"}, {"descriptorName": "Adult"}]
+        },
+    }
+    lit = Literature(config.load(), None, None, fake_sources([rec], []))
+    (article,) = asyncio.run(lit.fetch(["1"], full_texts=0)).articles
+    assert article["pub_types"] == ["Randomized Controlled Trial", "Journal Article"]
+    assert article["mesh"] == ["Humans", "Adult"]

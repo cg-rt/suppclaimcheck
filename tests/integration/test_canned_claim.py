@@ -34,6 +34,8 @@ from tests.helpers import run_async
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "canned_claim"
 SUBMITTED = "Taking creatine while doing resistance training makes older adults stronger. Ask your coach about it!"
 CORRELATION_ID = "canned-claim-0001"
+# The P1.08 acceptance test pins pipeline v0: its fixtures hold one article, which v0 reads.
+V0 = "pipeline-v0"
 
 
 def anthropic_fixture_client(seen: list[dict]):
@@ -81,14 +83,14 @@ def test_canned_claim_end_to_end(migrated_db):
             gateway = GatewayClient(
                 "http://gateway", transport=httpx.ASGITransport(app=gateway_app)
             )
-            tasks.runtime = Runtime(core_pool, gateway, core_config.load())
+            tasks.runtime = Runtime(core_pool, gateway, core_config.load(V0))
 
             connector = InMemoryConnector()
             queue = App(connector=connector)
             queue.add_tasks_from(tasks.blueprint, namespace="core")
             core_app = core_api.build_app(
                 checks={},
-                deps=core_api.Deps(core_pool, queue, core_config.load()["version"]),
+                deps=core_api.Deps(core_pool, queue, core_config.load(V0)["version"]),
             )
 
             async with (

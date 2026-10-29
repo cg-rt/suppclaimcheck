@@ -17,7 +17,9 @@ FIXTURES = (
     / "canned_claim"
     / "literature"
 )
-CFG = config.load()
+CFG = config.load(
+    "pipeline-v0"
+)  # these tests pin v0; rubric v1 has its own (test_rubric_v1.py)
 
 
 def test_query_is_built_by_code_from_the_claim():

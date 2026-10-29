@@ -32,14 +32,22 @@ def _fmt(name: str, value: float | None) -> str:
 
 
 def run_document(
-    meta: dict, summary: dict, comparison: dict | None, results: list[CaseResult]
+    meta: dict,
+    summary: dict,
+    comparison: dict | None,
+    results: list[CaseResult],
+    repeats: list[list[CaseResult]] | None = None,
 ) -> dict:
-    return {
+    """The run file. With repeats, `cases` holds the merged results and `runs` every run's own."""
+    document = {
         "run": meta,
         "summary": summary,
         "comparison": comparison,
         "cases": [asdict(r) for r in results],
     }
+    if repeats and len(repeats) > 1:
+        document["runs"] = [[asdict(r) for r in run] for run in repeats]
+    return document
 
 
 def write_json(path: Path, document: dict) -> None:
@@ -93,6 +101,17 @@ def markdown(
         + f" · LLM cost EUR {summary['run_cost_eur']:.4f}"
         + (" (recorded)" if meta["mode"] == "replay" else ""),
         "",
+    ]
+    if summary.get("repeats", 1) > 1:
+        lines += [
+            f"**{summary['repeats']} runs, metrics are means.** Cases passing per run: "
+            + ", ".join(str(p) for p in summary["passed_per_run"])
+            + f" · verdict stability (same outcome in every run): {summary['stability']:.0%}",
+            "",
+        ]
+    if meta.get("overrides"):
+        lines += ["Overrides: " + ", ".join(f"`{o}`" for o in meta["overrides"]), ""]
+    lines += [
         "| Metric | Value | Threshold |",
         "|---|---|---|",
     ]

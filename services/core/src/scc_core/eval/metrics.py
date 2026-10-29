@@ -5,6 +5,7 @@ named checks. `summarize()` turns the judged cases into the metrics in docs/EVAL
 with the thresholds in `evals/evalset.toml`.
 """
 
+import dataclasses
 import math
 from dataclasses import asdict, dataclass, field
 
@@ -230,3 +231,64 @@ def compare(results: list[CaseResult], baseline: dict) -> dict:
     newly_failing = [r.id for r in results if before.get(r.id) and not r.passed]
     newly_passing = [r.id for r in results if before.get(r.id) is False and r.passed]
     return {"newly_failing": newly_failing, "newly_passing": newly_passing}
+
+
+def aggregate(
+    repeats: list[list[CaseResult]], thresholds: dict[str, float]
+) -> tuple[dict, list[CaseResult]]:
+    """Several live runs of the same cases: mean metrics, per-run pass counts and verdict stability.
+
+    A case is stable when every run gave it the same outcome (verdict, or behaviour where no verdict).
+    Returns the summary and one merged result per case, passing only if it passed in every run.
+    """
+    summaries = [summarize(run, thresholds) for run in repeats]
+    names = summaries[0]["metrics"]
+    mean = {}
+    for name in names:
+        values = [
+            s["metrics"][name] for s in summaries if s["metrics"][name] is not None
+        ]
+        mean[name] = sum(values) / len(values) if values else None
+    merged, stable = [], 0
+    for runs in zip(*repeats, strict=True):
+        outcomes = {
+            r.observed.get("verdict") or r.observed.get("behaviour") for r in runs
+        }
+        stable += len(outcomes) == 1
+        passes = sum(r.passed for r in runs)
+        first_fail = next((r for r in runs if not r.passed), runs[0])
+        reasons = first_fail.reasons + (
+            [f"passed {passes} of {len(runs)} runs"] if passes < len(runs) else []
+        )
+        merged.append(
+            dataclasses.replace(first_fail, passed=passes == len(runs), reasons=reasons)
+        )
+    verdicts = {}
+    for name, limit in thresholds.items():
+        if mean.get(name) is not None:
+            verdicts[name] = (
+                mean[name] <= limit if name in AT_MOST else mean[name] >= limit
+            )
+    categories: dict[str, list[float]] = {}
+    for s in summaries:
+        for category, counts in s["by_category"].items():
+            c = categories.setdefault(category, [0, 0])
+            c[0] += counts["passed"] / len(summaries)
+            c[1] = counts["cases"]
+    summary = {
+        "cases": summaries[0]["cases"],
+        "passed": round(sum(s["passed"] for s in summaries) / len(summaries), 1),
+        "passed_per_run": [s["passed"] for s in summaries],
+        "repeats": len(repeats),
+        "stability": stable / len(merged) if merged else None,
+        "stale": sum(s["stale"] for s in summaries),
+        "labels_approved": summaries[0]["labels_approved"],
+        "run_cost_eur": round(sum(s["run_cost_eur"] for s in summaries), 6),
+        "llm_calls": sum(s["llm_calls"] for s in summaries),
+        "metrics": mean,
+        "thresholds_met": verdicts,
+        "by_category": {
+            k: {"passed": round(v[0], 1), "cases": v[1]} for k, v in categories.items()
+        },
+    }
+    return summary, merged
