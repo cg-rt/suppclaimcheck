@@ -4,7 +4,7 @@ version = "0.1.2"
 description = "SuppClaimCheck gateway module"
 requires-python = ">=3.14"
 dependencies = [
-    "anthropic==1.13.0",
+    "anthropic==1.15.0",
     "psycopg-pool==3.3.3",
     "scc-common",
 ]
