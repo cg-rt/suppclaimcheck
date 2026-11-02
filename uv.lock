@@ -8,7 +8,6 @@ exclude-newer-span = "P14D"
 
 [options.exclude-newer-package]
 certifi = "2026-10-21T00:00:00Z"
-filelock = "2026-10-18T00:00:00Z"
 virtualenv = "2026-10-23T00:00:00Z"
 
 [manifest]
