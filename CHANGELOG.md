@@ -18,6 +18,9 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - `backup.sh` waits up to 10 minutes for the backup storage host to resolve before starting. A nightly backup missed while the host PC was off runs right at boot, and on 2026-10-26 it failed because DNS through the Hyper-V Default Switch was not answering yet. Host script only: copy it to the VM; no new images.
 - `restore.sh` prints the scratch-database drop command with `sudo`, which the VM needs.
 
+### Security
+- Pillow 13.0.0 in the core image (41 advisories in 12.3.0, including GHSA-5x8w-8jj5-q52h and GHSA-v9pv-5gc8-w2m6), through fastembed 0.9.1, the first release that allows Pillow 13, taken before it is two weeks old (D-041). Core embeds text only and never opens an image; 0.1.2 has no Pillow at all, so this reaches production with the first release that has hybrid retrieval.
+
 ## [0.1.2] - 2026-10-25
 
 The first upgrade of the live site, with fixes found during the first production deploy.
