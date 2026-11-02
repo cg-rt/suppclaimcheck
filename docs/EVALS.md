@@ -141,34 +141,41 @@ Thresholds are reported, not enforced, until the Phase 3 guardrails exist.
 | 2026-11-02 | evalset-v2 | pipeline-v4 | claude-haiku-5-5 | tuning | 22 | 47% | 67% | 100% | 100% | 38% | 50% | 26.9 / 37.7 | 0.0028 | 0.0610 | `22e7bcf+dirty` | pipeline v4 as released (P2.07, keyword weight 0.7): recording and baseline; repeat of 114607-live-2b6d, which hit a network outage |
 | 2026-11-02 | evalset-v2 | pipeline-v4 | claude-haiku-5-5 | tuning | 22 | 60% | 73% | 100% | 100% | 38% | 17% | 26.6 / 38.7 | 0.0028 | 0.1831 | `b1dd014` | labelling-definition experiment, control arm: pipeline-v4 as is; mean of 3 runs |
 | 2026-11-02 | evalset-v2 | pipeline-v4+set | claude-haiku-5-5 | tuning | 22 | 51% | 71% | 99% | 100% | 38% | 33% | 41.5 / 62.1 | 0.0028 | 0.1849 | `b1dd014` | labelling-definition experiment, variant arm: other outcomes, populations, not-shown and subgroup comparisons are not findings; mean of 3 runs; prompts.assess=<1833 chars, sha256 c2f2d848, in the run file> |
+| 2026-11-02 | evalset-v2 | pipeline-v4+set | claude-haiku-5-5 | tuning | 22 | 49% | 73% | 99% | 100% | 38% | 33% | 44.7 / 74.9 | 0.0028 | 0.1867 | `b86d1d6` | labelling-definition experiment, variant arm: pipeline-v4 + one paragraph defining the claimed effect as the outcome the claim names (other outcomes not_relevant); ran alongside the variant above; mean of 3 runs; prompts.assess=<1684 chars, sha256 b5275b28, in the run file> |
 
 ## Comparisons
 ### Labelling definition: other outcomes (P2.07 follow-up)
-Same eval set (`evalset-v2`, tuning, 22 cases), Claude Haiku 5.5, pipeline-v4, three live runs per arm on the same afternoon. The variant changes only `prompts.assess`; its full text is in the run file (`20261102-133517-live-892d`, `run.overrides`).
+Same eval set (`evalset-v2`, tuning, 22 cases), Claude Haiku 5.5, pipeline-v4, three live runs per arm on the same afternoon. Each variant changes only `prompts.assess`; the full text is in its run file (`run.overrides`): variant 1 `20261102-133517-live-892d`, variant 2 `20261102-134430-live-e6cc`. The two variants were written and run independently, at the same time.
 
 **Why.** In v4's baseline run most failing answer cases had one fault: the model's own reason said the passage was about something else, and it still counted the passage. Vitamin C: "shorten colds, though it concerns duration rather than prevention" labelled supports. Beta-carotene: a micronuclei biomarker the reason called "a surrogate marker" labelled supports, which turns Contradicted into Mixed. Creatine: "findings apply to adults under 50" and "a smaller benefit in older adults" labelled contradicts, which turns Supported into Contradicted.
 
-**The variant.** v4's definitions word for word, plus a list of what is not a finding: a different outcome even if related, animals or cells or another population, "not shown" (as opposed to "shown to have no effect"), a smaller benefit in one group, a combination compared with the supplement alone; and one rule: if the reason needs "though" or "but" to say the passage is about something else, the label is not_relevant. Unlike arm C (29 Oct), "no effect" still counts against the claim, and the examples name no supplement in the set.
+**Variant 1 (broad).** v4's definitions word for word, plus a list of what is not a finding: a different outcome even if related, animals or cells or another population, "not shown" (as opposed to "shown to have no effect"), a smaller benefit in one group, a combination compared with the supplement alone; and one rule: if the reason needs "though" or "but" to say the passage is about something else, the label is not_relevant. Unlike arm C (29 Oct), "no effect" still counts against the claim, and the examples name no supplement in the set.
+
+**Variant 2 (narrow).** v4's prompt word for word plus one paragraph: the claimed effect is the outcome the claim names; another outcome, even a related one, is not_relevant in either direction (how long vs whether it happens, size vs strength or function, a marker vs the disease unless the claim names the marker); the same outcome in other words still counts (a lower rate, risk or incidence is about prevention). Nothing about populations, "not shown" or subgroups.
 
 | Arm | Runs | Cases passing | Mean | Verdict acc. | Stability | p50 / p95 (s) | EUR per check |
 |---|---|---|---|---|---|---|---|
 | **Control: pipeline-v4** | 3 | 10, 12, 11 | **11.0** | 60% | 82% | 26.6 / 38.7 | 0.0028 |
-| Variant: v4 + labelling definition | 3 | 10, 10, 9 | 9.7 | 51% | 68% | 41.5 / 62.1 | 0.0028 |
+| Variant 1: broad "not a finding" list | 3 | 10, 10, 9 | 9.7 | 51% | 68% | 41.5 / 62.1 | 0.0028 |
+| Variant 2: one "claimed outcome" paragraph | 3 | 10, 8, 10 | 9.3 | 49% | 73% | 44.7 / 74.9 | 0.0028 |
 
 Per case (runs passed out of 3; only cases that changed):
 
-| Case | Control | Variant |
-|---|---|---|
-| contradicted-01 (vitamin E) | 2 | 1 |
-| contradicted-02 (beta-carotene) | 0 | 1 |
-| contradicted-04 (vitamin C) | 0 | 1 |
-| injection-02 (melatonin, hidden instruction) | 1 | 2 |
-| supported-02 (caffeine, endurance) | 3 | 0 |
-| supported-05 (iron, anaemia) | 3 | 0 |
+| Case | Control | Variant 1 | Variant 2 |
+|---|---|---|---|
+| contradicted-01 (vitamin E) | 2 | 1 | 1 |
+| contradicted-02 (beta-carotene) | 0 | 1 | 0 |
+| contradicted-04 (vitamin C) | 0 | 1 | 0 |
+| injection-02 (melatonin, hidden instruction) | 1 | 2 | 2 |
+| noevidence-04 (chlorophyll, acne) | 3 | 3 | 0 |
+| supported-02 (caffeine, endurance) | 3 | 0 | 2 |
+| supported-05 (iron, anaemia) | 3 | 0 | 2 |
 
-**Reading it.** The variant moved the cases it aimed at, but only in one run of three each, and it broke two cases the control always passed. Caffeine lost its sprint and jump findings as "another kind of performance", leaving one null endurance result against it, so the verdict fell to Mixed. Iron fell to Mixed with the model still breaking the new rule ("no significant effect, but the outcome is transfusion use", labelled contradicts). Creatine failed in every run in both arms. A definition the model follows only some of the time adds noise: stability fell from 82% to 68%. The latency difference was not investigated; cost per check is the same.
+**Reading it.** Variant 1 moved the cases it aimed at, but only in one run of three each, and it broke two cases the control always passed. Caffeine lost its sprint and jump findings as "another kind of performance", leaving one null endurance result against it, so the verdict fell to Mixed. Iron fell to Mixed with the model still breaking the new rule ("no significant effect, but the outcome is transfusion use", labelled contradicts). Variant 2 fixed none of the target cases: vitamin C stayed Supported and beta-carotene Mixed in every run. It broke chlorophyll in every run: the model counted a lab study in which a chlorophyll derivative with light killed acne bacteria as support for "clears up acne", turning Insufficient evidence into Supported. Its "the same outcome in other words still counts" sentence is the likely cause: it widened what counts while the rest of the paragraph tried to narrow it. Creatine failed in every run in all three arms. A definition the model follows only some of the time adds noise: stability fell from 82% to 68% and 73%. Cost per check is the same.
 
-**Decision.** Rejected; pipeline-v4 stays active and its baseline is unchanged. Two prompt-only attempts at this fault have now failed (arms C and D on 29 Oct, this one), each trading the targeted errors for new ones. A possible next lever is outside the prompt: a structured field naming the outcome each passage reports, which code compares with the claimed effect. Not planned; for the owner to decide. Eval spend for both arms: EUR 0.37.
+**Latency.** Both variants ran at the same time, against one dev gateway and one CPU embedding the passages; the control ran alone before them. That overlap is the likely reason for their higher p50 (41-45 s against 27 s); the prompt adds no LLM calls and about the same tokens. Not a property of either prompt.
+
+**Decision.** Both variants rejected; pipeline-v4 stays active and its baseline is unchanged. Three prompt-only attempts at this fault have now failed (arms C and D on 29 Oct, and both variants here), a broad and a narrow wording alike, each trading the targeted errors for new ones. A possible next lever is outside the prompt: a structured field naming the outcome each passage reports, which code compares with the claimed effect. Not planned; for the owner to decide. Eval spend for all three arms: EUR 0.55.
 
 ### Retrieval (P2.07)
 Same eval set (`evalset-v2`, tuning, 22 cases), Claude Haiku 5.5, live runs. Hybrid retrieval arrives in P2.06 (D-046); the setting is chosen in D-047. The keyword weight 0.7 arm adds v4's plain run (the recording) as a fourth sample.
