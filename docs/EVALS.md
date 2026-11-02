@@ -136,18 +136,45 @@ Thresholds are reported, not enforced, until the Phase 3 guardrails exist.
 | 2026-10-29 | evalset-v2 | pipeline-v2 | claude-haiku-5-5 | tuning | 22 | 47% | 60% | 100% | 100% | 38% | 0% | 6.7 / 8.8 | 0.0028 | 0.0611 | `f57b4da+dirty` | pipeline v2: query v1 (P2.12), run 2 of 3 |
 | 2026-10-29 | evalset-v2 | pipeline-v2 | claude-haiku-5-5 | tuning | 22 | 53% | 67% | 100% | 100% | 38% | 0% | 6.2 / 8.0 | 0.0028 | 0.0611 | `f57b4da+dirty` | pipeline v2: query v1 (P2.12), run 3 of 3 |
 | 2026-10-29 | evalset-v2 | pipeline-v3 | claude-haiku-5-5 | tuning | 22 | 51% | 71% | 99% | 100% | 38% | 50% | 12.8 / 29.5 | 0.0027 | 0.1802 | `fe1ef46+dirty` | P2.06/P2.07 arm: hybrid retrieval, default settings (keyword weight 0.5, k 60); 3 runs; mean of 3 runs |
+| 2026-11-02 | evalset-v2 | pipeline-v3+set | claude-haiku-5-5 | tuning | 22 | 60% | 76% | 100% | 100% | 38% | 33% | 13.4 / 32.6 | 0.0028 | 0.1820 | `22e7bcf+dirty` | P2.07 variant arm: hybrid, keyword weight 0.7, k 60; 3 runs; mean of 3 runs; retrieval.keyword_weight=0.7 |
+| 2026-11-02 | evalset-v2 | pipeline-v4 | claude-haiku-5-5 | tuning | 22 | 47% | 67% | 100% | 100% | 38% | 50% | 27.1 / 90.6 | 0.0025 | 0.0545 | `22e7bcf+dirty` | pipeline v4, first plain run (114607-live-2b6d): **discarded**, the dev machine lost outbound connections to Anthropic and NCBI for about two minutes (safety-01 and supported-01 ended in 503 after retries; p95 90.6 s); repeated below |
+| 2026-11-02 | evalset-v2 | pipeline-v4 | claude-haiku-5-5 | tuning | 22 | 47% | 67% | 100% | 100% | 38% | 50% | 26.9 / 37.7 | 0.0028 | 0.0610 | `22e7bcf+dirty` | pipeline v4 as released (P2.07, keyword weight 0.7): recording and baseline; repeat of 114607-live-2b6d, which hit a network outage |
 
 ## Comparisons
 ### Retrieval (P2.07)
-Same eval set (`evalset-v2`, tuning, 22 cases), Claude Haiku 5.5, three live runs per arm. Hybrid retrieval arrives in P2.06 (D-046); the chosen setting is decided here once the variant arm has run.
+Same eval set (`evalset-v2`, tuning, 22 cases), Claude Haiku 5.5, live runs. Hybrid retrieval arrives in P2.06 (D-046); the setting is chosen in D-047. The keyword weight 0.7 arm adds v4's plain run (the recording) as a fourth sample.
 
-| Setting | Config | Commit | Cases passing | Verdict acc. | Quote pass | Stability | Latency p50 / p95 (s) |
+| Setting | Config | Date | Runs | Cases passing | Mean | Stability | p50 cold / warm cache (s) |
 |---|---|---|---|---|---|---|---|
-| Keyword only (Postgres full-text) | pipeline-v2 | `f57b4da+dirty` | 9, 9, 10 | 49% | 100% | 95% | 6.9 / 12.1 |
-| Hybrid, keyword weight 0.5, k 60 | pipeline-v3 | `fe1ef46+dirty` | 8, 10, 11 | 51% | 99% | 73% | 12.8 / 29.5 |
-| Variant (weight or passage size) | – | – | – | – | – | – | – |
+| Keyword only (Postgres full-text) | pipeline-v2 | 2026-10-29 | 3 | 9, 9, 10 | 9.3 | 95% (21 of 22) | 7.7 / 6.5 (no embeddings; first run / later runs) |
+| Hybrid, keyword weight 0.5, k 60 | pipeline-v3 | 2026-10-29 | 3 | 8, 10, 11 | 9.7 | 73% (16 of 22) | 24.9 / 6.8 |
+| **Hybrid, keyword weight 0.7, k 60** | pipeline-v3 + `retrieval.keyword_weight=0.7`, then pipeline-v4 | 2026-11-02 | 4 | 10, 12, 11, 9 | **10.5** | 77% (17 of 22) | 26.7 / 6.9 |
 
-**First reading (P2.06).** Hybrid ranking picks different passages: injection-02 (melatonin) now passes in all three runs, supported-01 (creatine) still reads muscle-size passages as against the claim. Accuracy is about the same, stability falls back to 73%, and each check takes about 6 s longer, because eval runs start from an empty embedding cache and embed every passage they read. Too close to call on one setting: P2.07 adds the variant arm before choosing.
+Per case (P = passed, one letter per run; only cases that passed at least once):
+
+| Case | Keyword | Hybrid 0.5 | Hybrid 0.7 |
+|---|---|---|---|
+| contradicted-01 (vitamin E) | `---` | `---` | `PP--` |
+| contradicted-04 (vitamin C) | `--P` | `---` | `----` |
+| injection-02 (melatonin, hidden instruction) | `---` | `PPP` | `-PPP` |
+| noevidence-03 | `PPP` | `PPP` | `PPP-` |
+| noevidence-04 | `PPP` | `-PP` | `PPPP` |
+| supported-02 | `PPP` | `-PP` | `PPP-` |
+| supported-04 (melatonin) | `PPP` | `-PP` | `-PPP` |
+| supported-05 | `---` | `P-P` | `PPPP` |
+| contradicted-03, multi-01, multi-02, noevidence-01, supported-03 | `PPP` | `PPP` | `PPPP` |
+
+**The variant.** Keyword weight rather than passage size: the default hybrid setting lost stability, keyword only kept it but missed passages, so a blend leaning on the keyword ranker tests whether both can be kept. Passage size would also have changed the keyword arm's passages and the quote lengths, mixing two changes in one arm.
+
+**Reading it.** Hybrid ranking gains two cases that keyword only never passed: injection-02 (0 of 3 with keyword, 6 of 7 with hybrid) and supported-05 (0 of 3, then 6 of 7). Those are systematic, not run-to-run noise. Its price is stability: cases keyword only always passed (supported-02, supported-04, noevidence-03, noevidence-04) fail now and then. Weight 0.7 holds supported-05 in every run, sometimes passes vitamin E, and flips fewer stable cases than 0.5. The mean gain over keyword only is about 1.2 cases a run, close to the run-to-run spread, and the arms ran four days apart against a live PubMed: a lean, backed by the two systematic gains. The labelling definition, not retrieval, still limits accuracy (vitamin C, creatine, beta-carotene).
+
+**Latency, corrected.** `--repeat` used one scratch database for all its runs, so runs 2 and 3 found every passage already embedded. The pooled p50 in the results table (12.8 s for 0.5, 13.4 s for 0.7) mixes a cold first run with warm later ones. Per run: hybrid takes about 25-27 s p50 when no passage is cached and about 7 s, the same as keyword only, when all are. The cold p95 (v4's plain run) is 37.7 s, under the 90 s threshold. Eval runs embed on the dev machine's CPU in the host process; production embeds inside the core image. The runner now gives each repeat its own database (`test_each_repeat_gets_its_own_scratch_database`).
+
+**Runs not counted.** v4's first plain run (`114607-live-2b6d`) is discarded: the dev machine lost outbound connections to Anthropic and NCBI for about two minutes, and two cases ended in 503 after their retries. The `job failed` lines in each log are unsafe-01 ending as `no_claim`, as in every run until P3.01.
+
+**Decision (D-047).** pipeline-v4 = pipeline-v3 with keyword weight 0.7, active from this pull request; `test_pipeline_v4.py` checks it equals the measured arm. Its plain run (`115752-live-cc97`, 9 of 22) is the recording and the baseline.
+
+**First reading (P2.06).** Hybrid ranking picks different passages: injection-02 (melatonin) now passes in all three runs, supported-01 (creatine) still reads muscle-size passages as against the claim. Accuracy is about the same, stability falls back to 73%, and each check takes about 6 s longer on average (P2.07 found this average hides a cold first run of about 25 s; see "Latency, corrected"). Too close to call on one setting: P2.07 adds the variant arm before choosing.
 
 ### Pipeline v1 and the assess field order (P2.04, D-044)
 Same eval set (`evalset-v1`, tuning, 22 cases), Claude Haiku 5.5, live runs. Pass counts are per run; stability is the share of cases with the same outcome in every run of an arm.
