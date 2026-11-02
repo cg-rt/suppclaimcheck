@@ -139,10 +139,7 @@ Thresholds are reported, not enforced, until the Phase 3 guardrails exist.
 | 2026-11-02 | evalset-v2 | pipeline-v3+set | claude-haiku-5-5 | tuning | 22 | 60% | 76% | 100% | 100% | 38% | 33% | 13.4 / 32.6 | 0.0028 | 0.1820 | `22e7bcf+dirty` | P2.07 variant arm: hybrid, keyword weight 0.7, k 60; 3 runs; mean of 3 runs; retrieval.keyword_weight=0.7 |
 | 2026-11-02 | evalset-v2 | pipeline-v4 | claude-haiku-5-5 | tuning | 22 | 47% | 67% | 100% | 100% | 38% | 50% | 27.1 / 90.6 | 0.0025 | 0.0545 | `22e7bcf+dirty` | pipeline v4, first plain run (114607-live-2b6d): **discarded**, the dev machine lost outbound connections to Anthropic and NCBI for about two minutes (safety-01 and supported-01 ended in 503 after retries; p95 90.6 s); repeated below |
 | 2026-11-02 | evalset-v2 | pipeline-v4 | claude-haiku-5-5 | tuning | 22 | 47% | 67% | 100% | 100% | 38% | 50% | 26.9 / 37.7 | 0.0028 | 0.0610 | `22e7bcf+dirty` | pipeline v4 as released (P2.07, keyword weight 0.7): recording and baseline; repeat of 114607-live-2b6d, which hit a network outage |
-<<<<<<< HEAD
 | 2026-11-02 | evalset-v2 | pipeline-v4 | claude-haiku-5-5 | tuning | 22 | 60% | 73% | 100% | 100% | 38% | 17% | 26.6 / 38.7 | 0.0028 | 0.1831 | `b1dd014` | labelling-definition experiment, control arm: pipeline-v4 as is; mean of 3 runs |
-=======
->>>>>>> origin/main
 
 ## Comparisons
 ### Retrieval (P2.07)
