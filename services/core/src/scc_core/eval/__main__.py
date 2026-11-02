@@ -212,12 +212,14 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     loop_factory = asyncio.SelectorEventLoop if sys.platform == "win32" else None
+    repeats = []
     try:
-        with scratch_database(args.admin_dsn) as conninfo:
-            repeats = []
-            for i in range(args.repeat):
-                if args.repeat > 1:
-                    print(f" run {i + 1} of {args.repeat}")
+        for i in range(args.repeat):
+            if args.repeat > 1:
+                print(f" run {i + 1} of {args.repeat}")
+            # A fresh database per repeat: each run starts with an empty embedding cache, as a plain
+            # run does, so latency is comparable (P2.07 found warm repeats hiding the embedding time).
+            with scratch_database(args.admin_dsn) as conninfo:
                 repeats.append(
                     asyncio.run(
                         run_cases(

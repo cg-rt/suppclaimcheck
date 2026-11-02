@@ -283,6 +283,33 @@ def test_repeated_runs_report_means_and_verdict_stability():
     assert merged[1].reasons[-1] == "passed 1 of 3 runs"
 
 
+def test_each_repeat_gets_its_own_scratch_database(monkeypatch, tmp_path):
+    # A shared database let later repeats hit a warm embedding cache and report lower latency (P2.07).
+    import contextlib
+
+    from scc_core.eval import __main__ as cli
+
+    opened = []
+
+    @contextlib.contextmanager
+    def scratch(dsn):
+        opened.append(f"db-{len(opened)}")
+        yield opened[-1]
+
+    seen = []
+
+    async def fake_run_cases(selected, config, transport, conninfo, run_id, gateway):
+        seen.append(conninfo)
+        return [judge(c, _answer()) for c in selected]
+
+    monkeypatch.setattr(cli, "scratch_database", scratch)
+    monkeypatch.setattr(cli, "run_cases", fake_run_cases)
+    argv = ["run", "--mode", "live", "--repeat", "3", "--cases", "supported-02"]
+    argv += ["--admin-dsn", "unused", "--out", str(tmp_path / "run.json")]
+    assert cli.main(argv) == 0
+    assert seen == ["db-0", "db-1", "db-2"]
+
+
 def test_config_overrides_parse_toml_values_and_reject_unknown_sections():
     from scc_core.eval.__main__ import apply_overrides
 
