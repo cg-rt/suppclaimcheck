@@ -191,6 +191,47 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Steps:** follow [`deploy/host/README.md`](../deploy/host/README.md): turn on Hyper-V, create the VM with `01-create-vm.ps1`, install Ubuntu Server, set up key login, then run `02-ssh-hardening.sh` and `03-docker-firewall-updates.sh`. Then deploy the current versions (RB-13) and restore the database (RB-12).
 - **Verify:** only SSH answers from the host; `docker run --rm hello-world` works on the VM; the smoke test passes after the deploy.
 
+## RB-15 Change, activate or roll back a config version
+**Status:** draft; the commands were exercised against the dev stack and in `tests/integration/test_config_store.py` (P2.09, D-048), not yet on the VM.
+- **What it is:** each of `core` (pipeline: prompts, N, K, retrieval, rubric, model), `gateway` (prices, budget caps, timeouts) and `web` (sessions, sign-in limits) has its own config versions in the database, one active pointer and an audit trail. The versions in the repo are registered by every deploy. A deploy activates the release's default only when that version is new, so your activations and rollbacks survive later deploys of the same release.
+- **Symptoms:** answers got worse, slower or dearer right after a config change; or you want to try a setting without a release.
+- **Checks:** what is active, what changed, and who changed it:
+  ```bash
+  sudo docker compose exec core-api python -m scc_core.config list
+  ```
+  ```bash
+  sudo docker compose exec core-api python -m scc_core.config history
+  ```
+  ```bash
+  sudo docker compose exec core-api python -m scc_core.config diff pipeline-v4
+  ```
+  The active version has a `*`; pipeline versions show their latest attached eval. For the other modules use `gateway python -m scc_gateway.config` and `web python -m scc_web.config`.
+- **Roll back (undo the last activation):**
+  ```bash
+  sudo docker compose exec core-api python -m scc_core.config rollback --by owner --reason "what went wrong"
+  ```
+  Core: the next check uses it; checks already running finish on their version. Gateway and web: `sudo docker compose restart gateway` (or `web`) to apply it.
+- **Try a new setting:** export the active version, edit a copy on the dev PC, and give it a new name such as `pipeline-v4-shorter-prompt` (names like `pipeline-v5` belong to releases). Measure it in dev first:
+  ```bash
+  uv run python -m scc_core.eval run --mode live --config-file pipeline-v4-shorter-prompt.toml --notes "why"
+  ```
+  (with `SCC_EVAL_ADMIN_DSN` set, as in docs/EVALS.md "How to run"; the run file lands in `evals/runs/`). Copy the TOML and the run file to the VM, then create the version, attach the eval and activate it:
+  ```bash
+  sudo docker compose exec -T core-api python -m scc_core.config create --file - --by owner --reason "why" < pipeline-v4-shorter-prompt.toml
+  ```
+  ```bash
+  sudo docker compose exec -T core-api python -m scc_core.config attach-eval pipeline-v4-shorter-prompt --run - --by owner < the-run-file.json
+  ```
+  ```bash
+  sudo docker compose exec core-api python -m scc_core.config activate pipeline-v4-shorter-prompt --by owner --reason "why"
+  ```
+  A version must keep every setting of the release's default with the same types; `create` says what differs. Activation refuses a pipeline version with no attached eval, or whose eval missed a threshold, until you add `--accept-warnings "why"`; the reason goes into the audit. Rollback never asks.
+- **After an app rollback (RB-13):** the older release keeps the active version it finds. If `list` shows a version the newer release shipped (for example `pipeline-v5` after going back to a release that ships `pipeline-v4`), activate the older release's default, with `--accept-warnings` if asked.
+- **Never:** edit the config tables by hand. Versions, evals and the audit are append-only (database triggers refuse changes); only the pointer moves.
+- **Verify:** `list` shows the `*` on the version you meant; `history` shows your line first; for core, the next check's job has that `config_version`.
+
+---
+
 ## Release go-live checklist
 To be completed in P3.13. Copy it into the private log for each release and tick it there.
 - [ ] CI green on the release commit; all tests pass
