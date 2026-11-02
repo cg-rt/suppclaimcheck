@@ -5,7 +5,7 @@
 # Update at every phase gate and whenever a module, port, dependency or version changes.
 
 schema_version: 1
-updated: 2026-10-25
+updated: 2026-11-02
 
 system:
   name: SuppClaimCheck
@@ -78,8 +78,9 @@ modules:
     phase_built: 1
     technology: Python 3.14, FastAPI, Procrastinate, fastembed, pgvector
     purpose: >
-      core-api: jobs, confirmation, config versions, eval runs (REST with OpenAPI).
-      core-worker: the pipeline: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring.
+      core-api: jobs and confirmation (REST with OpenAPI); each job is stamped with the config version active when it is created.
+      core-worker: the pipeline, run on the job's config version: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring.
+      In the image, not served: the config CLI (versions, activation, rollback; D-048) and the eval runner (run from the dev PC, D-043).
     why_it_exists: >
       Owns the product's logic and the deterministic parts (quote verification, scoring) that make it trustworthy.
       One codebase and one version, run as two containers so slow jobs never block the API.
@@ -120,7 +121,7 @@ modules:
     version: 0.1.2
     phase_built: 1
     technology: PostgreSQL 18 + pgvector 0.8.7 (pinned by digest)
-    purpose: All data, the job queue (Procrastinate), embeddings, the log sink and per-job traces. One schema and one least-privilege role per module.
+    purpose: All data, the job queue (Procrastinate), embeddings, config versions with their audit trail (one store per module schema, D-048), the log sink and per-job traces. One schema and one least-privilege role per module.
     why_it_exists: One boring, well-understood store instead of separate database, queue, vector and log systems (D-014, D-015, D-019).
     ports: {internal: 5432}
     networks: [internal]
@@ -132,11 +133,11 @@ modules:
 claim_path:
   - {step: 1, name: Submit, modules: [edge, web, core], what: "The user submits a claim; core-api creates a job with an idempotency key."}
   - {step: 2, name: Extract, modules: [core, gateway], what: "The worker asks the LLM, via the gateway, for a structured claim."}
-  - {step: 3, name: Confirm, modules: [web, core], what: "The user confirms or edits the claim. Nothing has been searched or spent yet beyond extraction."}
+  - {step: 3, name: Confirm, modules: [web, core], what: "The user confirms or edits the claim, and may accept PubMed's spelling of the supplement name. Nothing has been searched or spent yet beyond extraction."}
   - {step: 4, name: Triage, modules: [core, gateway], what: "Policy check: refuse, ask for clarification, or continue with a safety notice (Phase 3)."}
-  - {step: 5, name: Search, modules: [core, gateway], what: "The gateway queries PubMed via E-utilities with an open-access filter; results ranked by evidence type."}
+  - {step: 5, name: Search, modules: [core, gateway], what: "The gateway queries PubMed via E-utilities with an open-access filter, under the supplement's other names too; up to five articles, strongest study type first."}
   - {step: 6, name: Fetch, modules: [gateway, postgres], what: "Licence checked against the allowlist; full-text XML fetched from Europe PMC and cached."}
-  - {step: 7, name: Retrieve, modules: [core, postgres], what: "Sections are split into passages and ranked by keyword plus embeddings (hybrid); top K per article."}
+  - {step: 7, name: Retrieve, modules: [core, postgres], what: "Sections are split into passages and ranked by keyword (weight 0.7) and meaning (embeddings, 0.3), fused; top K per article."}
   - {step: 8, name: Assess, modules: [core, gateway], what: "The LLM labels each passage as supports, contradicts or not relevant, with an exact quote and a reason."}
   - {step: 9, name: Verify, modules: [core], what: "Code checks every quote word for word; failures are dropped and logged."}
   - {step: 10, name: Score, modules: [core], what: "Code applies the versioned rubric: verdict and 0-100 score."}
