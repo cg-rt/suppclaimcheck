@@ -20,6 +20,7 @@ import sys
 import tomllib
 from pathlib import Path
 
+from scc_common.config_store import content_hash
 from scc_core import config as core_config
 from scc_core.eval import cases as eval_cases
 from scc_core.eval import report
@@ -57,6 +58,11 @@ def _parser() -> argparse.ArgumentParser:
         "--config",
         default=None,
         help="pipeline config version (default: the active one)",
+    )
+    run.add_argument(
+        "--config-file",
+        type=Path,
+        help="a pipeline config TOML outside the repo, e.g. one to create with the config CLI (D-048)",
     )
     run.add_argument("--evals", type=Path, default=REPO / "evals")
     run.add_argument(
@@ -167,7 +173,18 @@ def main(argv: list[str] | None = None) -> int:
         c for c in evalset.cases if not args.cases or c.id in args.cases.split(",")
     ]
     partial = len(selected) != len(evalset.cases)
-    config = apply_overrides(core_config.load(args.config), args.set)
+    if args.config_file and (args.config or args.write_baseline):
+        print(
+            "--config-file runs a version outside the repo: no --config, no --write-baseline.",
+            file=sys.stderr,
+        )
+        return 2
+    base = (
+        tomllib.loads(args.config_file.read_text("utf-8"))
+        if args.config_file
+        else core_config.load(args.config)
+    )
+    config = apply_overrides(base, args.set)
     store = args.evals / "recordings" / "tuning"
     # A recording belongs to one real config version: never from repeats or overrides.
     record = (
@@ -176,6 +193,7 @@ def main(argv: list[str] | None = None) -> int:
         and not partial
         and args.repeat == 1
         and not args.set
+        and not args.config_file
     )
     transport = EvalTransport(
         args.mode, store if (record or args.mode == "replay") else None
@@ -191,6 +209,8 @@ def main(argv: list[str] | None = None) -> int:
         "evalset": evalset.version,
         "config_version": config["version"] + ("+set" if args.set else ""),
         "overrides": args.set,
+        # What `attach-eval` matches a stored config version by (D-048).
+        "config_sha256": content_hash(config),
         "repeats": args.repeat,
         "model": config["llm"]["model"],
         "commit": _commit(),

@@ -19,7 +19,7 @@ CLAIM = {
 }
 
 
-def with_core(migrated_db, steps):
+def with_core(migrated_db, steps, config_version="pipeline-v0"):
     async def scenario():
         pool = AsyncConnectionPool(migrated_db.conninfo("core"), open=False)
         await pool.open()
@@ -27,7 +27,7 @@ def with_core(migrated_db, steps):
         queue = App(connector=connector)
         queue.add_tasks_from(tasks.blueprint, namespace="core")
         app = core_api.build_app(
-            checks={}, deps=core_api.Deps(pool, queue, "pipeline-v0")
+            checks={}, deps=core_api.Deps(pool, queue, config_version)
         )
         try:
             async with (
@@ -131,3 +131,16 @@ def test_events_list_every_state_and_404_for_unknown_jobs(migrated_db):
     events, unknown = with_core(migrated_db, steps)
     assert [e["state"] for e in events.json()] == ["submitted"]
     assert unknown.status_code == 404
+
+
+def test_a_new_job_gets_the_version_active_in_the_database(migrated_db):
+    """P2.09: without a pinned version, core stamps each job with the active one (D-048)."""
+
+    async def steps(client, connector):
+        return await client.post(
+            "/jobs", json=BODY, headers={"Idempotency-Key": "active-version-01"}
+        )
+
+    response = with_core(migrated_db, steps, config_version=None)
+    assert response.status_code == 201
+    assert response.json()["config_version"] == "pipeline-v4"

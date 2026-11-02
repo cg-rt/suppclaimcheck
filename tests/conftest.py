@@ -64,7 +64,13 @@ def migrated_db():
         # Twice: the migrate step runs on every deploy, so it must be safe to repeat.
         for _ in range(2):
             for m in MODULES:
-                migrate(specs[m.SPEC.module], m.MIGRATIONS, admin_conninfo, PASSWORD)
+                migrate(
+                    specs[m.SPEC.module],
+                    m.MIGRATIONS,
+                    admin_conninfo,
+                    PASSWORD,
+                    m.STORE,
+                )
         yield TestDb(admin_conninfo, specs)
     finally:
         with psycopg.connect(ADMIN_DSN, autocommit=True) as admin:

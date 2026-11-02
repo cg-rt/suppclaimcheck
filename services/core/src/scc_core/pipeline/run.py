@@ -8,7 +8,8 @@ every quote and computes the verdict (AGENTS.md sections 6 and 8).
 import asyncio
 import json
 import logging
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field, replace
 from uuid import UUID
 
 import httpx
@@ -51,6 +52,24 @@ class Runtime:
     config: dict
     # Hybrid retrieval's model (P2.06); loaded from the config's model name when not given (tests pass a fake).
     embedder: embeddings.Embedder | None = None
+    # Loads a config version by name (the worker reads the database store, D-048); unset in tests and evals.
+    load_config: Callable[[str], Awaitable[dict]] | None = None
+    # Versions never change once stored, so each is loaded once.
+    loaded: dict[str, dict] = field(default_factory=dict)
+
+    async def for_job(self, version: str) -> Runtime:
+        """This runtime with the config the job was created under: an activation never changes a running check."""
+        if version == self.config["version"] or self.load_config is None:
+            return self
+        if version not in self.loaded:
+            self.loaded[version] = await self.load_config(version)
+        body = self.loaded[version]
+        same_model = body.get("retrieval", {}).get(
+            "embedding_model"
+        ) == self.config.get("retrieval", {}).get("embedding_model")
+        return replace(
+            self, config=body, embedder=self.embedder if same_model else None
+        )
 
     def embedding_model(self) -> embeddings.Embedder:
         if self.embedder is None:
@@ -177,6 +196,7 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
             extra={"job_id": str(job_id), "state": job.state if job else None},
         )
         return
+    rt = await rt.for_job(job.config_version)
     await _set(rt, job_id, JobState.extracting)
     try:
         extraction = await _structured(
@@ -229,6 +249,7 @@ async def run(rt: Runtime, job_id: UUID) -> None:
             extra={"job_id": str(job_id), "state": job.state if job else None},
         )
         return
+    rt = await rt.for_job(job.config_version)
     try:
         result = await _run(rt, job_id, job.user_id, job.confirmed_claim)
     except StageFailed as exc:

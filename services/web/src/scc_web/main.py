@@ -32,12 +32,12 @@ def build_app(
             "core-api": http_check(os.environ["SCC_CORE_URL"]),
         }
     if deps is None and "SCC_DB_USER" in os.environ:
+        conninfo = conninfo_from_env()
         deps = Deps(
-            pool=AsyncConnectionPool(
-                conninfo_from_env(), open=False, min_size=1, max_size=5
-            ),
+            pool=AsyncConnectionPool(conninfo, open=False, min_size=1, max_size=5),
             core=CoreClient(os.environ["SCC_CORE_URL"]),
-            config=config.load(),
+            # The active version in the database (D-048); a new one applies on restart.
+            config=config.load_active(conninfo),
             trust_cloudflare=os.environ.get("SCC_TRUST_CLOUDFLARE") == "1",
         )
 

@@ -103,7 +103,8 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> None:
     args = parser().parse_args(argv)
-    print(asyncio.run(run(args, conninfo_from_env(), config.load())))
+    conninfo = conninfo_from_env()
+    print(asyncio.run(run(args, conninfo, config.load_active(conninfo))))
 
 
 if __name__ == "__main__":
