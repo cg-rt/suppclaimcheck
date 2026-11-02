@@ -1,6 +1,6 @@
 # How SuppClaimCheck reaches a verdict
 
-The text for the method page (P3.11). It describes pipeline v1 with rubric v1 (P2.04, P2.05; D-044). The language model reads; code decides.
+The text for the method page (P3.11). It describes pipeline v4 (pipeline v1 with query v1 and hybrid retrieval) with rubric v1 (P2.04, P2.05, P2.07; D-044, D-045, D-047). The language model reads; code decides.
 
 ## In one paragraph
 We search PubMed for open-access studies about the claim, pick the strongest kinds of study first, and read up to five of them. A language model labels passages as supporting the claim, contradicting it, or not relevant, and copies a sentence as proof. Code checks every copied sentence word for word against the article and throws away any that don't match. Code then weighs each article by its type of study and works out the verdict and a 0–100 score. The model never decides the verdict or the score.
@@ -29,7 +29,7 @@ Code reads each article's PubMed publication types and subject headings (MeSH) a
 The weights are versioned settings, not fixed rules; changing them needs an eval run (docs/EVALS.md). Sample size is not used yet: PubMed's metadata doesn't give it.
 
 ## 3. Reading each article
-- Each article is split into passages; the passages that best match the claim's words go to the model, one article at a time.
+- Each article is split into passages; the passages that best match the claim go to the model, one article at a time. "Best match" blends two rankings: passages sharing the claim's words (weight 0.7) and passages close to it in meaning, from a small embedding model that runs on our server (weight 0.3; D-047).
 - For each passage the model gives a label (supports, contradicts, not relevant), an exact quote and a one-sentence reason. "Contradicts" includes a finding that the supplement does the opposite of what is claimed.
 - Every quote is checked against the passage, character for character (docs/QUOTE-VERIFICATION.md). A quote that fails is dropped and logged; it never counts and is never shown.
 

@@ -7,9 +7,10 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 ### Changed
 - Checks use pipeline v1 (D-044, docs/METHOD.md): up to five open-access articles per claim instead of one, chosen by type of study (systematic reviews and trials first), each assessed separately; rubric v1 weighs each article by its type of study and needs human evidence for a verdict. The result page explains the score article by article. Verdicts can differ from 0.1.x for the same claim.
 - The gateway keeps each article's MeSH headings, which tell human from animal and lab studies; article metadata cached before this release is fetched again once.
+- Checks use pipeline v4 (D-047): hybrid retrieval with matching words weighted 0.7 and meaning 0.3, chosen by comparing three retrieval settings on the eval set. A check takes longer (about 20 seconds in testing) when its articles have not been read before; repeat articles are as fast as before.
 
 ### Added
-- Hybrid retrieval (D-019, D-046), available as pipeline v3 and not yet active: passages are ranked by matching words and by meaning (a local embedding model in core, nothing leaves the machine), fused with weighted reciprocal rank fusion; embeddings are cached per passage. The core image now carries the model (about 400 MB larger).
+- Hybrid retrieval (D-019, D-046), pipeline v3, active from pipeline v4 (see Changed): passages are ranked by matching words and by meaning (a local embedding model in core, nothing leaves the machine), fused with weighted reciprocal rank fusion; embeddings are cached per passage. The core image now carries the model (about 400 MB larger).
 - Query v1 (D-042, D-045): the confirm page offers PubMed's spelling when a supplement name looks misspelled ("ashwaganda" → "ashwagandha"), applied only if you choose it; searches include a supplement's other names (ashwagandha also finds *Withania somnifera*); and when PubMed matches nothing, the result says the search found no articles instead of implying there is no evidence. Pipeline v2.
 - Eval set v1 (30 labelled claims, all approved by the owner) and the eval runner, `python -m scc_core.eval`, with a free replay of the recorded run in CI (D-043). Development tooling: nothing changes for users.
 

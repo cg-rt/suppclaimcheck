@@ -14,9 +14,9 @@ from scc_core.pipeline import query, run
 Q = config.load("pipeline-v2")["query"]
 
 
-def test_v2_is_active_and_uses_query_v1():
-    assert config.ACTIVE == "pipeline-v2"
+def test_v2_and_the_active_config_use_query_v1():
     assert query.version(Q) == "query-v1"
+    assert config.load(config.ACTIVE)["query"] == Q
     assert query.version(config.load("pipeline-v1").get("query")) == "query-v0"
 
 
