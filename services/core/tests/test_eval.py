@@ -330,3 +330,14 @@ def test_config_overrides_parse_toml_values_and_reject_unknown_sections():
         apply_overrides(base, ["nope.x=1"])
     with pytest.raises(ValueError, match="PATH=VALUE"):
         apply_overrides(base, ["search.articles_to_assess"])
+
+
+def test_a_long_override_is_shortened_in_the_evals_row_note():
+    from scc_core.eval.__main__ import override_note
+
+    assert (
+        override_note("retrieval.keyword_weight=0.7") == "retrieval.keyword_weight=0.7"
+    )
+    note = override_note('prompts.assess="""\nline one\nline two\n"""')
+    assert "\n" not in note
+    assert note.startswith("prompts.assess=<") and "in the run file" in note

@@ -12,6 +12,7 @@ import argparse
 import asyncio
 import copy
 import datetime
+import hashlib
 import json
 import os
 import secrets
@@ -127,6 +128,15 @@ def apply_overrides(config: dict, overrides: list[str]) -> dict:
     return config
 
 
+def override_note(item: str) -> str:
+    """An override as one short line for the EVALS.md row; the full value stays in the run file."""
+    path, _, raw = item.partition("=")
+    if "\n" not in raw and len(raw) <= 80:
+        return item
+    digest = hashlib.sha256(raw.encode()).hexdigest()[:8]
+    return f"{path.strip()}=<{len(raw)} chars, sha256 {digest}, in the run file>"
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     # The summary has ≥ and ✅; Windows consoles default to cp1252.
@@ -202,7 +212,7 @@ def main(argv: list[str] | None = None) -> int:
                 [
                     args.held_out_reason or args.notes,
                     f"mean of {args.repeat} runs" if args.repeat > 1 else "",
-                    *args.set,
+                    *map(override_note, args.set),
                 ],
             )
         ),
