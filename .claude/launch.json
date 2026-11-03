@@ -11,6 +11,13 @@
       "name": "web-dev",
       "url": "http://127.0.0.1:18080",
       "port": 18080
+    },
+    {
+      "name": "admin-preview",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "tools/admin_preview.py"],
+      "url": "http://admin.localhost:18095",
+      "port": 18095
     }
   ]
 }
