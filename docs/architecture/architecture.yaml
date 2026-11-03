@@ -5,7 +5,7 @@
 # Update at every phase gate and whenever a module, port, dependency or version changes.
 
 schema_version: 1
-updated: 2026-11-02
+updated: 2026-11-03
 
 system:
   name: SuppClaimCheck
@@ -133,8 +133,8 @@ modules:
 claim_path:
   - {step: 1, name: Submit, modules: [edge, web, core], what: "The user submits a claim; core-api creates a job with an idempotency key."}
   - {step: 2, name: Extract, modules: [core, gateway], what: "The worker asks the LLM, via the gateway, for a structured claim."}
-  - {step: 3, name: Confirm, modules: [web, core], what: "The user confirms or edits the claim, and may accept PubMed's spelling of the supplement name. Nothing has been searched or spent yet beyond extraction."}
-  - {step: 4, name: Triage, modules: [core, gateway], what: "Policy check: refuse, ask for clarification, or continue with a safety notice (Phase 3)."}
+  - {step: 3, name: Triage, modules: [core, gateway], what: "The extraction call also labels the request; code applies docs/POLICY.md: refuse, ask for a clearer claim, or continue, with a safety notice and a review flag where needed. Nothing is searched before this."}
+  - {step: 4, name: Confirm, modules: [web, core], what: "The user confirms or edits the claim, and may accept PubMed's spelling of the supplement name. Nothing has been searched or spent yet beyond extraction."}
   - {step: 5, name: Search, modules: [core, gateway], what: "The gateway queries PubMed via E-utilities with an open-access filter, under the supplement's other names too; up to five articles, strongest study type first."}
   - {step: 6, name: Fetch, modules: [gateway, postgres], what: "Licence checked against the allowlist; full-text XML fetched from Europe PMC and cached."}
   - {step: 7, name: Retrieve, modules: [core, postgres], what: "Sections are split into passages and ranked by keyword (weight 0.7) and meaning (embeddings, 0.3), fused; top K per article."}

@@ -18,8 +18,16 @@ from pydantic import BaseModel, ValidationError
 
 from scc_core import jobs
 from scc_core.gateway_client import GatewayClient, GatewayError
-from scc_core.models import Assessment, Claim, Extraction, JobState
-from scc_core.pipeline import embeddings, evidence, jats, query, rubric
+from scc_core.models import (
+    Assessment,
+    Claim,
+    Extraction,
+    GuardedAssessment,
+    Job,
+    JobState,
+    TriagedExtraction,
+)
+from scc_core.pipeline import embeddings, evidence, jats, query, rubric, triage
 from scc_core.pipeline.quotes import verify_quote
 
 log = logging.getLogger("scc.pipeline")
@@ -198,12 +206,21 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
         return
     rt = await rt.for_job(job.config_version)
     await _set(rt, job_id, JobState.extracting)
+    guarded = "guardrails" in rt.config
     try:
         extraction = await _structured(
-            rt, "extract", job_id, job.user_id, job.input_text, Extraction
+            rt,
+            "extract",
+            job_id,
+            job.user_id,
+            job.input_text,
+            TriagedExtraction if guarded else Extraction,
         )
     except StageFailed as exc:
         await _fail(rt, job_id, exc.code)
+        return
+    if guarded:
+        await _triaged(rt, job, extraction)
         return
     if not extraction.claims:
         await _fail(rt, job_id, "no_claim")
@@ -218,6 +235,99 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
         f"{len(extraction.claims)} claim(s)",
         extracted_claims=claims,
     )
+
+
+async def _triaged(rt: Runtime, job: Job, extraction: TriagedExtraction) -> None:
+    """Refuse, clarify or wait for confirmation, as docs/POLICY.md says (P3.01-P3.03, D-050)."""
+    decision = triage.decide(extraction, job.input_text, rt.config["guardrails"])
+    if decision.instructions_found:
+        await _injection(rt, job, "extract", "submitted_text")
+    claims = [c.model_dump() for c in extraction.claims]
+    if decision.action != "continue":
+        state = (
+            JobState.refused
+            if decision.action == "refuse"
+            else JobState.needs_clarification
+        )
+        log.info(
+            "job stopped by triage",
+            extra={"job_id": str(job.id), "code": decision.code},
+        )
+        # The claims are kept even so: they show what was read, in the admin trace and the evals.
+        await _set(
+            rt,
+            job.id,
+            state,
+            decision.code,
+            error=decision.message,
+            extracted_claims=claims,
+        )
+        return
+    if rt.config.get("query", {}).get("spelling_check"):
+        await _spelling(rt, job.id, claims)
+    flags = {}
+    if decision.sensitive_topics:
+        flags = {
+            "sensitive_topics": list(decision.sensitive_topics),
+            "needs_review": True,
+        }
+    await _set(
+        rt,
+        job.id,
+        JobState.awaiting_confirmation,
+        f"{len(claims)} claim(s)",
+        extracted_claims=claims,
+        **flags,
+    )
+    if decision.sensitive_topics:
+        await _review_alert(rt, job.id, decision.sensitive_topics)
+
+
+async def _review_alert(rt: Runtime, job_id: UUID, topics) -> None:
+    """Tells the owner a check needs a safety review (P3.03): job ID and topic codes, never user text."""
+    try:
+        # The code is one topic (the gateway's code format); the text lists them all, as codes.
+        await rt.gateway.notify(
+            "safety_review",
+            f"Job {job_id} needs a safety review: {', '.join(topics)}.",
+            topics[0],
+        )
+    except (GatewayError, httpx.HTTPError) as exc:
+        log.warning(
+            "review alert not sent",
+            extra={"job_id": str(job_id), "error": type(exc).__name__},
+        )
+
+
+async def _injection(rt: Runtime, job: Job, stage: str, source: str) -> None:
+    """Records instructions found in a text (P3.02). Reaching the account's limit alerts the owner once."""
+    limits = rt.config["guardrails"]
+    async with rt.pool.connection() as conn:
+        checks = await jobs.record_injection(
+            conn,
+            job.id,
+            job.user_id,
+            stage,
+            source,
+            rt.config["version"],
+            limits["injection_window_hours"],
+        )
+    log.warning(
+        "instructions found in text",
+        extra={"job_id": str(job.id), "stage": stage, "source": source},
+    )
+    if source == "submitted_text" and checks == limits["injection_max_checks"]:
+        try:
+            await rt.gateway.notify(
+                "injection_throttled",
+                f"User {job.user_id} reached the limit for checks with instructions.",
+                str(job.user_id),
+            )
+        except (GatewayError, httpx.HTTPError) as exc:
+            log.warning(
+                "throttle alert not sent",
+                extra={"job_id": str(job.id), "error": type(exc).__name__},
+            )
 
 
 async def _spelling(rt: Runtime, job_id: UUID, claims: list[dict]) -> None:
@@ -250,8 +360,9 @@ async def run(rt: Runtime, job_id: UUID) -> None:
         )
         return
     rt = await rt.for_job(job.config_version)
+    topics = await _confirmed_topics(rt, job) if "guardrails" in rt.config else ()
     try:
-        result = await _run(rt, job_id, job.user_id, job.confirmed_claim)
+        result = await _run(rt, job, job.confirmed_claim)
     except StageFailed as exc:
         await _fail(rt, job_id, exc.code)
         return
@@ -260,10 +371,27 @@ async def run(rt: Runtime, job_id: UUID) -> None:
             rt, job_id, exc.code if exc.code in MESSAGES else "literature_unavailable"
         )
         return
+    if topics:
+        result["safety_notices"] = triage.notices(topics)
     await _set(rt, job_id, JobState.done, result["verdict"], result=result)
 
 
-async def _run(rt: Runtime, job_id: UUID, user_id: int, claim: Claim) -> dict:
+async def _confirmed_topics(rt: Runtime, job: Job) -> tuple[str, ...]:
+    """The job's safety topics plus any the confirmed claim adds (an edit can name a population)."""
+    known = set(job.sensitive_topics)
+    found = triage.claim_topics(
+        job.confirmed_claim.model_dump(), rt.config["guardrails"]
+    )
+    topics = triage.ordered_topics(known | found)
+    if found - known:
+        async with rt.pool.connection() as conn:
+            await jobs.flag_review(conn, job.id, list(topics))
+        await _review_alert(rt, job.id, topics)
+    return topics
+
+
+async def _run(rt: Runtime, job: Job, claim: Claim) -> dict:
+    job_id = job.id
     cfg = rt.config
     search_query = query.build(claim, cfg.get("query"))
     found = await rt.gateway.search(search_query, cfg["search"]["pubmed_max_results"])
@@ -332,7 +460,7 @@ async def _run(rt: Runtime, job_id: UUID, user_id: int, claim: Claim) -> dict:
         JobState.assessing,
         f"{total} passages in {len(passages)} article(s)",
     )
-    assessments, unusable = await _assess(rt, job_id, user_id, claim, passages)
+    assessments, unusable = await _assess(rt, job, claim, passages)
     assessed_articles = [a for a in assessed_articles if a["pmcid"] not in unusable]
 
     await _set(rt, job_id, JobState.verifying)
@@ -354,19 +482,24 @@ async def _run(rt: Runtime, job_id: UUID, user_id: int, claim: Claim) -> dict:
             0,
             f"{len(unusable)} article(s) could not be assessed: the model's answer was not usable.",
         )
+    # The top-K passages each assess call read, for the admin trace (P3.08).
+    result["retrieved"] = {
+        pmcid: [p["passage_id"] for p in items] for pmcid, items in passages.items()
+    }
     return result
 
 
 async def _assess(
     rt: Runtime,
-    job_id: UUID,
-    user_id: int,
+    job: Job,
     claim: Claim,
     passages: dict[str, list[dict]],
 ) -> tuple[Assessment, set[str]]:
     """One assess call per article, a few at a time. An article whose answer stays unusable is left out;
-    any other failure (budget, provider down) fails the job."""
+    any other failure (budget, provider down) fails the job. From pipeline-v5 the model also reports
+    instructions found in an article, recorded as injection events against the article (P3.02)."""
     limit = asyncio.Semaphore(rt.config["llm"]["assess"].get("concurrency", 1))
+    output = GuardedAssessment if "guardrails" in rt.config else Assessment
 
     async def one(items: list[dict]) -> Assessment:
         data = json.dumps(
@@ -385,7 +518,7 @@ async def _assess(
             indent=1,
         )
         async with limit:
-            return await _structured(rt, "assess", job_id, user_id, data, Assessment)
+            return await _structured(rt, "assess", job.id, job.user_id, data, output)
 
     pmcids = list(passages)
     outcomes = await asyncio.gather(
@@ -400,6 +533,8 @@ async def _assess(
             raise outcome
         else:
             merged += outcome.assessments
+            if getattr(outcome, "instructions_found", False):
+                await _injection(rt, job, "assess", pmcid)
     if len(unusable) == len(pmcids):
         raise StageFailed("invalid_output")
     return Assessment(assessments=merged), unusable

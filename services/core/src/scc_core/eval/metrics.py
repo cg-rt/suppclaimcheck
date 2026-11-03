@@ -189,7 +189,10 @@ def summarize(results: list[CaseResult], thresholds: dict[str, float]) -> dict:
             else None
         ),
         "false_refusal_rate": (
-            sum(r.observed["behaviour"] in {"refuse", "no_claim"} for r in answers)
+            sum(
+                r.observed["behaviour"] in {"refuse", "clarify", "no_claim"}
+                for r in answers
+            )
             / len(answers)
             if answers
             else None

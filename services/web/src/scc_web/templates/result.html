@@ -10,6 +10,13 @@
   <p class="meta">The claim as you confirmed it{% if claim.dose %} · dose: {{ claim.dose }}{% endif %}{% if claim.duration %} · duration: {{ claim.duration }}{% endif %} · checked <time datetime="{{ job.updated_at }}" class="num">{{ job.updated_at[:10] }}</time></p>
 </section>
 
+{% if r.safety_notices %}
+<aside class="card card--warning" aria-labelledby="safety-title">
+  <h2 class="card__title" id="safety-title">Before you read the result</h2>
+  {% for notice in r.safety_notices %}<p>{{ notice.text }}</p>{% endfor %}
+</aside>
+{% endif %}
+
 <section class="card verdict verdict--{{ view.verdict_class }}" aria-labelledby="found-title">
   <h2 class="card__title" id="found-title">What the research says</h2>
   <div class="verdict__head">

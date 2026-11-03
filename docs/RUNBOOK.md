@@ -131,10 +131,15 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** the spend query shows the expected total; new jobs are accepted or refused as intended.
 
 ## RB-10 Suspected abuse or injection attempts
-**Status:** draft, verify in P3
-- **Symptoms:** injection or abuse flags in admin; one account using its quota repeatedly; strange inputs.
-- **Fix:** review the flagged jobs in admin; disable the account if needed; tighten its quota; add a Cloudflare WAF rule if the traffic is external. Record it as an incident.
-- **Verify:** no new flags from that account; costs back to normal.
+**Status:** draft; the throttle and the alerts are covered by `tests/integration/test_guardrails.py` (P3.02, D-050), not yet exercised on the VM.
+- **Symptoms:** a Telegram alert `injection_throttled` naming a user ID; a user reports "Too many checks from this account contained instructions to the system"; many refused checks from one account; strange inputs.
+- **Checks:** what the account sent and when (core's database; the admin view replaces this once P3.08 lands):
+  ```bash
+  sudo docker compose exec postgres psql -U postgres -d scc -c "SELECT e.at, e.stage, e.source, j.state FROM core.injection_events e JOIN core.jobs j ON j.id = e.job_id WHERE e.user_id = <id> ORDER BY e.at DESC LIMIT 20"
+  ```
+  `source = submitted_text` counts against the user; an article ID (`PMC...`) means the instructions were in a fetched article, which never counts against anyone.
+- **Fix:** the throttle lifts by itself 24 hours after the oldest counted check (pipeline-v5, `guardrails`). If the account is abusive, disable it (`python -m scc_web.admin disable <email>`). Instructions in an article: nothing to do for the user; if one article keeps triggering it, note its PMCID in the incident record. External traffic: add a Cloudflare WAF rule. Record it as an incident.
+- **Verify:** no new events from that account; costs back to normal.
 
 ## RB-11 Backup failed
 **Status:** rehearsed in dev on 2026-10-24 against a local restic repository: with the database stopped, `backup.sh` failed, kept no snapshot (3 before, 3 after) and raised the alert. Seen on the VM on 2026-10-26: a backup failed (DNS at boot) and both the Telegram alert and the healthchecks.io email reached the owner.

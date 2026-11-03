@@ -74,6 +74,8 @@
             "enum": [
               "budget_cap_reached",
               "job_failed",
+              "safety_review",
+              "injection_throttled",
               "test"
             ],
             "title": "Event",

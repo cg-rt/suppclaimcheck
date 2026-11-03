@@ -1,13 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Check stopped{% endblock %}
+{% set heading = {
+  "refused": "This isn't something SuppClaimCheck can check",
+  "needs_clarification": "Tell us a little more",
+}.get(job.state, "This check stopped") %}
+{% block title %}{{ heading }}{% endblock %}
 {% block main %}
 <section class="card">
-  <h1 class="title">This check stopped</h1>
-  <div class="notice notice--error" role="status">
+  <h1 class="title">{{ heading }}</h1>
+  <div class="notice {{ 'notice--error' if job.state == 'failed' else 'notice--hint' }}" role="status">
     <p>{{ job.error or "The check could not be completed." }}</p>
   </div>
   <p>Your text: <q>{{ job.input_text }}</q></p>
+  {% if job.state == "failed" %}
   <p>A stopped check doesn't repeat itself, so nothing is spent twice. Start a new one when you're ready.</p>
+  {% else %}
+  <p>Nothing was searched for this text, and nothing was spent on it.</p>
+  {% endif %}
   <p><a class="button" href="/checks/new">Start a new check</a></p>
 </section>
 {% endblock %}

@@ -15,11 +15,12 @@ STAGES = {
     "done": "Result ready",
     "failed": "Stopped",
     "refused": "Not checked",
+    "needs_clarification": "Needs a clearer claim",
 }
 BEFORE_CONFIRM = ["submitted", "extracting", "awaiting_confirmation"]
 AFTER_CONFIRM = ["searching", "retrieving", "assessing", "verifying", "scoring", "done"]
 # States where the progress stream stops and the page reloads to show what comes next.
-SETTLED = {"awaiting_confirmation", "done", "failed", "refused"}
+SETTLED = {"awaiting_confirmation", "done", "failed", "refused", "needs_clarification"}
 
 VERDICT_CLASS = {
     "Supported": "supported",

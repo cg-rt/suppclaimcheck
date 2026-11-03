@@ -109,6 +109,8 @@ class FakeCore:
     def __init__(self):
         self.jobs: dict[str, dict] = {}
         self.calls: list[tuple[str, str, dict | None]] = []
+        # When set, new jobs are refused as core does for an account over the injection limit (P3.02).
+        self.throttle_message: str | None = None
 
     def add(self, j: dict) -> dict:
         self.jobs[j["id"]] = j
@@ -121,6 +123,9 @@ class FakeCore:
         body = json.loads(request.content) if request.content else None
         path = request.url.path
         self.calls.append((request.method, path, body))
+        if request.method == "POST" and path == "/jobs" and self.throttle_message:
+            detail = {"code": "injection_throttled", "message": self.throttle_message}
+            return httpx.Response(429, json={"detail": detail})
         if request.method == "POST" and path == "/jobs":
             new = self.add(
                 job(body["user_id"], "submitted", input_text=body["input_text"])

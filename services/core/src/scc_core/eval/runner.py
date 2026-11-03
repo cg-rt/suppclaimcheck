@@ -76,13 +76,15 @@ def observe(
     result = job.result or {}
     if job.state == JobState.refused:
         behaviour = "refuse"
+    elif job.state == JobState.needs_clarification:
+        behaviour = "clarify"
     elif job.state == JobState.failed:
         behaviour = "no_claim" if last_detail == "no_claim" else "error"
     elif job.state == JobState.awaiting_confirmation:
         behaviour = "pick_claim" if len(claims) >= 2 else "single_claim"
     elif job.state == JobState.done:
         behaviour = (
-            "answer_with_safety_notice" if result.get("safety_notice") else "answer"
+            "answer_with_safety_notice" if result.get("safety_notices") else "answer"
         )
     else:
         behaviour = "error"

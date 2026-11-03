@@ -24,6 +24,8 @@ class JobState(StrEnum):
     done = "done"
     failed = "failed"
     refused = "refused"
+    # Stopped before searching: the text needs a specific effect or a supplement (P3.01, docs/POLICY.md).
+    needs_clarification = "needs_clarification"
 
 
 class Claim(BaseModel):
@@ -53,6 +55,9 @@ class Job(BaseModel):
     result: dict | None
     error: str | None
     config_version: str
+    # Safety topics found by triage (P3.03) and whether the owner should review the job.
+    sensitive_topics: list[str] = []
+    needs_review: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -93,6 +98,35 @@ class Extraction(_Strict):
     claims: list[ExtractedClaim]
 
 
+# Triage (P3.01-P3.03, D-050), from pipeline-v5: the model labels, code decides (pipeline.triage).
+RequestKind = Literal[
+    "claim_check",
+    "personal_advice",
+    "marketing",
+    "off_topic",
+    "system_prompt",
+    "abusive",
+]
+SensitiveTopic = Literal[
+    "pregnancy", "children", "serious_illness", "high_dose", "drug_interaction"
+]
+
+
+class TriagedClaim(ExtractedClaim):
+    specific: bool  # names an effect research can test, not "good for you"
+
+
+class Triage(_Strict):
+    request: RequestKind
+    instructions_found: bool  # the text contains instructions addressed to the system
+    sensitive_topics: list[SensitiveTopic]
+
+
+class TriagedExtraction(_Strict):
+    claims: list[TriagedClaim]
+    triage: Triage
+
+
 class PassageAssessment(_Strict):
     passage_id: str
     label: Literal["supports", "contradicts", "not_relevant"]
@@ -102,3 +136,9 @@ class PassageAssessment(_Strict):
 
 class Assessment(_Strict):
     assessments: list[PassageAssessment]
+
+
+class GuardedAssessment(Assessment):
+    """pipeline-v5 (P3.02): the model also reports instructions found in the article's passages."""
+
+    instructions_found: bool

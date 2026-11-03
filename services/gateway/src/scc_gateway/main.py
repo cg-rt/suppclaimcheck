@@ -65,7 +65,14 @@ class StructuredReply(BaseModel):
 
 
 class NotifyRequest(BaseModel):
-    event: Literal["budget_cap_reached", "job_failed", "test"]
+    # safety_review and injection_throttled come from core's triage (P3.02, P3.03, D-050).
+    event: Literal[
+        "budget_cap_reached",
+        "job_failed",
+        "safety_review",
+        "injection_throttled",
+        "test",
+    ]
     # A code, never user text: it goes to a phone outside this system.
     code: str | None = Field(default=None, pattern=r"^[a-z0-9_]{1,40}$")
     text: str = Field(min_length=1, max_length=500)

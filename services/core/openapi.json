@@ -133,6 +133,11 @@
             "title": "Input Type",
             "type": "string"
           },
+          "needs_review": {
+            "default": false,
+            "title": "Needs Review",
+            "type": "boolean"
+          },
           "result": {
             "anyOf": [
               {
@@ -144,6 +149,14 @@
               }
             ],
             "title": "Result"
+          },
+          "sensitive_topics": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sensitive Topics",
+            "type": "array"
           },
           "state": {
             "$ref": "#/components/schemas/JobState"
@@ -243,7 +256,8 @@
           "scoring",
           "done",
           "failed",
-          "refused"
+          "refused",
+          "needs_clarification"
         ],
         "title": "JobState",
         "type": "string"
@@ -519,6 +533,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "Too many recent checks from this account contained instructions to the system"
           }
         },
         "summary": "Create Job",

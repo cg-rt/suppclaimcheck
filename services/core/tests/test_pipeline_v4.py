@@ -4,8 +4,7 @@ from scc_core import config
 from scc_core.eval.__main__ import apply_overrides
 
 
-def test_v4_is_active_and_hybrid():
-    assert config.ACTIVE == "pipeline-v4"
+def test_v4_is_hybrid():
     retrieval = config.load("pipeline-v4")["retrieval"]
     assert retrieval["mode"] == "hybrid"
     assert retrieval["keyword_weight"] == 0.7

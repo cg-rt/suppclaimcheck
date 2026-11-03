@@ -25,6 +25,7 @@ from scc_common.app import Check, create_app, http_check
 from scc_common.db import conninfo_from_env, db_check
 from scc_core import config, jobs, tasks
 from scc_core.models import Claim, Job, JobCreate, JobEvent, JobSummary
+from scc_core.pipeline.triage import THROTTLED
 
 log = logging.getLogger("scc.jobs")
 IdempotencyKey = Annotated[
@@ -61,6 +62,9 @@ def _deps(request: Request) -> Deps:
             "description": "Same key and body as an earlier request: the existing job"
         },
         409: {"description": "Key reused with a different body"},
+        429: {
+            "description": "Too many recent checks from this account contained instructions to the system"
+        },
     },
 )
 async def create_job(
@@ -75,6 +79,7 @@ async def create_job(
         version = deps.config_version or await config_store.active_version_async(
             conn, config.STORE
         )
+        await _refuse_if_throttled(conn, body.user_id, idempotency_key, version)
         try:
             job, created = await jobs.create(
                 conn, body, idempotency_key, version, correlation.current()
@@ -95,6 +100,22 @@ async def create_job(
     )
     log.info("job created", extra={"job_id": str(job.id)})
     return job
+
+
+async def _refuse_if_throttled(conn, user_id: int, key: str, version: str) -> None:
+    """P3.02: an account whose recent texts kept instructing the system can't start new checks for a while.
+    A retry of a check that already exists is not a new check."""
+    settings = (await config_store.load_version_async(conn, config.STORE, version)).get(
+        "guardrails"
+    )
+    if settings is None or await jobs.exists(conn, user_id, key):
+        return
+    checks = await jobs.injection_checks(
+        conn, user_id, settings["injection_window_hours"]
+    )
+    if checks >= settings["injection_max_checks"]:
+        log.warning("job refused: injection throttle", extra={"user_id": user_id})
+        raise HTTPException(429, {"code": "injection_throttled", "message": THROTTLED})
 
 
 @router.get("")
