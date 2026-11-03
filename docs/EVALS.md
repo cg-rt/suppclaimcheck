@@ -5,6 +5,41 @@ How SuppClaimCheck's quality is measured, and the results. Built in Phase 2 (P2.
 ## Why
 Every change to a prompt, config, model or retrieval setting can make answers better or worse without anyone noticing. A fixed, versioned set of labelled cases turns "seems fine" into numbers that can be compared over time, and those numbers are part of the portfolio evidence.
 
+## Phase 2 in one page (P2.11)
+Phase 2 took the pipeline from v0 (one article per claim) to v4, measuring every change on the 22 tuning cases before keeping it. Pass counts are per live run; stability is the share of cases with the same outcome in every run of a configuration. Details are in "Comparisons" below.
+
+| Config | What changed | Cases passing (of 22) | Stability | EUR per check | Kept because |
+|---|---|---|---|---|---|
+| pipeline-v0 | One article, keyword passages, rubric v0 (Phase 1) | 8, 7 | 86% | 0.0006 | The baseline |
+| pipeline-v1 | Up to five articles, ranked by study type; rubric v1 weighs each article (D-044) | 9, 9, 9; 8 | 73% | 0.0023 | More accurate; three prompt variants were not (field order, an exact-effect definition) |
+| pipeline-v2 | Query v1: spelling suggestion, synonyms, an honest zero-match result (D-045) | 9, 9, 10 | 95% | 0.0028 | Same accuracy, far more stable; the misspelled case passes |
+| pipeline-v3 | Hybrid retrieval, keyword weight 0.5 (D-046) | 8, 10, 11 | 73% | 0.0028 | Not kept on its own: the default setting of the comparison |
+| **pipeline-v4** | Hybrid, keyword weight 0.7 (D-047) | 10, 12, 11, 9; 10, 12, 11 | 77–82% | 0.0028 | Two cases keyword search never passed now pass in most runs |
+
+v0 and v1 ran on `evalset-v1`; v2 onwards on `evalset-v2`, which changed only the two melatonin score ranges (worth one case on a replay of v1).
+
+**pipeline-v4 against the thresholds**
+
+| Metric | Threshold | Tuning (3 runs) | Held out (3 runs, P2.08) |
+|---|---|---|---|
+| Verdict accuracy | ≥ 75% | 60% ❌ | 87% ✅ (five answer cases) |
+| Quote-verification pass rate | ≥ 95% | 100% ✅ | 100% ✅ |
+| Citation correctness | 100% | 100% ✅ | 100% ✅ |
+| Correct refusals and clarifications | ≥ 90% | 38% ❌ | 25% ❌ |
+| Injection resistance | 100% | 17% ❌ | 100% ✅ |
+| Latency p95 | ≤ 90 s | 38.7 s ✅ | 47.2 s ✅ |
+| Cost per check | ≤ EUR 0.02 | EUR 0.0028 ✅ | EUR 0.0030 ✅ |
+
+**What moved the numbers:** reading more articles and ranking them by study type (v1), searching under more names (v2, mostly stability), and hybrid retrieval (v4, two systematic gains). **What did not:** prompt wording. Five prompt variants across two experiments (field order, an exact-effect definition, two "what is not a finding" definitions) each traded the cases they targeted for new failures.
+
+**Open going into Phase 3**
+- **Labelling:** the model counts passages about another outcome, a biomarker or another population as findings, even when its own reason says so (vitamin C, creatine, beta-carotene). This is now the main limit on tuning accuracy. Prompt wording has not fixed it; a code-side check is an option, not planned.
+- **Refuse, clarify, safety notice:** no code path yet (P3.01, P3.03). These cases fail by design until then, and they are most of the refusal and injection misses: the hidden-instruction cases fail on their verdicts like their clean twins, and no canary text has appeared in any run.
+- **Held out vs tuning:** 87% against 60% verdict accuracy rests on five held-out answer cases; it shows no sign of overfitting, not the accuracy users will see.
+- **Spelling suggestions:** NCBI suggests the wrong supplement in some cases (Vitamin E → "vitamin d supplements"); found in the eval logs, not yet fixed.
+
+**Cost.** All live eval runs in Phase 2 cost EUR 1.96 from the eval lane (18 runs, most of them three repeats). From P2.09 each run file records a hash of its settings, so results can be attached to stored config versions (D-048); the runs above predate it.
+
 ## The eval set
 **Version:** `evalset-v2` (30 cases, 2026-10-29; labels drafted by the agent, all 30 approved by the owner on 2026-10-29) · **Location:** `evals/cases/` (tuning, 22) and `evals/held_out/` (held out, 8) · **Definition and thresholds:** `evals/evalset.toml`
 
