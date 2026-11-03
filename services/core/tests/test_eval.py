@@ -108,6 +108,18 @@ def test_judge_behaviours():
     answered = judge(refuse, _answer())
     assert answered.reasons == ["expected refuse, got answer"]
 
+    # An unexpected notice names its topics, so the failure says which label fired.
+    plain = _case(behaviour="answer", verdicts=["Supported"])
+    noticed = Observation(
+        state="done",
+        behaviour="answer_with_safety_notice",
+        verdict="Supported",
+        safety_topics=["serious_illness"],
+    )
+    assert judge(plain, noticed).reasons == [
+        "expected answer, got answer_with_safety_notice (serious_illness)"
+    ]
+
     pick = _case(behaviour="pick_claim", min_claims=2)
     assert judge(
         pick,

@@ -41,6 +41,7 @@ class Observation:
     # Rubric v1's workings: the deciding rule and each article's tier, weight and stance.
     rubric: dict = field(default_factory=dict)
     spelling_suggestion: str | None = None
+    safety_topics: list[str] = field(default_factory=list)  # notices shown (P3.03)
     latency_s: float | None = None  # confirmation to result; live runs only
     cost_eur: float = 0.0
     llm_calls: int = 0
@@ -86,7 +87,9 @@ def judge(case: EvalCase, obs: Observation) -> CaseResult:
             if exp.behaviour == "pick_claim"
             else f"suggestion {obs.spelling_suggestion!r}"
             if exp.behaviour == "suggest_spelling"
-            else obs.behaviour + (f" ({obs.error_code})" if obs.error_code else "")
+            else obs.behaviour
+            + (f" ({obs.error_code})" if obs.error_code else "")
+            + (f" ({', '.join(obs.safety_topics)})" if obs.safety_topics else "")
         )
         reasons.append(f"expected {exp.behaviour}, got {observed}")
 

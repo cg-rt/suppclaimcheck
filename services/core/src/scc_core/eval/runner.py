@@ -111,6 +111,7 @@ def observe(
         },
         # Query v1 (P2.12): the suggestion offered on the confirm page for the first claim.
         spelling_suggestion=claims[0].get("spelling_suggestion") if claims else None,
+        safety_topics=[n["topic"] for n in result.get("safety_notices", [])],
         latency_s=round(latency_s, 2) if latency_s is not None else None,
         cost_eur=round(transport.cost_eur.get(str(job.id), 0.0), 6),
         llm_calls=transport.llm_calls.get(str(job.id), 0),
