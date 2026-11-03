@@ -91,6 +91,10 @@ services:
       # web is reachable only through edge (Cloudflare Tunnel), so the visitor's address for the
       # sign-in rate limit comes from Cloudflare's CF-Connecting-IP header (P1.04).
       SCC_TRUST_CLOUDFLARE: "1"
+      # Admin (P3.08, D-049) answers only on this hostname, which Cloudflare Access guards; it
+      # reads the gateway's call records through the gateway's read-only admin endpoints.
+      SCC_ADMIN_HOST: admin.suppclaimcheck.com
+      SCC_GATEWAY_URL: http://gateway:8000
     secrets: [db_web_password]
     depends_on:
       web-migrate: {condition: service_completed_successfully}

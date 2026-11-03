@@ -196,6 +196,16 @@ Verdict word (800, 2rem, verdict ink) with the score "67 out of 100" on the righ
 ### Evidence quote
 A 12px-rounded block tinted by direction: the quote in the serif, the reason in our voice, then section, citation and licence in small grey.
 
+## Admin
+
+Admin (P3.08–P3.10) uses the same tokens and components from `static/css/admin.css`, loaded after `app.css`. It is a desk tool, so it is denser:
+
+- **Column** 1200px instead of 720px, cards padded 24px, page titles at the claim size (1.625rem).
+- **Data tables** in `.data`: 0.875rem text with tabular figures, hairline rows, numbers right-aligned, a quiet-card row hover. A table wider than its card scrolls inside a focusable region, never the page. At 640px and below, row-shaped tables (`.data--stack`) become one block per row, each cell labelled.
+- **Status** is a coloured word with its drawn mark, like the progress list: green completed, red failed, amber awaiting confirmation, ink in progress, grey refused. Never a filled badge.
+- **Code** (settings, JSON, diffs, commands, IDs) in the platform monospace at 0.8125rem, on `card-quiet` with a hairline border. Diff lines keep their + and − and are tinted with the supported and contradicted tints, so colour is never the only signal. Small inline keys use a 4px radius.
+- Orange stays for what can be pressed: Retry, Search, Create, and the links. A one-time password is shown once, in a bordered code block.
+
 ## Do's and Don'ts
 
 ### Do:

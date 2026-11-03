@@ -1,0 +1,30 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import code, short_id, scroll %}
+{% block title %}Errors{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title" id="errors-title">Recent errors</h1>
+  <p class="meta">The newest 100 from core (failed and stalled jobs, quotes dropped by verification, queue tasks that crashed) and the gateway (failed LLM calls). Each code links to its runbook entry. For the full log of one job, open it and use its correlation ID.</p>
+  {% if errors %}
+  {% call scroll("errors-title") %}
+  <table class="data data--stack">
+    <thead><tr><th scope="col">When</th><th scope="col">What</th><th scope="col">Code</th><th scope="col">Detail</th><th scope="col">Job</th><th scope="col">Correlation ID</th></tr></thead>
+    <tbody>
+      {% for e in errors %}
+      <tr>
+        <td data-label="When"><time class="num" datetime="{{ e.at }}">{{ views.when(e.at) }}</time></td>
+        <td data-label="What">{{ views.KINDS.get(e.kind, e.kind) }} <span class="meta">{{ e.module }}</span></td>
+        <td data-label="Code">{{ code(views, e.code, long=True) }}</td>
+        <td data-label="Detail">{{ e.detail or "–" }}</td>
+        <td data-label="Job">{% if views.is_job(e.job_id) %}<a href="/admin/jobs/{{ e.job_id }}">{{ short_id(e.job_id) }}</a>{% elif e.job_id %}<code>{{ e.job_id }}</code>{% else %}–{% endif %}</td>
+        <td data-label="Correlation">{% if e.correlation_id %}<code>{{ e.correlation_id }}</code>{% else %}–{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% else %}
+  <p>Nothing has failed recently.</p>
+  {% endif %}
+</section>
+{% endblock %}

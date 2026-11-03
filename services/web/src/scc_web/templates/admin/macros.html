@@ -1,0 +1,30 @@
+{# Admin building blocks: the same drawn marks and inks as the public pages, denser. #}
+{% from "macros.html" import icon %}
+
+{# A job status as a coloured word with its mark, never a filled badge. #}
+{% macro status(views, name, state=None) -%}
+<span class="state state--{{ views.STATUS_INK.get(name, 'ink') }}">{{ icon("done" if name == "done" else "current" if name in ("in_progress", "failed") else "waiting") }} {{ views.STATUSES.get(name, name) }}{% if state and state != name %} <code>{{ state }}</code>{% endif %}</span>
+{%- endmacro %}
+
+{# A failure code, what it means, and the runbook entry that handles it. #}
+{% macro code(views, value, long=False) -%}
+{% set e = views.explain(value) %}
+<code>{{ value }}</code>{% if long and e.meaning %} <span class="meta">{{ e.meaning }}</span>{% endif %}{% if e.rb_url %} <a class="rb" href="{{ e.rb_url }}" rel="noopener">{{ e.rb }}<span class="visually-hidden"> in the runbook</span></a>{% endif %}
+{%- endmacro %}
+
+{# Up, down, or not checked from here. #}
+{% macro health(ok) -%}
+{% if ok is none %}<span class="state state--none">{{ icon("waiting") }} Not checked</span>
+{%- elif ok %}<span class="state state--supported">{{ icon("done") }} Up</span>
+{%- else %}<span class="state state--contradicted">{{ icon("current") }} Down</span>{% endif %}
+{%- endmacro %}
+
+{% macro short_id(value) -%}
+<code title="{{ value }}">{{ value[:8] }}</code>
+{%- endmacro %}
+
+{# A table that can scroll sideways inside its card on narrow screens; the page itself never does.
+   A named group, not a region: its card is already the landmark with that name. #}
+{% macro scroll(label_id) -%}
+<div class="table-scroll" role="group" aria-labelledby="{{ label_id }}" tabindex="0">{{ caller() }}</div>
+{%- endmacro %}

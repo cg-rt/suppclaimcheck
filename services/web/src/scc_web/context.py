@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from psycopg_pool import AsyncConnectionPool
 
+from scc_web.admin_client import AdminClient
 from scc_web.auth import store
 from scc_web.core_client import CoreClient
 from scc_web.security import SESSION_COOKIE
@@ -25,6 +26,9 @@ class Deps:
     config: dict
     trust_cloudflare: bool = False
     clock: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
+    # Admin (P3.08-P3.10): its hostname and the client for core's and the gateway's admin endpoints.
+    admin: AdminClient | None = None
+    admin_host: str | None = None
 
 
 class SignInRequired(Exception):

@@ -1,0 +1,82 @@
+{% extends "admin/layout.html" %}
+{% from "macros.html" import error_box %}
+{% from "admin/macros.html" import scroll %}
+{% block title %}Users{% endblock %}
+{% block main %}
+{% if shown %}
+<section class="card card--quiet" aria-labelledby="shown-title">
+  <h1 class="card__title" id="shown-title">{{ "Account created" if shown.new else "Password reset" }}</h1>
+  <div class="notice notice--ok" role="status">
+    <p>{{ shown.email }} can sign in with this password. It is shown only now: send it to them privately, with the invitation. They can change it under Account.{% if not shown.new %} Their other sessions have ended.{% endif %}</p>
+  </div>
+  <p class="secret"><code>{{ shown.password }}</code></p>
+</section>
+{% endif %}
+{% if done %}<div class="notice notice--ok" role="status"><p>{{ done }}</p></div>{% endif %}
+{{ error_box(error) }}
+
+<section class="card" aria-labelledby="users-title">
+  <h1 class="title" id="users-title">Users</h1>
+  <p class="meta">Invite-only: accounts exist only when an admin makes them, here or with <code>python -m scc_web.admin</code>.</p>
+  {% call scroll("users-title") %}
+  <table class="data data--stack">
+    <thead><tr><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Created</th><th scope="col">Last sign-in</th><th scope="col" class="n">Sessions</th><th scope="col">Actions</th></tr></thead>
+    <tbody>
+      {% for a in accounts %}
+      <tr>
+        <th scope="row" data-label="Email">{{ a.email }}{% if a.id == me %} <span class="meta">(you)</span>{% endif %}</th>
+        <td data-label="Role">{{ a.role }}</td>
+        <td data-label="Status">{% if a.disabled_at %}<span class="state state--none">disabled</span> <time class="meta num" datetime="{{ a.disabled_at.isoformat() }}">{{ views.when(a.disabled_at)[:10] }}</time>{% else %}active{% endif %}</td>
+        <td data-label="Created"><time class="num" datetime="{{ a.created_at.isoformat() }}">{{ views.when(a.created_at)[:10] }}</time></td>
+        <td data-label="Last sign-in">{% if a.last_sign_in %}<time class="num" datetime="{{ a.last_sign_in.isoformat() }}">{{ views.when(a.last_sign_in) }}</time>{% else %}<span class="meta">never</span>{% endif %}</td>
+        <td data-label="Sessions" class="n num">{{ a.sessions }}</td>
+        <td data-label="Actions">
+          {% if a.id != me %}
+          <div class="actions">
+            <a href="/admin/jobs?q={{ a.email|urlencode }}">Jobs</a>
+            {% if not a.disabled_at %}
+            <details class="confirm">
+              <summary>Reset password<span class="visually-hidden"> for {{ a.email }}</span></summary>
+              <form method="post" action="/admin/users/{{ a.id }}/reset">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <p class="hint">A new password is made and shown once; their sessions end.</p>
+                <button class="button button--small" type="submit">Reset {{ a.email }}</button>
+              </form>
+            </details>
+            <details class="confirm">
+              <summary>Disable<span class="visually-hidden"> {{ a.email }}</span></summary>
+              <form method="post" action="/admin/users/{{ a.id }}/disable">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <p class="hint">They can't sign in again, and their sessions end now. Re-enabling is by hand (database).</p>
+                <button class="button button--small" type="submit">Disable {{ a.email }}</button>
+              </form>
+            </details>
+            {% endif %}
+          </div>
+          {% else %}<a href="/account">Change your password</a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+</section>
+
+<section class="card" aria-labelledby="create-title">
+  <h2 class="card__title" id="create-title">Create an account</h2>
+  <form class="form form--inline" method="post" action="/admin/users">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="off" maxlength="254" required value="{{ email or '' }}">
+    </div>
+    <fieldset class="field choice">
+      <legend>Role</legend>
+      <label><input type="radio" name="role" value="user"{% if role != "admin" %} checked{% endif %}> User</label>
+      <label><input type="radio" name="role" value="admin"{% if role == "admin" %} checked{% endif %}> Admin</label>
+    </fieldset>
+    <button class="button" type="submit">Create the account</button>
+  </form>
+  <p class="hint">The password is made for you and shown once on the next page. Admin also needs the person's email in the Cloudflare Access policy.</p>
+</section>
+{% endblock %}

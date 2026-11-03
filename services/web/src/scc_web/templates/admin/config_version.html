@@ -1,0 +1,46 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ found.version }}{% endblock %}
+{% block main %}
+<section class="card">
+  <p class="meta"><a href="/admin/config">Config</a> · {{ label }}</p>
+  <div class="card__head">
+    <h1 class="title"><code class="title__code">{{ found.version }}</code></h1>
+    {% if found.active %}<span class="state state--supported">active</span>{% endif %}
+  </div>
+  <dl class="facts facts--wide">
+    <div><dt>From</dt><dd>{{ "a repo file, registered by the migrate step" if found.source == "repo" else "the CLI" }}</dd></div>
+    <div><dt>Created</dt><dd><time class="num" datetime="{{ found.created_at }}">{{ views.when(found.created_at) }}</time> by {{ found.created_by }}</dd></div>
+    <div><dt>Why</dt><dd>{{ found.reason }}</dd></div>
+    <div><dt>SHA-256</dt><dd><code>{{ found.sha256 }}</code></dd></div>
+    {% if module == "core" %}
+    <div><dt>Eval results</dt><dd>{% if found.evals %}{% for e in found.evals %}<code>{{ e.run_id }}</code> <span class="num">{{ "%g"|format(e.passed) }}</span> of <span class="num">{{ e.cases }}</span> {{ e.split }}{% if not loop.last %}<br>{% endif %}{% endfor %}{% else %}none attached{% endif %} · <a href="/admin/evals">Evals</a></dd></div>
+    {% endif %}
+  </dl>
+  {% if not found.active %}<p class="hint">To activate it, use the CLI on the VM (<a href="{{ views.rb_link('RB-15') }}" rel="noopener">RB-15</a>). This page can't change anything.</p>{% endif %}
+</section>
+
+<section class="card" aria-labelledby="diff-title">
+  <div class="card__head">
+    <h2 class="card__title" id="diff-title">What changes from {% if against %}<code>{{ against }}</code>{% else %}nothing{% endif %}</h2>
+    <form class="search" method="get" action="/admin/config/{{ module }}/{{ found.version }}">
+      <label for="against">Compare with</label>
+      <select id="against" name="against">
+        {% for n in names if n != found.version %}<option value="{{ n }}"{% if n == against %} selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+      <button class="button button--small button--secondary" type="submit">Compare</button>
+    </form>
+  </div>
+  {% set changed = diff|selectattr("kind", "in", ["add", "remove"])|list %}
+  {% if changed %}
+  <p class="meta"><span class="num">{{ diff|selectattr("kind", "equalto", "add")|list|length }}</span> lines added, <span class="num">{{ diff|selectattr("kind", "equalto", "remove")|list|length }}</span> removed. Added lines start with +, removed lines with -.</p>
+  <pre class="code diff" tabindex="0" aria-labelledby="diff-title"><code>{% for line in diff %}<span class="diff__{{ line.kind }}">{{ line.text or " " }}</span>{% endfor %}</code></pre>
+  {% else %}
+  <p>No lines differ.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="toml-title">
+  <h2 class="card__title" id="toml-title">The whole version</h2>
+  <pre class="code" tabindex="0" aria-labelledby="toml-title"><code>{{ found.body_toml }}</code></pre>
+</section>
+{% endblock %}

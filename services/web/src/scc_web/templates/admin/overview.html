@@ -1,0 +1,57 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import status, code, short_id, scroll %}
+{% block title %}Overview{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">Today in SuppClaimCheck</h1>
+  <dl class="facts facts--wide">
+    <div>
+      <dt>Modules</dt>
+      <dd>{% if unhealthy %}<span class="state state--contradicted">{{ unhealthy|length }} down:</span> {% for r in unhealthy %}{{ r.name }}{% if not loop.last %}, {% endif %}{% endfor %} · <a href="/admin/health">Health</a>{% else %}All up · <a href="/admin/health">Health</a>{% endif %}</dd>
+    </div>
+    <div>
+      <dt>Errors, last 24 h</dt>
+      <dd><span class="num">{{ errors_24h }}</span>{% if errors_24h == 10 %} or more{% endif %} · <a href="/admin/errors">Errors</a></dd>
+    </div>
+    {% for lane in lanes %}
+    <div>
+      <dt>{{ lane.lane|capitalize }} spend this month</dt>
+      <dd><span class="num">{{ views.eur(lane.spent_eur) }}</span> of <span class="num">{{ views.eur(lane.cap_eur, 2) }}</span> · <span class="num">{{ views.plural(lane.calls, "LLM call") }}</span> · <a href="/admin/costs">Costs</a></dd>
+    </div>
+    {% endfor %}
+  </dl>
+</section>
+
+<section class="card" aria-labelledby="states-title">
+  <h2 class="card__title" id="states-title">Jobs by status, all time</h2>
+  <ul class="tiles">
+    {% for key, label in views.STATUSES.items() %}
+    <li><a href="/admin/jobs?status={{ key }}"><span class="tiles__n num">{{ counts.get(key, 0) }}</span> {{ label }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="errors-title">
+  <h2 class="card__title" id="errors-title">Latest errors</h2>
+  {% if errors %}
+  {% call scroll("errors-title") %}
+  <table class="data data--stack">
+    <thead><tr><th scope="col">When</th><th scope="col">What</th><th scope="col">Code</th><th scope="col">Job</th></tr></thead>
+    <tbody>
+      {% for e in errors %}
+      <tr>
+        <td data-label="When"><time class="num" datetime="{{ e.at }}">{{ views.when(e.at) }}</time></td>
+        <td data-label="What">{{ views.KINDS.get(e.kind, e.kind) }}</td>
+        <td data-label="Code">{{ code(views, e.code) }}</td>
+        <td data-label="Job">{% if views.is_job(e.job_id) %}<a href="/admin/jobs/{{ e.job_id }}">{{ short_id(e.job_id) }}</a>{% elif e.job_id %}<code>{{ e.job_id }}</code>{% else %}–{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  <p><a href="/admin/errors">All recent errors</a></p>
+  {% else %}
+  <p>Nothing has failed recently. Failed and stalled jobs, dropped quotes and failed LLM calls show up here.</p>
+  {% endif %}
+</section>
+{% endblock %}

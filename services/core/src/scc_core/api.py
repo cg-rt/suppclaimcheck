@@ -20,10 +20,10 @@ from fastapi import (
 from procrastinate import App
 from psycopg_pool import AsyncConnectionPool
 
-from scc_common import config_store, correlation
+from scc_common import config_admin, config_store, correlation
 from scc_common.app import Check, create_app, http_check
 from scc_common.db import conninfo_from_env, db_check
-from scc_core import config, jobs, tasks
+from scc_core import admin_api, config, jobs, tasks
 from scc_core.models import Claim, Job, JobCreate, JobEvent, JobSummary
 
 log = logging.getLogger("scc.jobs")
@@ -187,4 +187,7 @@ def build_app(
     app = create_app("core-api", "SuppClaimCheck core API", checks, lifespan=lifespan)
     app.state.deps = deps
     app.include_router(router)
+    # Read-only admin views for web's admin pages (P3.08-P3.10), and the one retry action.
+    app.include_router(admin_api.router)
+    app.include_router(config_admin.router(config.STORE, admin_api.pool_of))
     return app
