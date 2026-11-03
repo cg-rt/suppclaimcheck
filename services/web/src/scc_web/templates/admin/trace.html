@@ -1,0 +1,269 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import status as status_mark, code, short_id, scroll %}
+{% block title %}Job {{ job.id[:8] }}{% endblock %}
+{% block main %}
+{% set stored = {} %}
+{% for p in trace.passages %}{% set _ = stored.update({p.pmcid: p.passages}) %}{% endfor %}
+<section class="card" aria-labelledby="job-title">
+  <div class="card__head">
+    <h1 class="title" id="job-title">Job {{ short_id(job.id) }}</h1>
+    {{ status_mark(views, trace.status, job.state) }}
+  </div>
+  {% if retried == "expired" %}
+  <div class="notice notice--error" role="alert"><p>The retry form expired. Press Retry again.</p></div>
+  {% elif retried == "not-failed" %}
+  <div class="notice notice--hint" role="status"><p>Nothing to retry: the job is no longer failed. Someone may have retried it already.</p></div>
+  {% elif retried %}
+  <div class="notice notice--ok" role="status"><p>Retry queued: the job went back to <code>{{ retried }}</code> on <code>{{ job.config_version }}</code>. Reload to follow it.</p></div>
+  {% endif %}
+  {% if trace.stalled %}
+  <div class="notice notice--error" role="alert">
+    <h2 class="notice__title">This job looks stuck</h2>
+    <p>It has been <code>{{ job.state }}</code> for more than 15 minutes. The worker may have crashed mid-job: check the queue on <a href="/admin/health">Health</a> and the logs below ({{ code(views, "core:run_pipeline" if job.confirmed_claim else "core:extract_claim") }}). Only failed jobs can be retried from here.</p>
+  </div>
+  {% endif %}
+  <dl class="facts facts--wide">
+    <div><dt>Job ID</dt><dd><code>{{ job.id }}</code></dd></div>
+    <div><dt>User</dt><dd>{{ email or "user " ~ job.user_id }} <span class="meta">(ID <span class="num">{{ job.user_id }}</span>)</span> · <a href="/admin/jobs?q={{ (email or '')|urlencode }}">their jobs</a></dd></div>
+    <div><dt>Created</dt><dd><time class="num" datetime="{{ job.created_at }}">{{ views.when(job.created_at) }}</time>, last change <time class="num" datetime="{{ job.updated_at }}">{{ views.when(job.updated_at) }}</time></dd></div>
+    <div><dt>Config</dt><dd><a href="/admin/config/core/{{ job.config_version }}"><code>{{ job.config_version }}</code></a>{% if result.query_version or result.searched %} · query <code>{{ (result.searched or {}).query_version or "–" }}</code>{% endif %}{% if result.rubric_version %} · rubric <code>{{ result.rubric_version }}</code>{% endif %}</dd></div>
+    <div>
+      <dt>Correlation {{ "IDs" if correlation_ids|length > 1 else "ID" }}</dt>
+      <dd>{% for cid in correlation_ids %}<code>{{ cid }}</code>{% if not loop.last %}, {% endif %}{% endfor %}
+        <p class="hint">Every log line of this job carries one of them{% if correlation_ids|length > 1 %}: the submission's first, then the confirmation's or a retry's, which the search ran under{% endif %}. On the VM, in <code>/opt/suppclaimcheck</code>:</p>
+        <pre class="code code--wrap" tabindex="0"><code>{{ log_command }}</code></pre>
+      </dd>
+    </div>
+    {% if trace.failure_code %}
+    <div><dt>Failed with</dt><dd>{{ code(views, trace.failure_code, long=True) }}{% if job.error %}<p class="hint">The user saw: {{ job.error }}</p>{% endif %}</dd></div>
+    {% endif %}
+  </dl>
+  {% if trace.retryable %}
+  <form class="retry" method="post" action="/admin/jobs/{{ job.id }}/retry">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="button" type="submit">Retry {{ "the search" if job.confirmed_claim else "the extraction" }}</button>
+    <p class="hint">Runs again from <code>{{ "searching" if job.confirmed_claim else "submitted" }}</code> on <code>{{ job.config_version }}</code>, the version the job was created under. LLM calls are charged again. Check the cause first{% if failure.rb_url %}: <a href="{{ failure.rb_url }}" rel="noopener">{{ failure.rb }}</a>{% endif %}.</p>
+  </form>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="timeline-title">
+  <h2 class="card__title" id="timeline-title">Timeline</h2>
+  {% call scroll("timeline-title") %}
+  <table class="data">
+    <thead><tr><th scope="col">State</th><th scope="col">Started</th><th scope="col" class="n">Took</th><th scope="col">Detail</th></tr></thead>
+    <tbody>
+      {% for e in trace.events %}
+      <tr>
+        <td><code>{{ e.state }}</code></td>
+        <td><time class="num" datetime="{{ e.at }}">{{ views.when(e.at) }}</time></td>
+        <td class="n num">{{ views.seconds(e.seconds) }}{% if loop.last and trace.status == "in_progress" %} <span class="meta">so far</span>{% endif %}</td>
+        <td>{% if e.detail %}{% if e.state == "failed" %}{{ code(views, e.detail) }}{% else %}{{ e.detail }}{% endif %}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+</section>
+
+<section class="card" aria-labelledby="input-title">
+  <h2 class="card__title" id="input-title">Input and claims</h2>
+  <h3 class="subhead">Submitted {{ job.input_type }}</h3>
+  <p class="your-text">{{ job.input_text }}</p>
+  <h3 class="subhead">Extracted claims</h3>
+  {% if job.extracted_claims %}
+  {% call scroll("input-title") %}
+  <table class="data">
+    <thead><tr><th scope="col">Supplement</th><th scope="col">Effect</th><th scope="col">Population</th><th scope="col">Dose</th><th scope="col">Duration</th><th scope="col">Quote from the text</th><th scope="col">Spelling</th></tr></thead>
+    <tbody>
+      {% for c in job.extracted_claims %}
+      <tr>
+        <td>{{ c.supplement }}</td><td>{{ c.effect }}</td><td>{{ c.population or "–" }}</td><td>{{ c.dose or "–" }}</td><td>{{ c.duration or "–" }}</td>
+        <td class="data__text">{% if c.quote %}<q>{{ c.quote }}</q>{% endif %}</td>
+        <td>{{ c.spelling_suggestion or "–" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% else %}
+  <p class="meta">None{% if job.state in ("submitted", "extracting") %} yet{% endif %}.</p>
+  {% endif %}
+  <h3 class="subhead">Confirmed claim</h3>
+  {% if job.confirmed_claim %}
+  <dl class="facts">
+    {% for name in ("supplement", "effect", "population", "dose", "duration") %}
+    <div><dt>{{ name|capitalize }}</dt><dd>{{ job.confirmed_claim[name] or "–" }}</dd></div>
+    {% endfor %}
+  </dl>
+  {% else %}
+  <p class="meta">Not confirmed; nothing was searched or spent after extraction.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="calls-title">
+  <h2 class="card__title" id="calls-title">LLM calls</h2>
+  {% if calls is none %}
+  <div class="notice notice--error" role="alert"><p>The gateway did not answer, so its call records are missing here. See <a href="/admin/health">Health</a>.</p></div>
+  {% elif calls %}
+  {% call scroll("calls-title") %}
+  <table class="data">
+    <thead><tr><th scope="col">Started</th><th scope="col">Stage</th><th scope="col">Model</th><th scope="col">Status</th><th scope="col" class="n">Tokens in</th><th scope="col" class="n">Tokens out</th><th scope="col" class="n">Cost</th><th scope="col" class="n">Latency</th><th scope="col">Correlation ID</th><th scope="col">Error</th></tr></thead>
+    <tbody>
+      {% for c in calls %}
+      <tr>
+        <td><time class="num" datetime="{{ c.created_at }}">{{ views.when(c.created_at) }}</time></td>
+        <td><code>{{ c.stage }}</code></td>
+        <td><code>{{ c.model }}</code></td>
+        <td>{{ c.status }}{% if c.lane != "live" %} <span class="meta">({{ c.lane }})</span>{% endif %}</td>
+        <td class="n num">{{ "{:,}".format(c.input_tokens) if c.input_tokens is not none else "–" }}</td>
+        <td class="n num">{{ "{:,}".format(c.output_tokens) if c.output_tokens is not none else "–" }}</td>
+        <td class="n num">{{ views.eur(c.cost_eur) }}</td>
+        <td class="n num">{{ views.ms(c.latency_ms) }}</td>
+        <td><code>{{ c.correlation_id or "–" }}</code></td>
+        <td>{% if c.error %}{{ code(views, views.code_of(c.error)) }} <span class="meta">{{ c.error }}</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row" colspan="4">{{ views.plural(calls|length, "call") }}</th>
+        <td class="n num">{{ "{:,}".format(calls|map(attribute="input_tokens")|select|sum) }}</td>
+        <td class="n num">{{ "{:,}".format(calls|map(attribute="output_tokens")|select|sum) }}</td>
+        <td class="n num">{{ views.eur(calls|map(attribute="cost_eur")|sum) }}</td>
+        <td class="n num">{{ views.ms(calls|map(attribute="latency_ms")|select|sum) }}</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+  {% endcall %}
+  {% else %}
+  <p class="meta">No LLM calls recorded for this job.</p>
+  {% endif %}
+</section>
+
+{% set searched = result.searched %}
+{% if searched or trace.passages %}
+<section class="card" aria-labelledby="search-title">
+  <h2 class="card__title" id="search-title">Search and retrieval</h2>
+  {% if searched %}
+  <dl class="facts facts--wide">
+    <div><dt>Query</dt><dd><code>{{ searched.query }}</code></dd></div>
+    <div><dt>Database</dt><dd>{{ searched.database }}</dd></div>
+    <div><dt>Matches</dt><dd><span class="num">{{ searched.matches }}</span> found, <span class="num">{{ searched.considered }}</span> considered{% if searched.ranking %}, ranked by <code>{{ searched.ranking }}</code>{% endif %}{% if searched.retrieval %}, passages by <code>{{ searched.retrieval }}</code> retrieval{% endif %}</dd></div>
+    {% if searched.skipped %}<div><dt>Skipped</dt><dd>{% for reason, n in searched.skipped.items() %}<code>{{ reason }}</code> <span class="num">{{ n }}</span>{% if not loop.last %} · {% endif %}{% endfor %}</dd></div>{% endif %}
+  </dl>
+  {% endif %}
+  {% set articles = result.articles or [] %}
+  {% if articles or trace.passages %}
+  <h3 class="subhead" id="articles-title">Articles read</h3>
+  {% call scroll("articles-title") %}
+  <table class="data">
+    <thead><tr><th scope="col">Article</th><th scope="col">Study type</th><th scope="col" class="n">Weight</th><th scope="col">Licence</th><th scope="col" class="n">Passages stored</th></tr></thead>
+    <tbody>
+      {% for a in articles %}
+      <tr>
+        <td class="data__text"><a href="{{ a.pmc_url or a.pubmed_url }}" rel="noopener">{{ a.title or a.pmcid }}</a> <span class="meta"><code>{{ a.pmcid }}</code>{% if a.year %} · {{ a.year }}{% endif %}</span></td>
+        <td>{{ a.tier or "–" }}</td>
+        <td class="n num">{{ "%.2f"|format(a.get("weight")) if a.get("weight") is not none else "–" }}</td>
+        <td>{{ a.license or "–" }}</td>
+        <td class="n num">{% if stored.get(a.pmcid) %}<a href="/admin/jobs/{{ job.id }}/passages/{{ a.pmcid }}">{{ stored[a.pmcid] }}</a>{% else %}–{% endif %}</td>
+      </tr>
+      {% endfor %}
+      {% for p in trace.passages if p.pmcid not in articles|map(attribute="pmcid")|list %}
+      <tr>
+        <td><code>{{ p.pmcid }}</code> <span class="meta">not in the result{% if not result %} (the job didn't finish){% endif %}</span></td>
+        <td>–</td><td class="n">–</td><td>–</td>
+        <td class="n num"><a href="/admin/jobs/{{ job.id }}/passages/{{ p.pmcid }}">{{ p.passages }}</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  <p class="hint">Every passage of each article is stored; the top ones by retrieval score went to the model. Which ones exactly isn't recorded yet, so the passage pages mark the quoted and dropped ones.</p>
+  {% endif %}
+  {% if result.found_not_assessed %}
+  <details>
+    <summary>{{ result.found_not_assessed|length }} found but not read</summary>
+    <ul class="limits">
+      {% for a in result.found_not_assessed %}
+      <li>{{ a.title or a.pmid }} <span class="meta">{% if a.skip_reason %}<code>{{ a.skip_reason }}</code>{% endif %}{% if a.tier %} · {{ a.tier }}{% endif %}</span></li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if result.quotes or trace.dropped_quotes %}
+<section class="card" aria-labelledby="quotes-title">
+  <h2 class="card__title" id="quotes-title">Quotes</h2>
+  {% if result.quotes %}
+  <h3 class="subhead">Verified and shown to the user</h3>
+  <ul class="quotes">
+    {% for q in result.quotes %}
+    <li class="quote quote--{{ q.label }}">
+      <blockquote class="quote__text"><p>{{ q.quote }}</p></blockquote>
+      <p class="quote__why"><strong>{{ q.label }}</strong>: {{ q.reason }}</p>
+      <p class="quote__source"><a href="/admin/jobs/{{ job.id }}/passages/{{ q.pmcid }}#{{ q.passage_id }}"><code>{{ q.passage_id }}</code></a> · {{ q.section }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if trace.dropped_quotes %}
+  <h3 class="subhead">Dropped: failed word-for-word verification</h3>
+  {% call scroll("quotes-title") %}
+  <table class="data">
+    <thead><tr><th scope="col">Passage</th><th scope="col">Reason</th><th scope="col">Quote the model gave</th><th scope="col">When</th></tr></thead>
+    <tbody>
+      {% for d in trace.dropped_quotes %}
+      <tr>
+        <td><code>{{ d.passage_ref or "–" }}</code></td>
+        <td>{{ code(views, d.reason) }}</td>
+        <td class="data__text">{{ d.quote }}</td>
+        <td><time class="num" datetime="{{ d.at }}">{{ views.when(d.at) }}</time></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% endif %}
+</section>
+{% endif %}
+
+{% if result %}
+<section class="card" aria-labelledby="result-title">
+  <h2 class="card__title" id="result-title">Result</h2>
+  <dl class="facts facts--wide">
+    <div><dt>Verdict</dt><dd><strong>{{ result.verdict }}</strong>{% if result.score is not none %}, <span class="num">{{ result.score }}</span> out of 100{% endif %}</dd></div>
+    {% if result.rule %}<div><dt>Rule</dt><dd>{{ result.rule }}</dd></div>{% endif %}
+    <div><dt>Counts</dt><dd>{{ views.plural(result.articles_assessed, "article") }} assessed{% if result.supporting is defined %}, {{ result.supporting }} supporting, {{ result.contradicting }} contradicting{% endif %}, {{ views.plural(result.quotes_dropped or 0, "quote") }} dropped</dd></div>
+    {% if result.limitations %}<div><dt>Limits shown</dt><dd><ul class="limits">{% for l in result.limitations %}<li>{{ l }}</li>{% endfor %}</ul></dd></div>{% endif %}
+  </dl>
+  <details>
+    <summary>The whole result as stored</summary>
+    <pre class="code" tabindex="0"><code>{{ views.pretty(result) }}</code></pre>
+  </details>
+</section>
+{% endif %}
+
+<section class="card" aria-labelledby="config-title">
+  <h2 class="card__title" id="config-title">Prompts and settings</h2>
+  {% if pipeline is none %}
+  <p class="meta">Core could not return <code>{{ job.config_version }}</code>.</p>
+  {% else %}
+  {% set llm = pipeline.body.llm or {} %}
+  <p>Run on <a href="/admin/config/core/{{ pipeline.version }}"><code>{{ pipeline.version }}</code></a>{% if pipeline.active %} (active now){% endif %}, model <code>{{ llm.model }}</code>.</p>
+  {% for stage, text in (pipeline.body.prompts or {}).items() %}
+  <details>
+    <summary>The <code>{{ stage }}</code> prompt{% if llm[stage] %} · max {{ llm[stage].max_tokens }} tokens, effort {{ llm[stage].effort }}{% endif %}</summary>
+    <pre class="code code--wrap" tabindex="0"><code>{{ text }}</code></pre>
+  </details>
+  {% endfor %}
+  {% endif %}
+  <details>
+    <summary>The whole job record</summary>
+    <pre class="code" tabindex="0"><code>{{ views.pretty(job) }}</code></pre>
+  </details>
+</section>
+{% endblock %}

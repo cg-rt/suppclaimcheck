@@ -1,0 +1,24 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import short_id %}
+{% block title %}{{ pmcid }} · Job {{ job.id[:8] }}{% endblock %}
+{% block main %}
+<section class="card">
+  <p class="meta"><a href="/admin/jobs/{{ job.id }}">Job {{ short_id(job.id) }}</a></p>
+  <h1 class="title">Passages of {{ pmcid }}</h1>
+  {% if article %}<p class="lede">{{ article.title }}</p>{% endif %}
+  <p class="meta"><span class="num">{{ passages|length }}</span> passages stored in reading order. <span class="mark-key mark-key--quoted">Quoted</span> passages carry a verified quote; <span class="mark-key mark-key--dropped">dropped</span> ones had a quote that failed verification.</p>
+</section>
+<section class="card" aria-label="Passages">
+  <ol class="passages">
+    {% for p in passages %}
+    {% set pid = pmcid ~ "-" ~ p.ordinal %}
+    {% set q = quotes.get(pid) %}
+    <li class="passage{% if q %} passage--quoted{% elif pid in dropped %} passage--dropped{% endif %}" id="{{ pid }}">
+      <p class="passage__meta"><code>{{ pid }}</code> · {{ p.section }}{% if q %} · <strong>quoted, {{ q.label }}</strong>{% elif pid in dropped %} · <strong>quote dropped</strong>{% endif %}</p>
+      <p class="passage__text">{{ p.text }}</p>
+      {% if q %}<p class="passage__quote">Quote: <q>{{ q.quote }}</q></p>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}

@@ -1,0 +1,170 @@
+/* Admin (P3.08-P3.10): the public site's tokens and components (app.css), wider and denser.
+   Admin is a desk tool first, so the column is 1200px and data sits in tables; phones still work. */
+
+:root {
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --admin-width: 1200px;
+}
+
+.admin .top__inner { max-width: calc(var(--admin-width) + 2 * var(--space-6)); padding-block: var(--space-4); }
+.top__area { font-weight: 600; color: var(--ink-2); }
+.admin-nav { margin-left: auto; }
+.admin-nav ul { list-style: none; padding: 0; display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+.admin-nav a, .admin-nav .top__link { color: var(--ink); text-decoration: none; font-weight: 600; padding: var(--space-1) 0; }
+.admin-nav a:hover, .admin-nav .top__link:hover { color: var(--action); }
+.admin-nav a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--ink); }
+.admin-nav form { display: contents; }
+
+.admin-column {
+  width: 100%; max-width: calc(var(--admin-width) + 2 * var(--space-6)); margin: 0 auto;
+  padding: var(--space-2) var(--space-6) var(--space-7);
+  display: grid; gap: var(--space-4); align-content: start; flex: 1; min-width: 0;
+}
+.admin .card { padding: var(--space-5); gap: var(--space-3); }
+.admin .title { font-size: var(--text-xl); }
+.admin .foot { padding-top: var(--space-3); }
+.card__head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3) var(--space-5); }
+.subhead--card { margin-top: 0; font-size: var(--text-lg); }
+.title__code { font-size: 0.85em; }
+
+/* Status words: a drawn mark and a coloured word, never a filled badge (DESIGN.md, the Calm Verdict Rule). */
+.state { display: inline-flex; align-items: center; gap: var(--space-1); font-weight: 700; white-space: nowrap; }
+.state code { font-weight: 400; color: var(--ink-2); }
+.state--ink { color: var(--ink); }
+.state--supported { color: var(--supported); }
+.state--contradicted { color: var(--contradicted); }
+.state--mixed { color: var(--mixed); }
+.state--none { color: var(--none); }
+.rb { font-size: var(--text-sm); font-weight: 700; white-space: nowrap; }
+/* On the green and red tints, action orange falls just under 4.5:1; its hover shade passes. */
+.notice a, .quote a, .passage a { color: var(--action-hover); }
+
+/* Data tables: hairline rows, tabular figures, numbers to the right. */
+.table-scroll { overflow-x: auto; min-width: 0; border-radius: var(--radius-sm); }
+.table-scroll:focus-visible { outline-offset: 2px; }
+.data { width: 100%; border-collapse: collapse; font-size: var(--text-sm); line-height: 1.45; font-variant-numeric: tabular-nums lining-nums; }
+.data th, .data td { padding: var(--space-2) var(--space-3); text-align: left; vertical-align: top; }
+.data thead th { font-weight: 700; color: var(--ink-2); border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+.data tbody th { font-weight: 700; }
+.data tbody tr + tr > * { border-top: 1px solid var(--line); }
+.data tbody tr:hover > * { background: var(--card-quiet); }
+.data tfoot > tr > * { border-top: 1px solid var(--line-strong); font-weight: 700; }
+.data .n { text-align: right; white-space: nowrap; }
+.data td:first-child, .data th:first-child { padding-left: 0; }
+.data td:last-child, .data th:last-child { padding-right: 0; }
+.data__text { min-width: 16rem; max-width: 40rem; overflow-wrap: anywhere; }
+.data code { font-size: 0.8125rem; }
+
+/* Filter tabs and search */
+.tabs ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); border-bottom: 1px solid var(--line); }
+.tabs a { display: inline-block; padding: var(--space-2) 0; color: var(--ink); font-weight: 600; text-decoration: none; }
+.tabs a:hover { color: var(--action); }
+.tabs a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--ink); }
+.tabs__n { color: var(--ink-2); font-weight: 400; }
+.search { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+.search input, .search select {
+  font: inherit; color: var(--ink); background: var(--card);
+  border: 1.5px solid var(--line-strong); border-radius: var(--radius-sm);
+  min-height: 40px; padding: var(--space-2) var(--space-3);
+}
+.search input { width: 22rem; max-width: 100%; }
+.search input:hover, .search select:hover { border-color: var(--ink-2); }
+.search input:focus-visible, .search select:focus-visible { outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--action-tint); }
+.search label { font-weight: 700; }
+::placeholder { color: var(--ink-2); opacity: 1; }
+.pager { display: flex; align-items: center; gap: var(--space-5); font-weight: 600; }
+
+/* Overview */
+.facts--wide > div { grid-template-columns: 12rem 1fr; }
+.tiles { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
+.tiles a {
+  display: flex; flex-direction: column; gap: var(--space-1); height: 100%;
+  background: var(--card-quiet); border-radius: var(--radius-sm); padding: var(--space-3);
+  color: var(--ink-2); font-size: var(--text-sm); text-decoration: none;
+  transition: background-color 160ms var(--ease);
+}
+.tiles a:hover { background: var(--action-tint); color: var(--ink); }
+.tiles__n { font-size: var(--text-lg); font-weight: 800; color: var(--ink); }
+
+/* Code, settings and diffs: monospace because they are code. */
+.code {
+  margin: 0; font: 0.8125rem/1.55 var(--mono); color: var(--ink);
+  background: var(--card-quiet); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4); overflow: auto; max-height: 36rem; tab-size: 2;
+}
+.code code { font-size: inherit; overflow-wrap: normal; }
+.code--wrap { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; }
+.code--wrap code { overflow-wrap: anywhere; }
+.diff code { display: inline-block; min-width: 100%; }
+.diff span { display: block; padding-inline: var(--space-2); margin-inline: calc(-1 * var(--space-2)); }
+.diff__add { background: var(--supported-tint); color: var(--supported); }
+.diff__remove { background: var(--contradicted-tint); color: var(--contradicted); }
+.diff__hunk { color: var(--ink-2); }
+.diff__file { color: var(--ink-2); font-weight: 700; }
+.secret code { font-size: var(--text-lg); background: var(--card); border: 1.5px solid var(--line-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); user-select: all; }
+
+/* Trace */
+.retry { display: grid; gap: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--line); }
+.passages { list-style: none; padding: 0; display: grid; gap: var(--space-2); min-width: 0; }
+.passages > li { min-width: 0; overflow-wrap: anywhere; }
+.passage { display: grid; gap: var(--space-1); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); scroll-margin-top: var(--space-5); }
+.passage + .passage { border-top: 1px solid var(--line); }
+.passage--quoted { background: var(--supported-tint); }
+.passage--dropped { background: var(--contradicted-tint); }
+.passage:target { box-shadow: 0 0 0 2px var(--ink); }
+.passage__meta { font-size: var(--text-sm); color: var(--ink-2); }
+.passage__text { max-width: 80ch; }
+.passage__quote { font-size: var(--text-sm); }
+.passage__quote q { font-family: var(--serif); font-style: italic; font-size: var(--text-base); }
+.mark-key { padding: 0 var(--space-1); border-radius: 4px; color: var(--ink); }
+.mark-key--quoted { background: var(--supported-tint); }
+.mark-key--dropped { background: var(--contradicted-tint); }
+
+/* Users */
+.actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-4); }
+.confirm > summary { font-weight: 700; }
+.confirm[open] { flex-basis: 100%; }
+.confirm form { display: grid; gap: var(--space-2); justify-items: start; }
+.confirm[open] > summary { margin-bottom: var(--space-2); }
+.form--inline { grid-template-columns: minmax(0, 24rem) auto auto; align-items: end; gap: var(--space-4) var(--space-5); }
+.choice { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); min-height: 48px; align-items: center; }
+.choice legend { font-weight: 700; padding: 0; margin-bottom: var(--space-1); float: left; width: 100%; }
+.choice label { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 400; cursor: pointer; }
+.choice input { width: 1.125rem; height: 1.125rem; accent-color: var(--action); margin: 0; }
+
+@media (max-width: 900px) {
+  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .form--inline { grid-template-columns: 1fr; align-items: start; }
+}
+
+@media (max-width: 640px) {
+  .admin .top__inner { padding: var(--space-4); }
+  .admin-nav { order: 3; margin-left: 0; width: 100%; }
+  .admin-column { padding: var(--space-2) var(--space-4) var(--space-6); gap: var(--space-3); }
+  .admin .card { padding: var(--space-4); }
+  .facts--wide > div { grid-template-columns: 1fr; gap: 0; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .search { width: 100%; }
+  .search input { flex: 1 1 12rem; width: auto; }
+  .pager { justify-content: space-between; }
+  .tabs ul { gap: 0 var(--space-4); }
+  .tabs a { font-size: var(--text-sm); padding: var(--space-1) 0; }
+  .data__text { min-width: 0; }
+
+  /* Row-shaped tables become one block per row, each cell labelled. */
+  .data--stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .data--stack, .data--stack tbody, .data--stack tr, .data--stack td, .data--stack tbody th { display: block; width: 100%; }
+  .data--stack tbody tr { padding: var(--space-3) 0; }
+  .data--stack tbody tr + tr > * { border-top: 0; }
+  .data--stack tbody tr + tr { border-top: 1px solid var(--line); }
+  .data--stack tbody tr:hover > * { background: none; }
+  /* Two classes, so the stacked layout outranks the first- and last-cell padding above. */
+  .data.data--stack td, .data.data--stack tbody th { position: relative; padding: var(--space-1) 0 var(--space-1) 7rem; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+  .data--stack td::before, .data--stack tbody th::before {
+    content: attr(data-label); position: absolute; left: 0; top: var(--space-1); width: 6.5rem;
+    color: var(--ink-2); font-weight: 700; font-size: var(--text-sm);
+  }
+  .data--stack .n { text-align: left; }
+  .data.data--stack td[colspan] { padding-left: 0; }
+  .data--stack td[colspan]::before { content: none; }
+}

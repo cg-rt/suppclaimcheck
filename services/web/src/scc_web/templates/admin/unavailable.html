@@ -1,0 +1,9 @@
+{% extends "admin/layout.html" %}
+{% block title %}Not available{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">{{ error.module }} didn't answer</h1>
+  <p class="lede">This page needs data from {{ error.module }}, which {% if error.status %}answered with an error ({{ error.status }}, <code>{{ error.code }}</code>){% else %}could not be reached{% endif %}.</p>
+  <p>Check <a href="/admin/health">Health</a>, then the module's container: <a href="{{ views.rb_link('RB-03') }}" rel="noopener">RB-03</a> if it keeps restarting, <a href="{{ views.rb_link('RB-04') }}" rel="noopener">RB-04</a> if the database is down.</p>
+</section>
+{% endblock %}

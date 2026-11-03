@@ -13,7 +13,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from scc_common.app import Check, create_app, http_check
 from scc_common.db import conninfo_from_env, db_check
-from scc_web import config, pages
+from scc_web import admin_pages, config, pages
+from scc_web.admin_client import AdminClient
 from scc_web.auth import routes as auth_routes
 from scc_web.context import Deps, SignInRequired, render, sign_in_redirect
 from scc_web.core_client import CoreClient
@@ -39,6 +40,11 @@ def build_app(
             # The active version in the database (D-048); a new one applies on restart.
             config=config.load_active(conninfo),
             trust_cloudflare=os.environ.get("SCC_TRUST_CLOUDFLARE") == "1",
+            # Without an admin hostname, /admin answers nowhere (P3.08, D-049).
+            admin=AdminClient(os.environ["SCC_CORE_URL"], os.environ["SCC_GATEWAY_URL"])
+            if os.environ.get("SCC_ADMIN_HOST")
+            else None,
+            admin_host=os.environ.get("SCC_ADMIN_HOST") or None,
         )
 
     @asynccontextmanager
@@ -57,6 +63,7 @@ def build_app(
     app.mount("/static", StaticFiles(directory=STATIC), name="static")
     app.include_router(auth_routes.router)
     app.include_router(pages.router)
+    admin_pages.mount(app)
 
     @app.exception_handler(SignInRequired)
     async def to_sign_in(request: Request, exc: SignInRequired) -> Response:
