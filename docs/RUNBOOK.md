@@ -133,7 +133,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 ## RB-10 Suspected abuse or injection attempts
 **Status:** draft; the throttle and the alerts are covered by `tests/integration/test_guardrails.py` (P3.02, D-050), not yet exercised on the VM.
 - **Symptoms:** a Telegram alert `injection_throttled` naming a user ID; a user reports "Too many checks from this account contained instructions to the system"; many refused checks from one account; strange inputs.
-- **Checks:** what the account sent and when (core's database; the admin view replaces this once P3.08 lands):
+- **Checks:** what the account sent and when (core's database; admin has no view of injection events yet):
   ```bash
   sudo docker compose exec postgres psql -U postgres -d scc -c "SELECT e.at, e.stage, e.source, j.state FROM core.injection_events e JOIN core.jobs j ON j.id = e.job_id WHERE e.user_id = <id> ORDER BY e.at DESC LIMIT 20"
   ```
