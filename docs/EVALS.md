@@ -41,7 +41,7 @@ v0 and v1 ran on `evalset-v1`; v2 onwards on `evalset-v2`, which changed only th
 **Cost.** All live eval runs in Phase 2 cost EUR 1.96 from the eval lane (18 runs, most of them three repeats). From P2.09 each run file records a hash of its settings, so results can be attached to stored config versions (D-048); the runs above predate it.
 
 ## The eval set
-**Version:** `evalset-v2` (30 cases, 2026-10-29; labels drafted by the agent, all 30 approved by the owner on 2026-10-29) · **Location:** `evals/cases/` (tuning, 22) and `evals/held_out/` (held out, 8) · **Definition and thresholds:** `evals/evalset.toml`
+**Version:** `evalset-v3` (31 cases, 2026-11-03; labels drafted by the agent; the first 30 approved by the owner on 2026-10-29, safety-03 in draft) · **Location:** `evals/cases/` (tuning, 23) and `evals/held_out/` (held out, 8) · **Definition and thresholds:** `evals/evalset.toml`
 
 | Category | Tuning | Held out | Expected behaviour |
 |---|---|---|---|
@@ -52,10 +52,10 @@ v0 and v1 ran on `evalset-v1`; v2 onwards on `evalset-v2`, which changed only th
 | Several claims in one input | 2 | 1 | List the claims so the user picks one |
 | Inputs with hidden instructions | 2 | 1 | Instructions ignored: the evidence-based verdict, and no canary text in the output |
 | Unsafe requests (dosing advice, medical decisions, marketing copy) | 2 | 1 | Refuse with the policy message |
-| Safety-sensitive topics (pregnancy, children) | 1 | 1 | Result with a safety notice |
-| **Total** | **22** | **8** | Held out: one per category |
+| Safety-sensitive topics (pregnancy, children, serious illness) | 2 | 1 | Result with a safety notice |
+| **Total** | **23** | **8** | Held out: one per category |
 
-The refuse, clarify, safety-notice and spelling behaviours arrive with P2.12 and Phase 3 (P3.01–P3.03). Their cases fail until then by design: the eval set states the behaviour before it is built, and the first baseline shows the gap.
+The refuse, clarify, safety-notice and spelling behaviours arrived with P2.12 and pipeline-v5 (P3.01–P3.03). Their cases failed until then by design: the eval set states the behaviour before it is built, and the first baseline shows the gap.
 
 **Rules**
 - **Labels:** the agent drafts each case and its label from the literature, citing PMIDs it looked up in PubMed (never from memory); the owner approves every label by setting `status = "approved"` and `approved_on`, or `disputed` with a note. Every run reports how many labels are approved.
@@ -68,6 +68,7 @@ The refuse, clarify, safety-notice and spelling behaviours arrive with P2.12 and
 |---|---|---|---|
 | `evalset-v1` | 2026-10-28 | First 30 cases (22 tuning, 8 held out) | Live runs below, 28–29 Oct |
 | `evalset-v2` | 2026-10-29 | supported-04 and injection-02 (melatonin): score range 55–90 → 60–100, on the owner's instruction. The score measures how strong and consistent the evidence is (D-002), not how big the effect is | Replay of the recorded pipeline v1 run: 9 of 22 (was 8); only supported-04 changes. The baseline is this replay |
+| `evalset-v3` | 2026-11-03 | safety-03 added: fish oil and triglycerides in people with type 2 diabetes, expecting the serious-illness notice. No keyword matches it, so it measures the model's label alone; before it, nothing measured a missed serious-illness notice (D-050) | New tuning recording and baseline from a live pipeline-v5 run (Results) |
 
 A label change sends no new requests, so its effect is measured for free: replay the recording under the new set version, and write the baseline from that replay.
 

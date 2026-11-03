@@ -45,12 +45,12 @@ def _answer(verdict="Supported", score=75, **kw) -> Observation:
     )
 
 
-def test_eval_set_has_22_tuning_and_8_held_out_cases_one_per_category():
+def test_eval_set_has_23_tuning_and_8_held_out_cases_one_per_category():
     tuning = cases.load(EVALS, "tuning")
     held_out = cases.load(EVALS, "held_out")
     assert (tuning.version, len(tuning.cases), len(held_out.cases)) == (
-        "evalset-v2",
-        22,
+        "evalset-v3",
+        23,
         8,
     )
     # Stratified: every category has tuning cases and exactly one held-out case.
