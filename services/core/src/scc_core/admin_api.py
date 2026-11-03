@@ -27,12 +27,13 @@ log = logging.getLogger("scc.admin")
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 # Jobs by state as admin groups them. Any state not named here is "in progress", so states added
-# later (P3.01's triage, for example) still show up somewhere.
+# later still show up somewhere. "refused" is every stop before the search: P3.01's triage refuses
+# a request or asks the user to clarify it (needs_clarification).
 SETTLED = {
     "done": ("done",),
     "awaiting_confirmation": ("awaiting_confirmation",),
     "failed": ("failed",),
-    "refused": ("refused",),
+    "refused": ("refused", "needs_clarification"),
 }
 STATUSES = ("in_progress", *SETTLED)
 Status = Literal["in_progress", "done", "awaiting_confirmation", "failed", "refused"]

@@ -111,6 +111,7 @@
 .passage + .passage { border-top: 1px solid var(--line); }
 .passage--quoted { background: var(--supported-tint); }
 .passage--dropped { background: var(--contradicted-tint); }
+.passage--sent:not(.passage--quoted, .passage--dropped) { background: var(--card-quiet); }
 .passage:target { box-shadow: 0 0 0 2px var(--ink); }
 .passage__meta { font-size: var(--text-sm); color: var(--ink-2); }
 .passage__text { max-width: 80ch; }

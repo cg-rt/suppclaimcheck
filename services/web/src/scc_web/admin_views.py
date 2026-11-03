@@ -66,7 +66,8 @@ STATUSES = {
     "awaiting_confirmation": "Awaiting confirmation",
     "done": "Completed",
     "failed": "Failed",
-    "refused": "Refused",
+    # Refused, or stopped to ask the user to clarify (P3.01): nothing was searched.
+    "refused": "Stopped before search",
 }
 # The ink each status is written in: a coloured word with a drawn mark, never a filled badge.
 STATUS_INK = {

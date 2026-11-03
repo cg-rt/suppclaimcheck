@@ -54,9 +54,16 @@ async def seed(conn, user: int = 7, other: int = 8, clear: bool = True) -> dict:
             await conn.execute(f"DELETE FROM core.{table}")
         await conn.execute("DELETE FROM core.procrastinate_workers")
     ids = {}
+    # The pipeline records the passages each assess call read (`retrieved`, P3.01 onwards).
+    result = {**RESULT, "retrieved": {"PMC6543210": ["PMC6543210-0", "PMC6543210-2"]}}
     ids["done"], at = await _job(
-        conn, "done", user_id=user, claim=CLAIM, result=RESULT, minutes_ago=50
+        conn, "done", user_id=user, claim=CLAIM, result=result, minutes_ago=50
     )
+    for ordinal in range(3):
+        await conn.execute(
+            "INSERT INTO core.passages (job_id, pmcid, ordinal, section, text) VALUES (%s, %s, %s, %s, %s)",
+            (ids["done"], "PMC6543210", ordinal, "Results", f"Done passage {ordinal}."),
+        )
     for i, state in enumerate(
         ("submitted", "extracting", "awaiting_confirmation", "searching")
     ):

@@ -441,6 +441,8 @@ async def job_passages(request: Request, job_id: str, pmcid: str) -> Response:
         q["passage_id"]: q for q in result.get("quotes", []) if q["pmcid"] == pmcid
     }
     dropped = {d["passage_ref"] for d in trace["dropped_quotes"]}
+    # The passages the model read, recorded on jobs that reach a result; older jobs don't have it.
+    retrieved = result.get("retrieved")
     article = next(
         (a for a in result.get("articles", []) if a.get("pmcid") == pmcid), None
     )
@@ -454,6 +456,7 @@ async def job_passages(request: Request, job_id: str, pmcid: str) -> Response:
         passages=passages,
         quotes=quotes,
         dropped=dropped,
+        retrieved=None if retrieved is None else set(retrieved.get(pmcid, [])),
     )
 
 

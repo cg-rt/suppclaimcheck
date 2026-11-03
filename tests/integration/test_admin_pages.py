@@ -288,19 +288,30 @@ def test_retry_needs_the_form_token_then_queues_the_failed_phase(migrated_db):
     assert f"retry by admin user {ctx['admin_id']}" in after
 
 
-def test_passages_mark_the_quoted_ones(migrated_db):
+def test_passages_mark_the_ones_sent_quoted_and_dropped(migrated_db):
     async def steps(ctx):
         job = ctx["ids"]["failed_late"]
+        done = ctx["ids"]["done"]
         async with admin_client(ctx) as c:
             return (
                 (await c.get(f"/admin/jobs/{job}/passages/PMC6543210")).text,
                 (await c.get(f"/admin/jobs/{job}/passages/PMC999")).status_code,
                 (await c.get(f"/admin/jobs/{job}/passages/nonsense")).status_code,
+                (await c.get(f"/admin/jobs/{done}/passages/PMC6543210")).text,
+                (await c.get(f"/admin/jobs/{done}")).text,
+                (await c.get(f"/admin/jobs/{job}")).text,
             )
 
-    found, other, bad = with_admin(migrated_db, steps)
+    found, other, bad, done, done_trace, failed_trace = with_admin(migrated_db, steps)
     assert found.count('<li class="passage') == 3 and "Passage 2." in found
+    assert "doesn't record which passages the model read" in found  # failed: no result
     assert (other, bad) == (404, 404)
+    # A job that reached a result records the passages each assess call read.
+    assert (
+        "2</span> of them sent to the model" in done
+        and done.count("passage--sent") == 2
+    )
+    assert "Sent to the model" in done_trace and "Sent to the model" not in failed_trace
 
 
 def test_errors_costs_evals_and_health(migrated_db):

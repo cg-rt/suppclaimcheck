@@ -4,6 +4,8 @@
 {% block main %}
 {% set stored = {} %}
 {% for p in trace.passages %}{% set _ = stored.update({p.pmcid: p.passages}) %}{% endfor %}
+{# The top-K passages each assess call read, per article; recorded on jobs that reach a result. #}
+{% set retrieved = (job.result or {}).get("retrieved") %}
 <section class="card" aria-labelledby="job-title">
   <div class="card__head">
     <h1 class="title" id="job-title">Job {{ short_id(job.id) }}</h1>
@@ -159,7 +161,7 @@
   <h3 class="subhead" id="articles-title">Articles read</h3>
   {% call scroll("articles-title") %}
   <table class="data">
-    <thead><tr><th scope="col">Article</th><th scope="col">Study type</th><th scope="col" class="n">Weight</th><th scope="col">Licence</th><th scope="col" class="n">Passages stored</th></tr></thead>
+    <thead><tr><th scope="col">Article</th><th scope="col">Study type</th><th scope="col" class="n">Weight</th><th scope="col">Licence</th><th scope="col" class="n">Passages stored</th>{% if retrieved is not none %}<th scope="col" class="n">Sent to the model</th>{% endif %}</tr></thead>
     <tbody>
       {% for a in articles %}
       <tr>
@@ -168,6 +170,7 @@
         <td class="n num">{{ "%.2f"|format(a.get("weight")) if a.get("weight") is not none else "–" }}</td>
         <td>{{ a.license or "–" }}</td>
         <td class="n num">{% if stored.get(a.pmcid) %}<a href="/admin/jobs/{{ job.id }}/passages/{{ a.pmcid }}">{{ stored[a.pmcid] }}</a>{% else %}–{% endif %}</td>
+        {% if retrieved is not none %}<td class="n num">{{ retrieved.get(a.pmcid, [])|length }}</td>{% endif %}
       </tr>
       {% endfor %}
       {% for p in trace.passages if p.pmcid not in articles|map(attribute="pmcid")|list %}
@@ -175,12 +178,17 @@
         <td><code>{{ p.pmcid }}</code> <span class="meta">not in the result{% if not result %} (the job didn't finish){% endif %}</span></td>
         <td>–</td><td class="n">–</td><td>–</td>
         <td class="n num"><a href="/admin/jobs/{{ job.id }}/passages/{{ p.pmcid }}">{{ p.passages }}</a></td>
+        {% if retrieved is not none %}<td class="n num">{{ retrieved.get(p.pmcid, [])|length }}</td>{% endif %}
       </tr>
       {% endfor %}
     </tbody>
   </table>
   {% endcall %}
-  <p class="hint">Every passage of each article is stored; the top ones by retrieval score went to the model. Which ones exactly isn't recorded yet, so the passage pages mark the quoted and dropped ones.</p>
+  {% if retrieved is not none %}
+  <p class="hint">Every passage of each article is stored; the top ones by retrieval score went to the model in that article's assess call. The passage pages mark which ones, and which were quoted or dropped.</p>
+  {% else %}
+  <p class="hint">Every passage of each article is stored; the top ones by retrieval score went to the model. This job doesn't record which ones (it finished before that was recorded, or didn't reach a result), so the passage pages mark the quoted and dropped ones.</p>
+  {% endif %}
   {% endif %}
   {% if result.found_not_assessed %}
   <details>

@@ -7,6 +7,7 @@ controls the states, events, passages and dropped quotes it reads back.
 import uuid
 
 import httpx
+import psycopg
 from procrastinate import App
 from procrastinate.testing import InMemoryConnector
 from psycopg_pool import AsyncConnectionPool
@@ -393,3 +394,37 @@ def test_usage_adds_up_this_month_per_lane_day_and_stage(migrated_db):
         1,
         1560.0,
     )
+
+
+def test_a_job_stopped_to_clarify_counts_with_the_refused_ones(migrated_db):
+    """P3.01's triage adds needs_clarification: stopped before search, like refused, never stalled."""
+    with psycopg.connect(migrated_db.admin_conninfo, autocommit=True) as admin:
+        # main's state check predates the state; P3.01's migration widens it.
+        admin.execute(
+            "ALTER TABLE core.jobs DROP CONSTRAINT IF EXISTS jobs_state_valid"
+        )
+
+    async def steps(client, ctx):
+        async with ctx["pool"].connection() as conn:
+            await conn.execute(
+                "UPDATE core.jobs SET state = 'needs_clarification', updated_at = now() - interval '1 hour'"
+                " WHERE id = %s",
+                (ctx["ids"]["waiting"],),
+            )
+        return (
+            ctx["ids"],
+            (await client.get("/admin/jobs", params={"status": "refused"})).json(),
+            (await client.get("/admin/errors")).json(),
+        )
+
+    ids, refused, errors = with_core(migrated_db, steps)
+    assert (
+        refused["counts"]["refused"] == 1
+        and refused["counts"]["awaiting_confirmation"] == 0
+    )
+    assert [(j["id"], j["status"]) for j in refused["jobs"]] == [
+        (str(ids["waiting"]), "refused")
+    ]
+    assert str(ids["waiting"]) not in {
+        e["job_id"] for e in errors if e["kind"] == "job_stalled"
+    }
