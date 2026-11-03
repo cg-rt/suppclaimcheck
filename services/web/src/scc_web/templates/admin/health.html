@@ -1,0 +1,28 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import health as mark, scroll %}
+{% block title %}Health{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title" id="health-title">Modules</h1>
+  <p class="meta">Checked now, from web: each module's <code>/health/deps</code> and <code>/version</code>, core-worker's queue heartbeats, and the database web connects to. Every module runs one app version (D-034).</p>
+  {% if mixed %}<div class="notice notice--error" role="alert"><p>Modules report different versions. A deploy may have stopped halfway: see <a href="{{ views.rb_link('RB-03') }}" rel="noopener">RB-03</a> and the deploy log.</p></div>{% endif %}
+  {% call scroll("health-title") %}
+  <table class="data data--stack">
+    <thead><tr><th scope="col">Module</th><th scope="col">State</th><th scope="col">What was checked</th><th scope="col">Version</th><th scope="col">Git SHA</th><th scope="col">Runbook</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <th scope="row" data-label="Module">{{ r.name }}</th>
+        <td data-label="State">{{ mark(r.ok) }}</td>
+        <td data-label="Checked" class="data__text">{{ r.detail }}</td>
+        <td data-label="Version">{% if r.version %}<code>{{ r.version }}</code>{% if r.note %} <span class="meta">{{ r.note }}</span>{% endif %}{% else %}–{% endif %}</td>
+        <td data-label="Git SHA">{% if r.git_sha and r.git_sha != "unknown" %}<a href="{{ views.REPO }}/commit/{{ r.git_sha }}" rel="noopener"><code>{{ r.git_sha[:7] }}</code></a>{% elif r.git_sha %}<code>{{ r.git_sha }}</code>{% else %}–{% endif %}</td>
+        <td data-label="Runbook">{% if r.rb %}<a href="{{ views.rb_link(r.rb) }}" rel="noopener">{{ r.rb }}</a>{% else %}–{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  <p class="hint">Tunnel down: <a href="{{ views.rb_link('RB-01') }}" rel="noopener">RB-01</a>. Container restarting: <a href="{{ views.rb_link('RB-03') }}" rel="noopener">RB-03</a>. Database down: <a href="{{ views.rb_link('RB-04') }}" rel="noopener">RB-04</a>. The full map of modules is in <code>docs/architecture/</code>.</p>
+</section>
+{% endblock %}

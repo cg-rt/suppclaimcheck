@@ -1,0 +1,61 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import status as status_mark, code, short_id, scroll %}
+{% block title %}Jobs{% endblock %}
+{% block main %}
+{% set counts = listing.counts %}
+{% set query = ("&q=" ~ q|urlencode) if q else "" %}
+<section class="card">
+  <div class="card__head">
+    <h1 class="title" id="jobs-title">Jobs</h1>
+    <form class="search" method="get" action="/admin/jobs" role="search">
+      {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+      <label class="visually-hidden" for="q">Search jobs</label>
+      <input id="q" name="q" type="search" value="{{ q }}" maxlength="200" placeholder="ID, words or email" aria-describedby="q-hint">
+      <button class="button button--small" type="submit">Search</button>
+    </form>
+  </div>
+  <p class="hint" id="q-hint">Search matches a job ID or its first characters, a correlation ID, words in the text or the confirmed claim, or part of a user's email.</p>
+  <nav class="tabs" aria-label="Job status">
+    <ul>
+      <li><a href="/admin/jobs{{ '?' ~ query[1:] if query else '' }}"{% if not status %} aria-current="page"{% endif %}>All <span class="tabs__n num">{{ counts.values()|sum }}</span></a></li>
+      {% for key, label in views.STATUSES.items() %}
+      <li><a href="/admin/jobs?status={{ key }}{{ query }}"{% if status == key %} aria-current="page"{% endif %}>{{ label }} <span class="tabs__n num">{{ counts.get(key, 0) }}</span></a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% if q %}<p class="meta">Showing jobs that match <q>{{ q }}</q>. <a href="/admin/jobs{{ '?status=' ~ status if status else '' }}">Clear the search</a></p>{% endif %}
+
+  {% if listing.jobs %}
+  {% call scroll("jobs-title") %}
+  <table class="data data--stack">
+    <thead>
+      <tr><th scope="col">Created</th><th scope="col">Job</th><th scope="col">User</th><th scope="col">Claim or text</th><th scope="col">Status</th><th scope="col">Outcome</th><th scope="col">Config</th></tr>
+    </thead>
+    <tbody>
+      {% for j in listing.jobs %}
+      <tr>
+        <td data-label="Created"><time class="num" datetime="{{ j.created_at }}">{{ views.when(j.created_at) }}</time></td>
+        <td data-label="Job"><a href="/admin/jobs/{{ j.id }}">{{ short_id(j.id) }}</a></td>
+        <td data-label="User">{{ emails.get(j.user_id, "user " ~ j.user_id) }}</td>
+        <td data-label="Claim" class="data__text">{% if j.supplement %}<strong>{{ j.supplement }}</strong>: {{ j.effect }}{% else %}{{ j.input_preview|truncate(90) }}{% endif %}</td>
+        <td data-label="Status">{{ status_mark(views, j.status, j.state) }}</td>
+        <td data-label="Outcome">{% if j.verdict %}{{ j.verdict }}{% if j.score is not none %} <span class="num">{{ j.score }}</span>{% endif %}{% elif j.failure_code %}{{ code(views, j.failure_code) }}{% else %}–{% endif %}</td>
+        <td data-label="Config"><code>{{ j.config_version }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% set base = "/admin/jobs?" ~ ("status=" ~ status ~ "&" if status else "") ~ ("q=" ~ q|urlencode ~ "&" if q else "") %}
+  {% if page_number > 1 or listing.more %}
+  <nav class="pager" aria-label="Pages">
+    {% if page_number > 1 %}<a href="{{ base }}page={{ page_number - 1 }}">Newer jobs</a>{% endif %}
+    <span class="meta">Page <span class="num">{{ page_number }}</span></span>
+    {% if listing.more %}<a href="{{ base }}page={{ page_number + 1 }}">Older jobs</a>{% endif %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <p>{% if q %}No job matches this search{% if status %} with this status{% endif %}.{% elif status %}No jobs are {{ views.STATUSES[status]|lower }}.{% else %}No jobs yet. A job appears here as soon as someone submits a claim.{% endif %}</p>
+  {% endif %}
+</section>
+{% endblock %}

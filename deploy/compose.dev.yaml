@@ -93,6 +93,10 @@ services:
       SCC_DB_USER: scc_web_app
       SCC_DB_PASSWORD_FILE: /run/secrets/db_web_password
       SCC_CORE_URL: http://core-api:8000
+      # Admin (P3.08): its read-only gateway endpoints, and the hostname admin answers on
+      # (http://admin.localhost:18080/admin; browsers send *.localhost to this machine).
+      SCC_GATEWAY_URL: http://gateway:8000
+      SCC_ADMIN_HOST: admin.localhost
     secrets: [db_web_password]
     ports: ["127.0.0.1:18080:8000"]
     depends_on:

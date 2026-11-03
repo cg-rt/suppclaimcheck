@@ -13,9 +13,10 @@ from fastapi import APIRouter, FastAPI, HTTPException, Request
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
+from scc_common import config_admin
 from scc_common.app import Check, create_app
 from scc_common.db import conninfo_from_env, db_check, read_secret
-from scc_gateway import budget, config
+from scc_gateway import admin_api, budget, config
 from scc_gateway.alerts import AlertFailed, Alerts, AlertsNotConfigured
 from scc_gateway.literature import Literature, LiteratureUnavailable
 from scc_gateway.llm import (
@@ -319,4 +320,7 @@ def build_app(
     app = create_app("gateway", "SuppClaimCheck gateway", checks, lifespan=lifespan)
     app.state.deps = deps
     app.include_router(router)
+    # Read-only admin views for web's admin pages (P3.08-P3.10).
+    app.include_router(admin_api.router)
+    app.include_router(config_admin.router(config.STORE, admin_api.pool_of))
     return app

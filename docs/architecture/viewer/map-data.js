@@ -69,7 +69,7 @@ window.ARCHITECTURE_MAP = {
       "version": "0.1.2",
       "phase_built": 1,
       "technology": "Python 3.14, FastAPI, Jinja2, htmx, server-sent events",
-      "purpose": "Public pages (sign in, submit, confirm, progress, result, history, method, privacy), the admin dashboard on its own hostname, and login (accounts, sessions, CSRF, lockout) as a separate package with its own schema and database role.\n",
+      "purpose": "Public pages (sign in, submit, confirm, progress, result, history, method, privacy), the admin pages on their own hostname (jobs and per-job traces with retry, errors, costs, evals, config versions, users, health; D-049), and login (accounts, sessions, CSRF, lockout) as a separate package with its own schema and database role. Admin reads core and gateway data through their read-only admin endpoints.\n",
       "why_it_exists": "The only module users talk to. Login lives here with its own least-privilege role, so core, which handles hostile text, can never read password hashes. Admin code answers only on the admin hostname, behind Cloudflare Access and the admin role.\n",
       "ports": {
         "internal": 8000,
@@ -80,6 +80,7 @@ window.ARCHITECTURE_MAP = {
       ],
       "depends_on": [
         "core-api",
+        "gateway",
         "postgres"
       ],
       "data_stores": [
@@ -100,7 +101,7 @@ window.ARCHITECTURE_MAP = {
       "version": "0.1.2",
       "phase_built": 1,
       "technology": "Python 3.14, FastAPI, Procrastinate, fastembed, pgvector",
-      "purpose": "core-api: jobs and confirmation (REST with OpenAPI); each job is stamped with the config version active when it is created. core-worker: the pipeline, run on the job's config version: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring. In the image, not served: the config CLI (versions, activation, rollback; D-048) and the eval runner (run from the dev PC, D-043).\n",
+      "purpose": "core-api: jobs and confirmation (REST with OpenAPI); each job is stamped with the config version active when it is created. Read-only admin endpoints (jobs, traces, errors, queue, config) and the retry of a failed job. core-worker: the pipeline, run on the job's config version: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring. In the image, not served: the config CLI (versions, activation, rollback; D-048) and the eval runner (run from the dev PC, D-043).\n",
       "why_it_exists": "Owns the product's logic and the deterministic parts (quote verification, scoring) that make it trustworthy. One codebase and one version, run as two containers so slow jobs never block the API.\n",
       "ports": {
         "internal": 8000,
@@ -130,7 +131,7 @@ window.ARCHITECTURE_MAP = {
       "version": "0.1.2",
       "phase_built": 1,
       "technology": "Python 3.14, FastAPI, provider SDKs, httpx",
-      "purpose": "The single door to the outside world: the LLM provider (Anthropic Claude for v1, D-033, behind a swappable interface; prompts, token and cost accounting, budget guard), PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts.\n",
+      "purpose": "The single door to the outside world: the LLM provider (Anthropic Claude for v1, D-033, behind a swappable interface; prompts, token and cost accounting, budget guard), PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts. Read-only admin endpoints over its LLM call records (calls per job, costs and usage) and its config versions.\n",
       "why_it_exists": "Holds every API key, so the budget cap cannot be bypassed and egress is one auditable place. Merges the AI gateway and the sources connector (D-011).\n",
       "ports": {
         "internal": 8000,

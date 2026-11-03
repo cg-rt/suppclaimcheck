@@ -1,6 +1,347 @@
 {
   "components": {
     "schemas": {
+      "AdminJob": {
+        "properties": {
+          "config_version": {
+            "title": "Config Version",
+            "type": "string"
+          },
+          "confirmed_claim": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed Claim"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "extracted_claims": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted Claims"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "input_text": {
+            "title": "Input Text",
+            "type": "string"
+          },
+          "input_type": {
+            "title": "Input Type",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "state",
+          "input_type",
+          "input_text",
+          "extracted_claims",
+          "confirmed_claim",
+          "result",
+          "error",
+          "config_version",
+          "correlation_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AdminJob",
+        "type": "object"
+      },
+      "AdminJobList": {
+        "description": "One page of jobs, newest first, and how many jobs match the search in each status.",
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/AdminJobRow"
+            },
+            "title": "Jobs",
+            "type": "array"
+          },
+          "more": {
+            "title": "More",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "counts",
+          "jobs",
+          "more"
+        ],
+        "title": "AdminJobList",
+        "type": "object"
+      },
+      "AdminJobRow": {
+        "properties": {
+          "config_version": {
+            "title": "Config Version",
+            "type": "string"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effect"
+          },
+          "failure_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Code"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "input_preview": {
+            "title": "Input Preview",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "in_progress",
+              "done",
+              "awaiting_confirmation",
+              "failed",
+              "refused"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "supplement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplement"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "state",
+          "status",
+          "input_preview",
+          "supplement",
+          "effect",
+          "verdict",
+          "score",
+          "failure_code",
+          "config_version",
+          "correlation_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AdminJobRow",
+        "type": "object"
+      },
+      "ArticlePassages": {
+        "properties": {
+          "passages": {
+            "title": "Passages",
+            "type": "integer"
+          },
+          "pmcid": {
+            "title": "Pmcid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pmcid",
+          "passages"
+        ],
+        "title": "ArticlePassages",
+        "type": "object"
+      },
+      "AuditEntry": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "previous_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Version"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "actor",
+          "action",
+          "version",
+          "previous_version",
+          "reason"
+        ],
+        "title": "AuditEntry",
+        "type": "object"
+      },
       "Claim": {
         "description": "A claim as the user confirms it. Only supplement and effect are required.",
         "properties": {
@@ -58,6 +399,298 @@
           "effect"
         ],
         "title": "Claim",
+        "type": "object"
+      },
+      "ConfigOverview": {
+        "description": "Every version, oldest first, and the newest audit entries first.",
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "evaluated": {
+            "title": "Evaluated",
+            "type": "boolean"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEntry"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "module": {
+            "title": "Module",
+            "type": "string"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/VersionSummary"
+            },
+            "title": "Versions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "module",
+          "evaluated",
+          "active",
+          "versions",
+          "history"
+        ],
+        "title": "ConfigOverview",
+        "type": "object"
+      },
+      "ConfigVersion": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "body": {
+            "additionalProperties": true,
+            "title": "Body",
+            "type": "object"
+          },
+          "body_toml": {
+            "title": "Body Toml",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "evals": {
+            "items": {
+              "$ref": "#/components/schemas/EvalResult"
+            },
+            "title": "Evals",
+            "type": "array"
+          },
+          "latest_eval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvalResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "source",
+          "created_at",
+          "created_by",
+          "reason",
+          "active",
+          "latest_eval",
+          "sha256",
+          "body_toml",
+          "body",
+          "evals"
+        ],
+        "title": "ConfigVersion",
+        "type": "object"
+      },
+      "DroppedQuote": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "config_version": {
+            "title": "Config Version",
+            "type": "string"
+          },
+          "passage_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passage Ref"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage",
+          "passage_ref",
+          "quote",
+          "reason",
+          "config_version",
+          "at"
+        ],
+        "title": "DroppedQuote",
+        "type": "object"
+      },
+      "ErrorItem": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "kind": {
+            "enum": [
+              "job_failed",
+              "job_stalled",
+              "quote_dropped",
+              "task_failed"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "at",
+          "job_id",
+          "code",
+          "detail",
+          "correlation_id"
+        ],
+        "title": "ErrorItem",
+        "type": "object"
+      },
+      "EvalResult": {
+        "properties": {
+          "attached_at": {
+            "format": "date-time",
+            "title": "Attached At",
+            "type": "string"
+          },
+          "attached_by": {
+            "title": "Attached By",
+            "type": "string"
+          },
+          "cases": {
+            "title": "Cases",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "number"
+          },
+          "run_date": {
+            "format": "date",
+            "title": "Run Date",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "split": {
+            "title": "Split",
+            "type": "string"
+          },
+          "thresholds_met": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "title": "Thresholds Met",
+            "type": "object"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "run_id",
+          "split",
+          "run_date",
+          "passed",
+          "cases",
+          "thresholds_met",
+          "attached_at",
+          "attached_by"
+        ],
+        "title": "EvalResult",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -327,6 +960,206 @@
         "title": "JobSummary",
         "type": "object"
       },
+      "JobTrace": {
+        "description": "Everything core knows about one job. The gateway holds its LLM calls (by job ID).",
+        "properties": {
+          "dropped_quotes": {
+            "items": {
+              "$ref": "#/components/schemas/DroppedQuote"
+            },
+            "title": "Dropped Quotes",
+            "type": "array"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/TraceEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "failure_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Code"
+          },
+          "job": {
+            "$ref": "#/components/schemas/AdminJob"
+          },
+          "passages": {
+            "items": {
+              "$ref": "#/components/schemas/ArticlePassages"
+            },
+            "title": "Passages",
+            "type": "array"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          },
+          "stalled": {
+            "title": "Stalled",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "in_progress",
+              "done",
+              "awaiting_confirmation",
+              "failed",
+              "refused"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job",
+          "status",
+          "failure_code",
+          "retryable",
+          "stalled",
+          "events",
+          "passages",
+          "dropped_quotes"
+        ],
+        "title": "JobTrace",
+        "type": "object"
+      },
+      "Passage": {
+        "properties": {
+          "ordinal": {
+            "title": "Ordinal",
+            "type": "integer"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ordinal",
+          "section",
+          "text"
+        ],
+        "title": "Passage",
+        "type": "object"
+      },
+      "QueueStatus": {
+        "description": "core-worker's health as the queue sees it: live workers and tasks by status.",
+        "properties": {
+          "tasks": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Tasks",
+            "type": "object"
+          },
+          "workers": {
+            "items": {
+              "$ref": "#/components/schemas/QueueWorker"
+            },
+            "title": "Workers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "workers",
+          "tasks"
+        ],
+        "title": "QueueStatus",
+        "type": "object"
+      },
+      "QueueWorker": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_heartbeat": {
+            "format": "date-time",
+            "title": "Last Heartbeat",
+            "type": "string"
+          },
+          "seconds_since": {
+            "title": "Seconds Since",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "last_heartbeat",
+          "seconds_since"
+        ],
+        "title": "QueueWorker",
+        "type": "object"
+      },
+      "RetryRequest": {
+        "properties": {
+          "actor_user_id": {
+            "minimum": 1.0,
+            "title": "Actor User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "actor_user_id"
+        ],
+        "title": "RetryRequest",
+        "type": "object"
+      },
+      "TraceEvent": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seconds"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "detail",
+          "at",
+          "seconds"
+        ],
+        "title": "TraceEvent",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -366,6 +1199,56 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VersionSummary": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "latest_eval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvalResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "source",
+          "created_at",
+          "created_by",
+          "reason",
+          "active",
+          "latest_eval"
+        ],
+        "title": "VersionSummary",
+        "type": "object"
       }
     }
   },
@@ -375,6 +1258,432 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/admin/config": {
+      "get": {
+        "description": "Every config version, the active one, eval results and the audit trail. Read-only.",
+        "operationId": "config_overview_admin_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigOverview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Config Overview",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/config/versions/{name}": {
+      "get": {
+        "description": "One version's TOML text and every eval result attached to it.",
+        "operationId": "config_version_admin_config_versions__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z0-9][a-z0-9.-]{2,63}$",
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigVersion"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such version"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Config Version",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/errors": {
+      "get": {
+        "description": "Recent failures core records, newest first: failed and stalled jobs, quotes that failed\nverification, and queue tasks that raised. LLM call failures are the gateway's.",
+        "operationId": "recent_errors_admin_errors_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorItem"
+                  },
+                  "title": "Response Recent Errors Admin Errors Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recent Errors",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/jobs": {
+      "get": {
+        "description": "Every user's jobs, newest first, filtered by status, user and a search over IDs and text.",
+        "operationId": "list_jobs_admin_jobs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "in_progress",
+                    "done",
+                    "awaiting_confirmation",
+                    "failed",
+                    "refused"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminJobList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Jobs",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/jobs/{job_id}/passages": {
+      "get": {
+        "description": "Every passage stored for one article of the job, in reading order.",
+        "operationId": "job_passages_admin_jobs__job_id__passages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pmcid",
+            "required": true,
+            "schema": {
+              "pattern": "^PMC\\d{1,12}$",
+              "title": "Pmcid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Passage"
+                  },
+                  "title": "Response Job Passages Admin Jobs  Job Id  Passages Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such job or article"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Job Passages",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/jobs/{job_id}/retry": {
+      "post": {
+        "description": "Sends a failed job back to the start of the phase that failed and queues that task again.",
+        "operationId": "retry_job_admin_jobs__job_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such job"
+          },
+          "409": {
+            "description": "The job is not in failed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Job",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/jobs/{job_id}/trace": {
+      "get": {
+        "description": "The job with its inputs and outputs, each state it went through and for how long, the passages\nstored per article, and the quotes that failed verification.",
+        "operationId": "job_trace_admin_jobs__job_id__trace_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobTrace"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such job"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Job Trace",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/queue": {
+      "get": {
+        "description": "Live core-worker processes (Procrastinate heartbeats) and queue tasks by status.",
+        "operationId": "queue_status_admin_queue_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Queue Status",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "health_health_get",

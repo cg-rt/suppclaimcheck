@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block title %}{% endblock %} · Admin · SuppClaimCheck</title>
+<link rel="preload" href="/static/fonts/nunito-sans-5.3.0-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body class="admin">
+{% from "macros.html" import icon %}
+<a class="skip" href="#main">Skip to the content</a>
+<header class="top">
+  <div class="top__inner">
+    <a class="top__name" href="/admin">SuppClaimCheck <span class="top__area">admin</span></a>
+    <nav class="admin-nav" aria-label="Admin">
+      <ul>
+        {% for key, label, href in sections %}
+        <li><a href="{{ href }}"{% if section == key %} aria-current="page"{% endif %}>{{ label }}</a></li>
+        {% endfor %}
+        <li><a href="{{ views.RUNBOOK }}" rel="noopener">Runbook {{ icon("out") }}<span class="visually-hidden"> (on GitHub)</span></a></li>
+        <li>
+          <form method="post" action="/sign-out">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="top__link" type="submit">Sign out</button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<main id="main" class="admin-column">
+{% block main %}{% endblock %}
+</main>
+<footer class="foot">
+  <p>Signed in as {{ session.user.email }}. Times are UTC.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import scroll %}
+{% block title %}Evals{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title" id="evals-title">Eval results per pipeline version</h1>
+  <p class="meta">Results attached to each version in core's config store (D-048), matched by the settings' content hash. The full write-up of every run is in <a href="{{ views.EVALS }}" rel="noopener">docs/EVALS.md</a>.</p>
+  {% call scroll("evals-title") %}
+  <table class="data data--stack">
+    <thead><tr><th scope="col">Version</th><th scope="col">Latest run</th><th scope="col">Split</th><th scope="col" class="n">Passed</th><th scope="col">Thresholds</th></tr></thead>
+    <tbody>
+      {% for v in pipeline.versions|reverse %}
+      {% set e = v.latest_eval %}
+      {% set met, missed = views.thresholds(e) %}
+      <tr>
+        <th scope="row" data-label="Version"><a href="/admin/config/core/{{ v.version }}"><code>{{ v.version }}</code></a>{% if v.active %} <span class="meta">active</span>{% endif %}</th>
+        {% if e %}
+        <td data-label="Latest run"><code>{{ e.run_id }}</code> <span class="meta num">{{ e.run_date }}</span></td>
+        <td data-label="Split">{{ e.split }}</td>
+        <td data-label="Passed" class="n num">{{ "%g"|format(e.passed) }} of {{ e.cases }}</td>
+        <td data-label="Thresholds">{% if missed %}<span class="state state--contradicted">missed</span> {{ missed|join(", ") }}{% if met %}<span class="meta">; met {{ met|join(", ") }}</span>{% endif %}{% else %}<span class="state state--supported">all met</span>{% if met %} <span class="meta">{{ met|join(", ") }}</span>{% endif %}{% endif %}</td>
+        {% else %}
+        <td data-label="Latest run" colspan="4" class="meta">No result attached</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% if not runs %}
+  <p class="hint">No eval run is attached to any version yet. Attach one with <code>python -m scc_core.config attach-eval VERSION --run FILE</code> (<a href="{{ views.rb_link('RB-15') }}" rel="noopener">RB-15</a>); activating a version without a passing result asks for a reason.</p>
+  {% endif %}
+</section>
+
+{% for version, results in runs.items() %}
+<section class="card" aria-labelledby="runs-{{ loop.index }}">
+  <h2 class="card__title" id="runs-{{ loop.index }}">Every run of <code>{{ version }}</code></h2>
+  {% call scroll("runs-" ~ loop.index) %}
+  <table class="data">
+    <thead><tr><th scope="col">Run</th><th scope="col">Date</th><th scope="col">Split</th><th scope="col" class="n">Passed</th><th scope="col">Missed</th><th scope="col">Attached</th></tr></thead>
+    <tbody>
+      {% for e in results %}
+      {% set met, missed = views.thresholds(e) %}
+      <tr>
+        <td><code>{{ e.run_id }}</code></td>
+        <td class="num">{{ e.run_date }}</td>
+        <td>{{ e.split }}</td>
+        <td class="n num">{{ "%g"|format(e.passed) }} of {{ e.cases }}</td>
+        <td>{{ missed|join(", ") or "none" }}</td>
+        <td><span class="meta">{{ e.attached_by }}, <time class="num" datetime="{{ e.attached_at }}">{{ views.when(e.attached_at) }}</time></span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+</section>
+{% endfor %}
+{% endblock %}

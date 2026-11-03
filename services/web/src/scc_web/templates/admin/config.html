@@ -1,0 +1,55 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import scroll %}
+{% block title %}Config{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">Config versions</h1>
+  <p class="meta">Every module keeps its versions, the active pointer and an append-only audit in its own schema (D-048). This page only reads them: creating, activating and rolling back stay on each module's CLI, with a reason that goes into the audit (<a href="{{ views.rb_link('RB-15') }}" rel="noopener">RB-15</a>). Core applies a new version to the next check; gateway and web apply one on restart.</p>
+</section>
+{% for s in stores %}
+<section class="card" aria-labelledby="store-{{ s.slug }}">
+  <div class="card__head">
+    <h2 class="subhead subhead--card" id="store-{{ s.slug }}">{{ s.label }}</h2>
+    <p class="meta">Active: {% if s.active %}<a href="/admin/config/{{ s.slug }}/{{ s.active }}"><code>{{ s.active }}</code></a>{% else %}none{% endif %}</p>
+  </div>
+  {% call scroll("store-" ~ s.slug) %}
+  <table class="data data--stack">
+    <thead><tr><th scope="col">Version</th><th scope="col">From</th><th scope="col">Created</th><th scope="col">Why</th>{% if s.evaluated %}<th scope="col">Latest eval</th>{% endif %}</tr></thead>
+    <tbody>
+      {% for v in s.versions|reverse %}
+      {% set met, missed = views.thresholds(v.latest_eval) %}
+      <tr>
+        <th scope="row" data-label="Version"><a href="/admin/config/{{ s.slug }}/{{ v.version }}"><code>{{ v.version }}</code></a>{% if v.active %} <span class="state state--supported">active</span>{% endif %}</th>
+        <td data-label="From">{{ "repo" if v.source == "repo" else "CLI" }}</td>
+        <td data-label="Created"><time class="num" datetime="{{ v.created_at }}">{{ views.when(v.created_at) }}</time> <span class="meta">{{ v.created_by }}</span></td>
+        <td data-label="Why" class="data__text">{{ v.reason }}</td>
+        {% if s.evaluated %}
+        <td data-label="Latest eval">{% if v.latest_eval %}<span class="num">{{ "%g"|format(v.latest_eval.passed) }}</span> of <span class="num">{{ v.latest_eval.cases }}</span> {{ v.latest_eval.split }}{% if missed %} <span class="state state--contradicted">missed {{ missed|join(", ") }}</span>{% endif %}{% else %}<span class="meta">none attached</span>{% endif %}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  <details>
+    <summary>Audit trail, newest first</summary>
+    {% call scroll("store-" ~ s.slug) %}
+    <table class="data data--stack">
+      <thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">Action</th><th scope="col">Version</th><th scope="col">Why</th></tr></thead>
+      <tbody>
+        {% for h in s.history %}
+        <tr>
+          <td data-label="When"><time class="num" datetime="{{ h.at }}">{{ views.when(h.at) }}</time></td>
+          <td data-label="Who">{{ h.actor }}</td>
+          <td data-label="Action">{{ h.action|replace("_", " ") }}</td>
+          <td data-label="Version"><code>{{ h.version }}</code>{% if h.previous_version %} <span class="meta">from <code>{{ h.previous_version }}</code></span>{% endif %}</td>
+          <td data-label="Why" class="data__text">{{ h.reason }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endcall %}
+  </details>
+</section>
+{% endfor %}
+{% endblock %}

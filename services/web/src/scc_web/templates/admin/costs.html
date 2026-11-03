@@ -1,0 +1,104 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import code, short_id, scroll %}
+{% block title %}Costs{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title" id="month-title">Costs and usage</h1>
+  <p class="meta">From the gateway's record of every LLM call, since <time class="num" datetime="{{ usage.month_start }}">{{ views.when(usage.month_start)[:10] }}</time> (the month the cap counts, in UTC). A call still running counts at its reserved worst case, as the cap counts it.</p>
+  {% call scroll("month-title") %}
+  <table class="data">
+    <thead><tr><th scope="col">Lane</th><th scope="col" class="n">Spent</th><th scope="col" class="n">Cap</th><th scope="col" class="n">Calls</th><th scope="col" class="n">Failed</th><th scope="col" class="n">Running</th><th scope="col" class="n">Jobs</th><th scope="col" class="n">Per job</th><th scope="col" class="n">Tokens in</th><th scope="col" class="n">Tokens out</th></tr></thead>
+    <tbody>
+      {% for l in usage.lanes %}
+      <tr>
+        <th scope="row">{{ l.lane }}</th>
+        <td class="n num">{{ views.eur(l.spent_eur) }}</td>
+        <td class="n num">{{ views.eur(l.cap_eur, 2) }}</td>
+        <td class="n num">{{ l.calls }}</td>
+        <td class="n num">{{ l.failed }}</td>
+        <td class="n num">{{ l.running }}</td>
+        <td class="n num">{{ l.jobs }}</td>
+        <td class="n num">{{ views.eur(l.spent_eur / l.jobs) if l.jobs else "–" }}</td>
+        <td class="n num">{{ "{:,}".format(l.input_tokens) }}</td>
+        <td class="n num">{{ "{:,}".format(l.output_tokens) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  <p class="hint">Per job is this month's spend over the jobs that made at least one call; eval calls name their case, not a job. Warnings at 50% and 80% of a cap come with the budget guard (P3.04); what to do at the cap is <a href="{{ views.rb_link('RB-09') }}" rel="noopener">RB-09</a>.</p>
+</section>
+
+<section class="card" aria-labelledby="stages-title">
+  <h2 class="card__title" id="stages-title">This month by stage and model</h2>
+  {% if usage.stages %}
+  {% call scroll("stages-title") %}
+  <table class="data">
+    <thead><tr><th scope="col">Lane</th><th scope="col">Stage</th><th scope="col">Model</th><th scope="col" class="n">Calls</th><th scope="col" class="n">Failed</th><th scope="col" class="n">Cost</th><th scope="col" class="n">Tokens in</th><th scope="col" class="n">Tokens out</th><th scope="col" class="n">Median latency</th><th scope="col" class="n">p95 latency</th></tr></thead>
+    <tbody>
+      {% for s in usage.stages %}
+      <tr>
+        <td>{{ s.lane }}</td><td><code>{{ s.stage }}</code></td><td><code>{{ s.model }}</code></td>
+        <td class="n num">{{ s.calls }}</td><td class="n num">{{ s.failed }}</td>
+        <td class="n num">{{ views.eur(s.cost_eur) }}</td>
+        <td class="n num">{{ "{:,}".format(s.input_tokens) }}</td><td class="n num">{{ "{:,}".format(s.output_tokens) }}</td>
+        <td class="n num">{{ views.ms(s.median_latency_ms) }}</td><td class="n num">{{ views.ms(s.p95_latency_ms) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% else %}
+  <p>No LLM calls this month yet.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="days-title">
+  <h2 class="card__title" id="days-title">Last 14 days</h2>
+  {% if usage.days %}
+  {% call scroll("days-title") %}
+  <table class="data">
+    <thead><tr><th scope="col">Day</th><th scope="col">Lane</th><th scope="col" class="n">Calls</th><th scope="col" class="n">Cost</th><th scope="col" class="n">Tokens in</th><th scope="col" class="n">Tokens out</th></tr></thead>
+    <tbody>
+      {% for d in usage.days %}
+      <tr>
+        <td class="num">{{ d.day }}</td><td>{{ d.lane }}</td><td class="n num">{{ d.calls }}</td>
+        <td class="n num">{{ views.eur(d.cost_eur) }}</td>
+        <td class="n num">{{ "{:,}".format(d.input_tokens) }}</td><td class="n num">{{ "{:,}".format(d.output_tokens) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% else %}
+  <p>No LLM calls in the last 14 days.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="calls-title">
+  <h2 class="card__title" id="calls-title">Latest 50 calls</h2>
+  {% if calls %}
+  {% call scroll("calls-title") %}
+  <table class="data data--stack">
+    <thead><tr><th scope="col">Started</th><th scope="col">Lane</th><th scope="col">Stage</th><th scope="col">Status</th><th scope="col">Job</th><th scope="col" class="n">Tokens</th><th scope="col" class="n">Cost</th><th scope="col" class="n">Latency</th></tr></thead>
+    <tbody>
+      {% for c in calls %}
+      <tr>
+        <td data-label="Started"><time class="num" datetime="{{ c.created_at }}">{{ views.when(c.created_at) }}</time></td>
+        <td data-label="Lane">{{ c.lane }}</td>
+        <td data-label="Stage"><code>{{ c.stage }}</code></td>
+        <td data-label="Status">{{ c.status }}{% if c.error %} {{ code(views, views.code_of(c.error)) }}{% endif %}</td>
+        <td data-label="Job">{% if views.is_job(c.job_id) %}<a href="/admin/jobs/{{ c.job_id }}">{{ short_id(c.job_id) }}</a>{% elif c.job_id %}<code>{{ c.job_id }}</code>{% else %}–{% endif %}</td>
+        <td data-label="Tokens" class="n num">{{ "{:,}".format(c.input_tokens or 0) }} / {{ "{:,}".format(c.output_tokens or 0) }}</td>
+        <td data-label="Cost" class="n num">{{ views.eur(c.cost_eur) }}</td>
+        <td data-label="Latency" class="n num">{{ views.ms(c.latency_ms) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% else %}
+  <p>No LLM calls recorded yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

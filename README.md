@@ -32,6 +32,7 @@ flowchart LR
   entry --> m_edge
   m_edge --> m_web
   m_web --> m_core
+  m_web --> m_gateway
   m_web --> m_postgres
   m_core --> m_postgres
   m_core --> m_gateway

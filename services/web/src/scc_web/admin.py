@@ -8,11 +8,15 @@ Run inside the web container, which has the database settings:
 
 The password is asked for twice at a hidden prompt, or read from stdin when it isn't a terminal,
 so it never lands in the shell history or the process list.
+
+The admin users page (P3.10) creates, resets and disables accounts with the same functions.
 """
 
 import argparse
 import asyncio
 import getpass
+import re
+import secrets
 import sys
 
 import psycopg
@@ -35,16 +39,64 @@ def read_password(cfg: dict) -> str:
     return password
 
 
+class AccountError(Exception):
+    """A refused account change; the message says why, in words the admin can act on."""
+
+
+EMAIL = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]+$")
+
+
+def new_password() -> str:
+    """A random password for an account made or reset in admin, shown once to that admin."""
+    return secrets.token_urlsafe(15)
+
+
+async def create_account(
+    conn: psycopg.AsyncConnection, email: str, role: str, password: str, cfg: dict
+) -> int:
+    email = email.strip()
+    if not EMAIL.fullmatch(email) or len(email) > 254:
+        raise AccountError(f"{email or 'That'} doesn't look like an email address.")
+    if role not in {"user", "admin"}:
+        raise AccountError("The role must be user or admin.")
+    problem = passwords.check_new_password(password, cfg)
+    if problem:
+        raise AccountError(problem)
+    if await store.user_by_email(conn, email):
+        raise AccountError(f"An account for {email} already exists.")
+    return await store.create_user(conn, email, passwords.hash_password(password), role)
+
+
+async def reset_password(
+    conn: psycopg.AsyncConnection, user: store.User, password: str, cfg: dict
+) -> None:
+    """Sets a new password and ends every session of the account."""
+    problem = passwords.check_new_password(password, cfg)
+    if problem:
+        raise AccountError(problem)
+    await store.set_password(conn, user.id, passwords.hash_password(password))
+    await store.delete_user_sessions(conn, user.id)
+
+
+async def disable_account(conn: psycopg.AsyncConnection, user: store.User) -> None:
+    """Stops the account signing in and ends its sessions."""
+    await store.disable_user(conn, user.id)
+    await store.delete_user_sessions(conn, user.id)
+
+
 async def run(args: argparse.Namespace, conninfo: str, cfg: dict) -> str:
     async with await psycopg.AsyncConnection.connect(conninfo) as conn:
         user = await store.user_by_email(conn, args.email)
         if args.command == "create-user":
+            role = "admin" if args.admin else "user"
             if user:
                 raise SystemExit(f"An account for {args.email} already exists.")
-            role = "admin" if args.admin else "user"
-            user_id = await store.create_user(
-                conn, args.email, passwords.hash_password(read_password(cfg)), role
-            )
+            try:
+                user_id = await create_account(
+                    conn, args.email, role, read_password(cfg), cfg
+                )
+            except AccountError as exc:
+                raise SystemExit(str(exc)) from None
             return f"Created {role} account {user_id} for {args.email}."
         if args.command == "ensure-user":
             password = read_password(cfg)
@@ -66,13 +118,9 @@ async def run(args: argparse.Namespace, conninfo: str, cfg: dict) -> str:
         if user is None:
             raise SystemExit(f"No account for {args.email}.")
         if args.command == "set-password":
-            await store.set_password(
-                conn, user.id, passwords.hash_password(read_password(cfg))
-            )
-            await store.delete_user_sessions(conn, user.id)
+            await reset_password(conn, user, read_password(cfg), cfg)
             return f"Password changed for {args.email}; their sessions were ended."
-        await store.disable_user(conn, user.id)
-        await store.delete_user_sessions(conn, user.id)
+        await disable_account(conn, user)
         return f"Disabled {args.email}; their sessions were ended."
 
 
