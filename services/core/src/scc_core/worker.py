@@ -11,6 +11,7 @@ from pathlib import Path
 
 from psycopg_pool import AsyncConnectionPool
 
+from scc_common import config_store
 from scc_common.db import conninfo_from_env
 from scc_common.logs import configure_logging
 from scc_core import config, tasks
@@ -33,10 +34,16 @@ async def main_async() -> None:
     conninfo = conninfo_from_env()
     pool = AsyncConnectionPool(conninfo, open=False, min_size=1, max_size=4)
     await pool.open()
+
+    async def load_version(version: str) -> dict:
+        async with pool.connection() as conn:
+            return await config_store.load_version_async(conn, config.STORE, version)
+
     tasks.runtime = Runtime(
         pool=pool,
         gateway=GatewayClient(os.environ["SCC_GATEWAY_URL"]),
-        config=config.load(),
+        config=config.load_active(conninfo),
+        load_config=load_version,
     )
     app = tasks.make_app(conninfo)
     beat = asyncio.create_task(_heartbeat())

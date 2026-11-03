@@ -20,7 +20,7 @@ from fastapi import (
 from procrastinate import App
 from psycopg_pool import AsyncConnectionPool
 
-from scc_common import correlation
+from scc_common import config_store, correlation
 from scc_common.app import Check, create_app, http_check
 from scc_common.db import conninfo_from_env, db_check
 from scc_core import config, jobs, tasks
@@ -42,7 +42,8 @@ IdempotencyKey = Annotated[
 class Deps:
     pool: AsyncConnectionPool
     queue: App
-    config_version: str
+    # Tests pin a version; otherwise each new job gets the version active when it is created (D-048).
+    config_version: str | None = None
 
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -71,9 +72,12 @@ async def create_job(
     """Creates a job and queues claim extraction. Retrying with the same Idempotency-Key returns the same job."""
     deps = _deps(request)
     async with deps.pool.connection() as conn:
+        version = deps.config_version or await config_store.active_version_async(
+            conn, config.STORE
+        )
         try:
             job, created = await jobs.create(
-                conn, body, idempotency_key, deps.config_version, correlation.current()
+                conn, body, idempotency_key, version, correlation.current()
             )
         except jobs.IdempotencyConflict:
             raise HTTPException(
@@ -166,7 +170,6 @@ def build_app(
         deps = Deps(
             pool=AsyncConnectionPool(conninfo, open=False, min_size=1, max_size=5),
             queue=tasks.make_app(conninfo),
-            config_version=config.load()["version"],
         )
 
     @asynccontextmanager

@@ -6,6 +6,7 @@ from pathlib import Path
 from scc_common.db import ModuleDb, read_secret
 from scc_common.logs import configure_logging
 from scc_common.migrations import admin_conninfo_from_env, migrate
+from scc_web.config import STORE
 
 SPEC = ModuleDb(module="web", schema="auth")
 MIGRATIONS = Path(__file__).parent / "migrations"
@@ -18,6 +19,7 @@ def main() -> None:
         MIGRATIONS,
         admin_conninfo_from_env(),
         read_secret(os.environ["SCC_DB_PASSWORD_FILE"]),
+        STORE,
     )
 
 

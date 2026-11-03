@@ -14,7 +14,9 @@ import sqlalchemy as sa
 from alembic import command, context
 from alembic.config import Config
 
+from scc_common import config_store
 from scc_common.db import ModuleDb, bootstrap, read_secret
+from scc_common.version import app_version
 
 log = logging.getLogger("scc.migrate")
 
@@ -31,9 +33,13 @@ def admin_conninfo_from_env() -> str:
 
 
 def migrate(
-    spec: ModuleDb, migrations_dir: Path, admin_conninfo: str, app_password: str
+    spec: ModuleDb,
+    migrations_dir: Path,
+    admin_conninfo: str,
+    app_password: str,
+    store: config_store.Store | None = None,
 ) -> None:
-    """Bootstraps the module's roles and schema, then upgrades its tables to the latest migration."""
+    """Bootstraps the module's roles and schema, upgrades its tables, then registers its config versions."""
     with psycopg.connect(admin_conninfo, autocommit=True) as admin:
         bootstrap(admin, spec, app_password)
     log.info("bootstrap done", extra={"db_module": spec.module, "schema": spec.schema})
@@ -54,6 +60,19 @@ def migrate(
     finally:
         engine.dispose()
     log.info("migrations at head", extra={"db_module": spec.module})
+    if store is not None:
+        with psycopg.connect(admin_conninfo, autocommit=True) as conn:
+            conn.execute(f'SET ROLE "{spec.owner_role}"')
+            registered = config_store.sync_repo_versions(conn, store, app_version())
+            active = config_store.active_version(conn, store)
+        log.info(
+            "config versions registered",
+            extra={
+                "db_module": spec.module,
+                "registered": registered,
+                "active": active,
+            },
+        )
 
 
 def run_env() -> None:

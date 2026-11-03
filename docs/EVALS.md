@@ -146,7 +146,9 @@ Live tuning run (spends from the eval lane; refreshes the recording, writes `eva
 SCC_EVAL_ADMIN_DSN="host=127.0.0.1 port=15433 user=postgres dbname=postgres" uv run python -m scc_core.eval run --mode live --notes "why this run"
 ```
 
-Other options: `--cases id1,id2` for a partial run (never saved; add `--out file.json` to keep the details), `--write-baseline` to make a run the new baseline, `--config <version>` for another pipeline config, `--split held_out --held-out-reason "release candidate X"` for the held-out set.
+Other options: `--cases id1,id2` for a partial run (never saved; add `--out file.json` to keep the details), `--write-baseline` to make a run the new baseline, `--config <version>` for another pipeline config, `--config-file <file.toml>` for a config outside the repo (never recorded), `--split held_out --held-out-reason "release candidate X"` for the held-out set.
+
+**Results per config version (D-048).** Every run file records `config_sha256`, a hash of the settings it ran (the version name excluded). In production, `python -m scc_core.config attach-eval <version> --run <file>` links a full run without overrides to the stored version with the same hash; activation then shows that result and warns when it missed a threshold (RUNBOOK RB-15).
 
 **Experiments.** One live run is one sample: two identical runs of v0 disagreed on 3 of 22 verdicts. `--repeat 3` runs the split three times and reports mean metrics, each run's pass count and **verdict stability** (the share of cases with the same outcome in every run). `--set path=value` overrides one config value for the run, for example `--set 'llm.assess.field_order=["passage_id", "label", "quote", "reason"]'`. Repeated and overridden runs are never recorded and never become the baseline: those come from one plain run of a real config version.
 

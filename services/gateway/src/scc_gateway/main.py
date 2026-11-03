@@ -273,10 +273,10 @@ def build_app(
     if checks is None:
         checks = {"database": db_check(conninfo_from_env())}
     if deps is None and "SCC_DB_USER" in os.environ:
-        cfg = config.load()
-        pool = AsyncConnectionPool(
-            conninfo_from_env(), open=False, min_size=1, max_size=5
-        )
+        conninfo = conninfo_from_env()
+        # The active version in the database (D-048); a new one applies on restart.
+        cfg = config.load_active(conninfo)
+        pool = AsyncConnectionPool(conninfo, open=False, min_size=1, max_size=5)
         api_key = _optional_secret("SCC_ANTHROPIC_API_KEY_FILE")
         provider = (
             ClaudeProvider(api_key, cfg["llm"]["timeout_s"])
