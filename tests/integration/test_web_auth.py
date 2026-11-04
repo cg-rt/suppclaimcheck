@@ -457,6 +457,37 @@ def test_result_page_shows_safety_notices_before_the_verdict(migrated_db):
     assert html.index(notice) < html.index("What the research says")
 
 
+def test_result_page_says_why_an_injected_or_infused_article_was_not_read(migrated_db):
+    """Query v2 (D-052): the reason, and the count next to the other skipped ones."""
+
+    async def steps(client, ctx):
+        base = job(ctx["user"])["result"]
+        result = {
+            **base,
+            "searched": {**base["searched"], "skipped": {"not_by_mouth": 1}},
+            "found_not_assessed": [
+                {
+                    "pmid": "30984714",
+                    "title": "Intravenous iron sucrose in pregnancy",
+                    "skip_reason": "not_by_mouth",
+                },
+                {**base["found_not_assessed"][0], "skip_reason": "not_in_europe_pmc"},
+            ],
+        }
+        done = ctx["core"].add(job(ctx["user"], result=result))
+        await sign_in(client)
+        return (await client.get(f"/checks/{done['id']}")).text
+
+    html = with_web(migrated_db, steps)
+    assert (
+        "Intravenous iron sucrose in pregnancy</a>" not in html
+    )  # no PubMed link given
+    assert "given by injection or infusion, not taken by mouth" in html
+    assert '<span class="num">1</span> given by injection or infusion' in html
+    # Each reason in its own words: Europe PMC no longer reads as "no full text".
+    assert "· not in Europe PMC</li>" in html
+
+
 def test_a_throttled_account_sees_why_it_cannot_start_a_check(migrated_db):
     """P3.02: core refuses new checks after repeated instructions; web shows core's message."""
     message = "Too many checks from this account contained instructions to the system."

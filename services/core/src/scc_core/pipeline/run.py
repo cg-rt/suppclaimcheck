@@ -418,6 +418,12 @@ async def _run(rt: Runtime, job: Job, claim: Claim) -> dict:
         # Metadata for every candidate first (the gateway caches it), so code can rank by evidence tier;
         # then full texts for the best N, in that order, skipping any without full text.
         listed = await rt.gateway.fetch(found["pmids"], 0)
+        # Query v2 (D-052): candidates given by injection or infusion are found, not read.
+        listed["articles"], other_route = query.other_route(
+            listed["articles"], claim, cfg.get("query")
+        )
+        if other_route:
+            listed["counts"] = {**listed["counts"], query.NOT_BY_MOUTH: other_route}
         order = [a["pmid"] for a in evidence.rank(listed["articles"], weights, mode)]
         fetched = await rt.gateway.fetch(order, n) if order else listed
     ranked_articles = evidence.rank(fetched["articles"], weights, mode)

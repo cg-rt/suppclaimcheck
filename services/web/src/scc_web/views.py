@@ -22,6 +22,13 @@ AFTER_CONFIRM = ["searching", "retrieving", "assessing", "verifying", "scoring",
 # States where the progress stream stops and the page reloads to show what comes next.
 SETTLED = {"awaiting_confirmation", "done", "failed", "refused", "needs_clarification"}
 
+# Why a found article was not read, in the result's own words. not_by_mouth: query v2 (D-052).
+SKIP_REASONS = {
+    "licence_not_allowed": "licence doesn't allow text mining",
+    "no_full_text": "no full text",
+    "not_in_europe_pmc": "not in Europe PMC",
+    "not_by_mouth": "given by injection or infusion, not taken by mouth",
+}
 VERDICT_CLASS = {
     "Supported": "supported",
     "Contradicted": "contradicted",
@@ -198,6 +205,7 @@ def result_view(job: dict) -> dict:
         )
     skipped = result["searched"].get("skipped", {})
     return {
+        "skip_reasons": SKIP_REASONS,
         "verdict": result["verdict"],
         "verdict_class": VERDICT_CLASS.get(result["verdict"], "none"),
         "explanation": explain(result),

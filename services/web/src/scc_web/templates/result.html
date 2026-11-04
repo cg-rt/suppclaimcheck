@@ -99,7 +99,7 @@
     <div><dt>Search</dt><dd><code>{{ r.searched.query }}</code></dd></div>
     <div><dt>Matches</dt><dd class="num">{{ r.searched.matches }}</dd></div>
     <div><dt>Looked at</dt><dd class="num">{{ r.searched.considered }}</dd></div>
-    <div><dt>Skipped</dt><dd><span class="num">{{ view.skipped.get("licence_not_allowed", 0) }}</span> licence doesn't allow text mining · <span class="num">{{ view.skipped.get("no_full_text", 0) }}</span> no full text · <span class="num">{{ view.skipped.get("not_in_europe_pmc", 0) }}</span> not in Europe PMC</dd></div>
+    <div><dt>Skipped</dt><dd><span class="num">{{ view.skipped.get("licence_not_allowed", 0) }}</span> licence doesn't allow text mining · <span class="num">{{ view.skipped.get("no_full_text", 0) }}</span> no full text · <span class="num">{{ view.skipped.get("not_in_europe_pmc", 0) }}</span> not in Europe PMC{% if view.skipped.get("not_by_mouth") %} · <span class="num">{{ view.skipped.not_by_mouth }}</span> given by injection or infusion{% endif %}</dd></div>
     <div><dt>Method</dt><dd>{{ r.config_version }} · {{ r.rubric_version }}</dd></div>
   </dl>
 </section>
@@ -115,7 +115,7 @@
     <summary>Also found, not read in this version (<span class="num">{{ view.not_read|length }}</span>)</summary>
     <ul>
       {% for a in view.not_read %}
-      <li>{% if a.pubmed_url %}<a href="{{ a.pubmed_url }}" rel="noopener noreferrer" target="_blank">{{ a.title or ("PMID " ~ a.pmid) }}</a>{% else %}{{ a.title or ("PMID " ~ a.pmid) }}{% endif %}{% if a.year %} · <span class="num">{{ a.year }}</span>{% endif %}{% if a.skip_reason %} · {{ "licence doesn't allow text mining" if a.skip_reason == "licence_not_allowed" else "no full text" }}{% endif %}</li>
+      <li>{% if a.pubmed_url %}<a href="{{ a.pubmed_url }}" rel="noopener noreferrer" target="_blank">{{ a.title or ("PMID " ~ a.pmid) }}</a>{% else %}{{ a.title or ("PMID " ~ a.pmid) }}{% endif %}{% if a.year %} · <span class="num">{{ a.year }}</span>{% endif %}{% if a.skip_reason %} · {{ view.skip_reasons.get(a.skip_reason, "not read") }}{% endif %}</li>
       {% endfor %}
     </ul>
   </details>
