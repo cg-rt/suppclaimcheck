@@ -37,7 +37,6 @@ exclude-newer = "14 days"
 # Security fixes newer than two weeks (D-041): a fixed cutoff just after the patched release.
 # A fixed date gets stricter than "14 days" once it is two weeks old, so delete each entry then.
 [tool.uv.exclude-newer-package]
-certifi = "2026-10-21T00:00:00Z"     # 2026.10.19 fixes GHSA-6q48-6c7w-9gw2 (in the images); delete on 2026-11-04
 virtualenv = "2026-10-23T00:00:00Z"  # 21.14.13 fixes GHSA-cx6f-vjhg-g3cc (and 21.14.9 GHSA-vxj4-q4g9-crj7); delete on 2026-11-06
 fastembed = "2026-10-25T00:00:00Z"   # 0.9.1 allows Pillow 13.0.0, which fixes GHSA-5x8w-8jj5-q52h, GHSA-v9pv-5gc8-w2m6 and 39 more (in core); delete on 2026-11-07
 
