@@ -38,7 +38,7 @@ The check stops before searching and asks for what is missing. The user starts a
 
 ## Escalate: answer with a safety notice
 
-The check runs as normal. The result page shows a safety notice above the verdict, the job is flagged for the owner's review (admin review queue), and the owner gets a Telegram alert with the job ID and topic, never the user's text.
+The check runs as normal. The result page shows a safety notice above the verdict, the job is flagged for the owner's review (admin review queue), and the owner gets a Telegram alert with the job ID and topic, never the user's text. In the queue the owner opens the job, sees what the user sent and saw, and records whether the notice fit, wasn't needed, or needs follow-up, with an optional note. The review is never shown to the user; a job whose confirmed claim adds a topic comes back to the queue.
 
 | Topic | Code | Examples | Notice |
 |---|---|---|---|

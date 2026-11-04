@@ -51,7 +51,7 @@ from scc_web.auth import passwords, store
 from scc_web.context import Deps
 from scc_web.core_client import CoreClient
 from scc_web.main import build_app
-from tests.admin_samples import seed, seed_calls
+from tests.admin_samples import seed, seed_calls, seed_safety
 
 DBNAME = "scc_admin_preview"
 PREFIX = "pv_"
@@ -219,6 +219,7 @@ async def main(admin_dsn: str) -> None:
             await canned_claim(core, connector, tester)
         async with pools["core"].connection() as conn:
             ids = await seed(conn, user=tester, other=admin_id, clear=False)
+            await seed_safety(conn, user=tester, other=gone, reviewer=admin_id)
         async with pools["gateway"].connection() as conn:
             await seed_calls(conn, str(ids["failed_late"]), clear=False)
         beat = asyncio.create_task(heartbeat(pools["core"]))
@@ -232,7 +233,13 @@ async def main(admin_dsn: str) -> None:
                 admin=AdminClient(
                     "http://core",
                     "http://gateway",
-                    httpx.ASGITransport(app=core_app),
+                    # Admin reads the active config (pipeline-v5, with the injection throttle);
+                    # only the canned claim above runs on v0, for its one-article fixtures.
+                    httpx.ASGITransport(
+                        app=core_api.build_app(
+                            checks={}, deps=core_api.Deps(pools["core"], queue)
+                        )
+                    ),
                     httpx.ASGITransport(app=gateway_app),
                 ),
                 admin_host="admin.localhost",

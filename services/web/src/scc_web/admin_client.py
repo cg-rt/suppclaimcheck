@@ -1,7 +1,8 @@
 """Web's calls to the admin endpoints of core-api and the gateway (P3.08-P3.10), on the internal network.
 
 Web may read only its own `auth` schema (D-011), so admin reads core's and the gateway's data through
-their read-only `/admin/...` endpoints. The one write is core's retry of a failed job.
+their read-only `/admin/...` endpoints. The writes are core's retry of a failed job and its record
+of a safety review.
 """
 
 from typing import Any
@@ -81,6 +82,32 @@ class AdminClient:
             "POST",
             f"/admin/jobs/{job_id}/retry",
             json={"actor_user_id": actor_user_id},
+        )
+
+    async def reviews(self, **params) -> dict:
+        return await self._call(
+            "core-api",
+            "GET",
+            "/admin/reviews",
+            params={k: v for k, v in params.items() if v is not None},
+        )
+
+    async def review(
+        self, job_id: str, actor_user_id: int, outcome: str, note: str | None
+    ) -> dict:
+        return await self._call(
+            "core-api",
+            "POST",
+            f"/admin/jobs/{job_id}/review",
+            json={"actor_user_id": actor_user_id, "outcome": outcome, "note": note},
+        )
+
+    async def injections(self, **params) -> dict:
+        return await self._call(
+            "core-api",
+            "GET",
+            "/admin/injections",
+            params={k: v for k, v in params.items() if v is not None},
         )
 
     async def core_errors(self, limit: int = 50) -> list[dict]:

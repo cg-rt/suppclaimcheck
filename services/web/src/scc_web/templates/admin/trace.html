@@ -1,5 +1,6 @@
 {% extends "admin/layout.html" %}
-{% from "admin/macros.html" import status as status_mark, code, short_id, scroll %}
+{% from "admin/macros.html" import status as status_mark, code, short_id, scroll, outcome %}
+{% from "macros.html" import icon %}
 {% block title %}Job {{ job.id[:8] }}{% endblock %}
 {% block main %}
 {% set stored = {} %}
@@ -48,6 +49,88 @@
   </form>
   {% endif %}
 </section>
+
+{% if job.sensitive_topics or job.needs_review or job.review %}
+<section class="card" aria-labelledby="review-title">
+  <div class="card__head">
+    <h2 class="card__title" id="review-title">Safety review</h2>
+    {% if job.needs_review %}<span class="state state--mixed">{{ icon("waiting") }} Waiting for your review</span>{% else %}{{ outcome(views, job.review.outcome) }}{% endif %}
+  </div>
+  {% if reviewed == "expired" %}
+  <div class="notice notice--error" role="alert"><p>The review form expired. Choose again and press Mark reviewed.</p></div>
+  {% elif reviewed == "invalid" %}
+  <div class="notice notice--error" role="alert"><p>Choose what you found, and keep the note under {{ views.NOTE_MAX }} characters.</p></div>
+  {% elif reviewed == "not-open" %}
+  <div class="notice notice--hint" role="status"><p>Nothing to record: this job no longer waits for a review. Someone may have reviewed it already.</p></div>
+  {% endif %}
+  <dl class="facts facts--wide">
+    <div><dt>Safety topics</dt><dd>{% for t in job.sensitive_topics %}{{ views.topic(t) }}{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>
+    <div>
+      <dt>What the user saw</dt>
+      <dd>
+        {% if result.safety_notices %}
+        <p>Above the verdict, under <q>Before you read the result</q>:</p>
+        <div class="notice notice--warning">{% for n in result.safety_notices %}<p>{{ n.text }}</p>{% endfor %}</div>
+        {% elif job.state == "done" %}
+        <p>No notice on the result.</p>
+        {% elif job.state in ("refused", "needs_clarification") %}
+        <p>No result: the check stopped before the search. {{ job.error or "" }}</p>
+        {% else %}
+        <p>No result yet. The notice is added above the verdict when the check finishes{% if job.state == "awaiting_confirmation" %}, once the user confirms the claim{% endif %}.</p>
+        {% endif %}
+      </dd>
+    </div>
+    {% if job.review %}
+    <div>
+      <dt>{{ "Earlier review" if job.needs_review else "Reviewed" }}</dt>
+      <dd>{{ outcome(views, job.review.outcome) }} · {{ reviewer or "user " ~ job.review.reviewed_by }}, <time class="num" datetime="{{ job.review.reviewed_at }}">{{ views.when(job.review.reviewed_at) }}</time>
+        {% if job.review.note %}<p>{{ job.review.note }}</p>{% endif %}
+        {% if job.needs_review %}<p class="hint">Flagged again since: the confirmed claim added a topic.</p>{% endif %}
+      </dd>
+    </div>
+    {% endif %}
+  </dl>
+  {% if job.needs_review %}
+  <form class="review" method="post" action="/admin/jobs/{{ job.id }}/review">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <fieldset class="choice">
+      <legend>What did you find?</legend>
+      {% for key, label in views.OUTCOMES.items() %}
+      <label><input type="radio" name="outcome" value="{{ key }}"{% if loop.first %} checked{% endif %}> {{ label }}</label>
+      {% endfor %}
+    </fieldset>
+    <div class="field">
+      <label for="review-note">Note <span class="meta">(optional, for you only)</span></label>
+      <textarea id="review-note" name="note" rows="2" maxlength="{{ views.NOTE_MAX }}" aria-describedby="review-note-hint"></textarea>
+      <p class="hint" id="review-note-hint">For example a missing topic, or why no notice was needed. Up to {{ views.NOTE_MAX }} characters. Never shown to the user.</p>
+    </div>
+    <div><button class="button" type="submit">Mark reviewed</button></div>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if trace.injection_events %}
+<section class="card" aria-labelledby="injection-title">
+  <h2 class="card__title" id="injection-title">Instructions found</h2>
+  <p class="meta">The model reported instructions to the system in these texts; they were ignored. Only the user's own text counts towards the account's throttle. <a href="/admin/injections">All injection events</a> · <a class="rb" href="{{ views.rb_link('RB-10') }}" rel="noopener">RB-10<span class="visually-hidden"> in the runbook</span></a></p>
+  {% call scroll("injection-title") %}
+  <table class="data">
+    <thead><tr><th scope="col">When</th><th scope="col">Stage</th><th scope="col">Found in</th><th scope="col">Config</th></tr></thead>
+    <tbody>
+      {% for e in trace.injection_events %}
+      <tr>
+        <td><time class="num" datetime="{{ e.at }}">{{ views.when(e.at) }}</time></td>
+        <td><code>{{ e.stage }}</code></td>
+        <td>{{ views.source(e.source) }}</td>
+        <td><code>{{ e.config_version }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+</section>
+{% endif %}
 
 <section class="card" aria-labelledby="timeline-title">
   <h2 class="card__title" id="timeline-title">Timeline</h2>

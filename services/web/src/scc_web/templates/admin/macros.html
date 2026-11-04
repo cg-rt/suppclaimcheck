@@ -19,8 +19,13 @@
 {%- else %}<span class="state state--contradicted">{{ icon("current") }} Down</span>{% endif %}
 {%- endmacro %}
 
+{# What a safety review found, as a coloured word with its mark. #}
+{% macro outcome(views, name) -%}
+<span class="state state--{{ views.OUTCOME_INK.get(name, 'ink') }}">{{ icon("done" if name == "notice_right" else "current" if name == "follow_up" else "waiting") }} {{ views.OUTCOMES.get(name, name) }}</span>
+{%- endmacro %}
+
 {% macro short_id(value) -%}
-<code title="{{ value }}">{{ value[:8] }}</code>
+<code class="short-id" title="{{ value }}">{{ value[:8] }}</code>
 {%- endmacro %}
 
 {# A table that can scroll sideways inside its card on narrow screens; the page itself never does.

@@ -1,0 +1,66 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import status as status_mark, code, short_id, scroll, outcome %}
+{% block title %}Safety reviews{% endblock %}
+{% block main %}
+{% set counts = listing.counts %}
+{% if reviewed %}
+<div class="notice notice--ok" role="status"><p>Job <a href="/admin/jobs/{{ reviewed }}">{{ short_id(reviewed) }}</a> is reviewed.{% if counts.open %} {{ views.plural(counts.open, "check") }} still {{ "waits" if counts.open == 1 else "wait" }} below.{% endif %}</p></div>
+{% endif %}
+<section class="card" aria-labelledby="reviews-title">
+  <h1 class="title" id="reviews-title">Safety reviews</h1>
+  <p class="meta">A check lands here when triage finds a safety topic: pregnancy or breastfeeding, children, serious illness, very high doses or drug interactions. It is answered as usual with a safety notice above the verdict (docs/POLICY.md), and you get a Telegram alert. Open a job to see what the user sent and saw, then record whether the notice fit. Your review is never shown to the user.</p>
+  <nav class="tabs" aria-label="Review status">
+    <ul>
+      <li><a href="/admin/reviews"{% if status == "open" %} aria-current="page"{% endif %}>Waiting <span class="tabs__n num">{{ counts.open }}</span></a></li>
+      <li><a href="/admin/reviews?status=reviewed"{% if status == "reviewed" %} aria-current="page"{% endif %}>Reviewed <span class="tabs__n num">{{ counts.reviewed }}</span></a></li>
+    </ul>
+  </nav>
+
+  {% if listing.jobs %}
+  {% call scroll("reviews-title") %}
+  <table class="data data--stack">
+    <thead>
+      <tr>
+        <th scope="col">{{ "Created" if status == "open" else "Reviewed" }}</th><th scope="col">Job</th><th scope="col">User</th><th scope="col">Claim or text</th><th scope="col">Safety topics</th>
+        {% if status == "open" %}<th scope="col">Status</th><th scope="col">Outcome</th>{% else %}<th scope="col">You found</th><th scope="col">Note</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for j in listing.jobs %}
+      <tr>
+        {% if status == "open" %}
+        <td data-label="Created"><time class="num" datetime="{{ j.created_at }}">{{ views.when(j.created_at) }}</time></td>
+        {% else %}
+        <td data-label="Reviewed"><time class="num" datetime="{{ j.review.reviewed_at }}">{{ views.when(j.review.reviewed_at) }}</time></td>
+        {% endif %}
+        <td data-label="Job"><a href="/admin/jobs/{{ j.id }}">{{ short_id(j.id) }}</a></td>
+        <td data-label="User">{{ emails.get(j.user_id, "user " ~ j.user_id) }}</td>
+        <td data-label="Claim" class="data__text">{% if j.supplement %}<strong>{{ j.supplement }}</strong>: {{ j.effect }}{% else %}{{ j.input_preview|truncate(90) }}{% endif %}</td>
+        <td data-label="Topics">{% for t in j.sensitive_topics %}{{ views.topic(t) }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        {% if status == "open" %}
+        <td data-label="Status">{{ status_mark(views, j.status, j.state) }}</td>
+        <td data-label="Outcome">{% if j.verdict %}{{ j.verdict }}{% if j.score is not none %} <span class="num">{{ j.score }}</span>{% endif %}{% elif j.failure_code %}{{ code(views, j.failure_code) }}{% else %}–{% endif %}{% if j.review %}<br><span class="meta">Reviewed before, flagged again</span>{% endif %}</td>
+        {% else %}
+        <td data-label="You found">{{ outcome(views, j.review.outcome) }}</td>
+        <td data-label="Note" class="data__note">{{ j.review.note or "–" }}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% set base = "/admin/reviews?" ~ ("status=reviewed&" if status == "reviewed" else "") %}
+  {% if page_number > 1 or listing.more %}
+  <nav class="pager" aria-label="Pages">
+    {% if page_number > 1 %}<a href="{{ base }}page={{ page_number - 1 }}">{{ "Older checks" if status == "open" else "Newer reviews" }}</a>{% endif %}
+    <span class="meta">Page <span class="num">{{ page_number }}</span></span>
+    {% if listing.more %}<a href="{{ base }}page={{ page_number + 1 }}">{{ "Newer checks" if status == "open" else "Older reviews" }}</a>{% endif %}
+  </nav>
+  {% endif %}
+  {% elif status == "open" %}
+  <p>Nothing waits for a review.{% if counts.reviewed %} <a href="/admin/reviews?status=reviewed">See the {{ views.plural(counts.reviewed, "reviewed check") }}</a>.{% endif %}</p>
+  {% else %}
+  <p>No check has been reviewed yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

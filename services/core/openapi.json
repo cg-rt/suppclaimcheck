@@ -74,6 +74,11 @@
             "title": "Input Type",
             "type": "string"
           },
+          "needs_review": {
+            "default": false,
+            "title": "Needs Review",
+            "type": "boolean"
+          },
           "result": {
             "anyOf": [
               {
@@ -85,6 +90,24 @@
               }
             ],
             "title": "Result"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Review"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sensitive_topics": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sensitive Topics",
+            "type": "array"
           },
           "state": {
             "title": "State",
@@ -706,6 +729,165 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "InjectionAccount": {
+        "description": "One account's checks whose own text instructed the system: what the throttle counts.",
+        "properties": {
+          "checks_in_window": {
+            "title": "Checks In Window",
+            "type": "integer"
+          },
+          "checks_total": {
+            "title": "Checks Total",
+            "type": "integer"
+          },
+          "last_at": {
+            "format": "date-time",
+            "title": "Last At",
+            "type": "string"
+          },
+          "throttled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Throttled"
+          },
+          "throttled_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Throttled Until"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "checks_in_window",
+          "checks_total",
+          "last_at",
+          "throttled",
+          "throttled_until"
+        ],
+        "title": "InjectionAccount",
+        "type": "object"
+      },
+      "InjectionEvent": {
+        "description": "Instructions to the system found in a text (P3.02). The text itself is never stored here.",
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "config_version": {
+            "title": "Config Version",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "job_id",
+          "user_id",
+          "stage",
+          "source",
+          "config_version"
+        ],
+        "title": "InjectionEvent",
+        "type": "object"
+      },
+      "InjectionReport": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "$ref": "#/components/schemas/InjectionAccount"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "config_version": {
+            "title": "Config Version",
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/InjectionEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "max_checks": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Checks"
+          },
+          "more": {
+            "title": "More",
+            "type": "boolean"
+          },
+          "window_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Hours"
+          }
+        },
+        "required": [
+          "config_version",
+          "window_hours",
+          "max_checks",
+          "accounts",
+          "events",
+          "more"
+        ],
+        "title": "InjectionReport",
+        "type": "object"
+      },
       "Job": {
         "properties": {
           "config_version": {
@@ -988,6 +1170,14 @@
             ],
             "title": "Failure Code"
           },
+          "injection_events": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/InjectionEvent"
+            },
+            "title": "Injection Events",
+            "type": "array"
+          },
           "job": {
             "$ref": "#/components/schemas/AdminJob"
           },
@@ -1115,6 +1305,267 @@
           "actor_user_id"
         ],
         "title": "RetryRequest",
+        "type": "object"
+      },
+      "Review": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "outcome": {
+            "enum": [
+              "notice_right",
+              "notice_not_needed",
+              "follow_up"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "reviewed_at": {
+            "format": "date-time",
+            "title": "Reviewed At",
+            "type": "string"
+          },
+          "reviewed_by": {
+            "title": "Reviewed By",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reviewed_at",
+          "reviewed_by",
+          "outcome",
+          "note"
+        ],
+        "title": "Review",
+        "type": "object"
+      },
+      "ReviewList": {
+        "description": "One page of the safety review queue, and how many jobs are open and reviewed.",
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewRow"
+            },
+            "title": "Jobs",
+            "type": "array"
+          },
+          "more": {
+            "title": "More",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "counts",
+          "jobs",
+          "more"
+        ],
+        "title": "ReviewList",
+        "type": "object"
+      },
+      "ReviewRequest": {
+        "properties": {
+          "actor_user_id": {
+            "minimum": 1.0,
+            "title": "Actor User Id",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "outcome": {
+            "enum": [
+              "notice_right",
+              "notice_not_needed",
+              "follow_up"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "actor_user_id",
+          "outcome"
+        ],
+        "title": "ReviewRequest",
+        "type": "object"
+      },
+      "ReviewRow": {
+        "properties": {
+          "config_version": {
+            "title": "Config Version",
+            "type": "string"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effect"
+          },
+          "failure_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Code"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "input_preview": {
+            "title": "Input Preview",
+            "type": "string"
+          },
+          "needs_review": {
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Review"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "sensitive_topics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sensitive Topics",
+            "type": "array"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "in_progress",
+              "done",
+              "awaiting_confirmation",
+              "failed",
+              "refused"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "supplement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplement"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "state",
+          "status",
+          "input_preview",
+          "supplement",
+          "effect",
+          "verdict",
+          "score",
+          "failure_code",
+          "config_version",
+          "correlation_id",
+          "created_at",
+          "updated_at",
+          "sensitive_topics",
+          "needs_review",
+          "review"
+        ],
+        "title": "ReviewRow",
         "type": "object"
       },
       "TraceEvent": {
@@ -1377,6 +1828,64 @@
         ]
       }
     },
+    "/admin/injections": {
+      "get": {
+        "description": "Instructions found in texts (P3.02): per account, what the throttle counts and whether it holds\nthe account now under the active config, throttled first; then every event, newest first.",
+        "operationId": "injection_report_admin_injections_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InjectionReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Injection Report",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/jobs": {
       "get": {
         "description": "Every user's jobs, newest first, filtered by status, user and a search over IDs and text.",
@@ -1615,6 +2124,66 @@
         ]
       }
     },
+    "/admin/jobs/{job_id}/review": {
+      "post": {
+        "description": "Records the owner's review of a safety-flagged job and takes it off the queue.\n\nGuarded on `needs_review`, so two clicks record one review. A later flag puts the job back.",
+        "operationId": "review_job_admin_jobs__job_id__review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such job"
+          },
+          "409": {
+            "description": "The job is not waiting for a review"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review Job",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/jobs/{job_id}/trace": {
       "get": {
         "description": "The job with its inputs and outputs, each state it went through and for how long, the passages\nstored per article, and the quotes that failed verification.",
@@ -1679,6 +2248,78 @@
           }
         },
         "summary": "Queue Status",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/reviews": {
+      "get": {
+        "description": "Safety-flagged jobs (P3.03). Open ones oldest first, as a queue; reviewed ones newest first.",
+        "operationId": "review_queue_admin_reviews_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "open",
+              "enum": [
+                "open",
+                "reviewed"
+              ],
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review Queue",
         "tags": [
           "admin"
         ]
