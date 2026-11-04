@@ -5,6 +5,7 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 ## [Unreleased]
 
 ### Changed
+- Checks use pipeline v6 (D-052): the search also tries other spellings of the effect and population words ("anaemia" finds "anemia" too), and studies whose title says the substance was injected or infused are listed as found but not read, unless the claim is about injections. The result page names each reason an article wasn't read. In the evals, iron claims are right again and verdict accuracy reaches 81%.
 - "No claim found" is now a request for a clearer text instead of a failed check (pipeline v5).
 - Checks use pipeline v1 (D-044, docs/METHOD.md): up to five open-access articles per claim instead of one, chosen by type of study (systematic reviews and trials first), each assessed separately; rubric v1 weighs each article by its type of study and needs human evidence for a verdict. The result page explains the score article by article. Verdicts can differ from 0.1.x for the same claim.
 - The gateway keeps each article's MeSH headings, which tell human from animal and lab studies; article metadata cached before this release is fetched again once.

@@ -139,7 +139,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   sudo docker compose exec postgres psql -U postgres -d scc -c "SELECT e.at, e.stage, e.source, j.state FROM core.injection_events e JOIN core.jobs j ON j.id = e.job_id WHERE e.user_id = <id> ORDER BY e.at DESC LIMIT 20"
   ```
   `source = submitted_text` counts against the user; an article ID (`PMC...`) means the instructions were in a fetched article, which never counts against anyone.
-- **Fix:** the throttle lifts by itself 24 hours after the oldest counted check (pipeline-v5, `guardrails`). If the account is abusive, disable it (`python -m scc_web.admin disable <email>`). Instructions in an article: nothing to do for the user; if one article keeps triggering it, note its PMCID in the incident record. External traffic: add a Cloudflare WAF rule. Record it as an incident.
+- **Fix:** the throttle lifts by itself 24 hours after the oldest counted check (from pipeline-v5, `guardrails`; admin's Injections page shows until when). If the account is abusive, disable it (`python -m scc_web.admin disable <email>`). Instructions in an article: nothing to do for the user; if one article keeps triggering it, note its PMCID in the incident record. External traffic: add a Cloudflare WAF rule. Record it as an incident.
 - **Verify:** no new events from that account; costs back to normal.
 
 ## RB-11 Backup failed
