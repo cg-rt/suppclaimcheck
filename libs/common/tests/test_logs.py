@@ -54,3 +54,36 @@ def test_a_bound_id_wins_and_odd_job_fields_are_ignored():
         ]
         is None
     )
+
+
+def test_secrets_in_urls_are_masked_wherever_they_appear():
+    """httpx logs full URLs: PubMed's key is a query parameter, Telegram's token is in the path."""
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(JsonFormatter("svc"))
+    logger = logging.getLogger("test.logs.secrets")
+    logger.setLevel(logging.INFO)
+    logger.handlers[:] = [handler]
+    logger.propagate = False
+    key, token = "b8b1aaaa0000ffff", "123456789:AAH-xyz_TOKEN"
+    url = f"https://eutils.ncbi.nlm.nih.gov/esearch.fcgi?db=pubmed&api_key={key}&retmax=20"
+    logger.info('HTTP Request: GET %s "HTTP/1.1 200 OK"', url)
+    logger.info(
+        "alert", extra={"what": f"https://api.telegram.org/bot{token}/sendMessage"}
+    )
+    try:
+        raise RuntimeError(f"failed: {url}")
+    except RuntimeError:
+        logger.exception("boom")
+    out = stream.getvalue()
+    assert key not in out and token not in out
+    lines = [json.loads(line) for line in out.splitlines()]
+    assert "api_key=[redacted]&retmax=20" in lines[0]["msg"]
+    assert lines[1]["what"] == "https://api.telegram.org/bot[redacted]/sendMessage"
+    assert "api_key=[redacted]" in lines[2]["exc"]
+
+
+def test_ordinary_words_are_left_alone():
+    entry = log_line(path="/keys?monkey=1&keyword=x", note="token bucket, key lime")
+    assert entry["path"] == "/keys?monkey=1&keyword=x"
+    assert entry["note"] == "token bucket, key lime"

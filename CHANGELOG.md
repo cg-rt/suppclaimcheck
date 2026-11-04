@@ -24,6 +24,7 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - `restore.sh` prints the scratch-database drop command with `sudo`, which the VM needs.
 
 ### Security
+- Logs no longer contain the NCBI API key or the Telegram bot token. The HTTP client logs every request's full URL, and the key is a query parameter, the token part of the path, so both were written to the gateway's container logs (in production since 0.1.1). Every log line is now masked before it is written. Rotating both after this release is recommended: a new key in the NCBI account and a new token from @BotFather, then restart the gateway.
 - Pillow 13.0.0 in the core image (41 advisories in 12.3.0, including GHSA-5x8w-8jj5-q52h and GHSA-v9pv-5gc8-w2m6), through fastembed 0.9.1, the first release that allows Pillow 13, taken before it is two weeks old (D-041). Core embeds text only and never opens an image; 0.1.2 has no Pillow at all, so this reaches production with the first release that has hybrid retrieval.
 
 ## [0.1.2] - 2026-10-25
