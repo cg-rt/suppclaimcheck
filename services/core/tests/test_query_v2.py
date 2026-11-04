@@ -14,10 +14,6 @@ IRON = Claim(
 )
 
 
-def test_v6_is_active():
-    assert config.ACTIVE == "pipeline-v6"
-
-
 def test_v6_is_v5_with_query_v2_and_nothing_else():
     assert query.version(Q) == "query-v2"
     assert {k: v for k, v in V6.items() if k not in ("version", "query")} == {

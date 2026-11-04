@@ -1,4 +1,4 @@
-"""Procrastinate tasks for core-worker (P1.05, P1.08). Each job carries its correlation ID (P1.01)."""
+"""Procrastinate tasks for core-worker (P1.05, P1.08, P3.05). Each job carries its correlation ID (P1.01)."""
 
 import os
 from uuid import UUID
@@ -33,6 +33,13 @@ async def extract_claim(job_id: str, correlation_id: str | None = None) -> None:
 async def run_pipeline(job_id: str, correlation_id: str | None = None) -> None:
     with bind(correlation_id):
         await pipeline.run(_rt(), UUID(job_id))
+
+
+@blueprint.periodic(cron="*/5 * * * *")
+@blueprint.task(name="sweep_stalled", queue=QUEUE)
+async def sweep_stalled(timestamp: int) -> None:
+    """Every five minutes: end checks that lost their worker (P3.05, pipeline.run.sweep_stalled)."""
+    await pipeline.sweep_stalled(_rt())
 
 
 def make_app(conninfo: str) -> App:

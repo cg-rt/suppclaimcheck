@@ -2471,6 +2471,9 @@
             },
             "description": "Successful Response"
           },
+          "402": {
+            "description": "This month's budget for checks is used up"
+          },
           "409": {
             "description": "Key reused with a different body"
           },
@@ -2485,7 +2488,10 @@
             "description": "Validation Error"
           },
           "429": {
-            "description": "Too many recent checks from this account contained instructions to the system"
+            "description": "The account's checks for today are used up, or too many recent checks contained instructions to the system"
+          },
+          "503": {
+            "description": "The budget could not be checked"
           }
         },
         "summary": "Create Job",
@@ -2577,6 +2583,9 @@
             },
             "description": "Successful Response"
           },
+          "402": {
+            "description": "This month's budget for checks is used up"
+          },
           "404": {
             "description": "No such job"
           },
@@ -2592,6 +2601,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "503": {
+            "description": "The budget could not be checked"
           }
         },
         "summary": "Confirm Job",

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
 
+import httpx
 from fastapi import (
     APIRouter,
     FastAPI,
@@ -24,6 +25,7 @@ from scc_common import config_admin, config_store, correlation
 from scc_common.app import Check, create_app, http_check
 from scc_common.db import conninfo_from_env, db_check
 from scc_core import admin_api, config, jobs, tasks
+from scc_core.gateway_client import GatewayClient, GatewayError
 from scc_core.models import Claim, Job, JobCreate, JobEvent, JobSummary
 from scc_core.pipeline.triage import THROTTLED
 
@@ -45,6 +47,9 @@ class Deps:
     queue: App
     # Tests pin a version; otherwise each new job gets the version active when it is created (D-048).
     config_version: str | None = None
+    # Asked before a new job or a confirmation whether the budget allows it (P3.04, D-053). Tests that
+    # don't test the budget leave it out.
+    gateway: GatewayClient | None = None
 
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -62,9 +67,12 @@ def _deps(request: Request) -> Deps:
             "description": "Same key and body as an earlier request: the existing job"
         },
         409: {"description": "Key reused with a different body"},
+        402: {"description": "This month's budget for checks is used up"},
         429: {
-            "description": "Too many recent checks from this account contained instructions to the system"
+            "description": "The account's checks for today are used up, or too many recent checks "
+            "contained instructions to the system"
         },
+        503: {"description": "The budget could not be checked"},
     },
 )
 async def create_job(
@@ -80,6 +88,8 @@ async def create_job(
             conn, config.STORE
         )
         await _refuse_if_throttled(conn, body.user_id, idempotency_key, version)
+        if not await jobs.exists(conn, body.user_id, idempotency_key):
+            await _refuse_if_over_budget(deps, body.user_id)
         try:
             job, created = await jobs.create(
                 conn, body, idempotency_key, version, correlation.current()
@@ -118,6 +128,34 @@ async def _refuse_if_throttled(conn, user_id: int, key: str, version: str) -> No
         raise HTTPException(429, {"code": "injection_throttled", "message": THROTTLED})
 
 
+# HTTP status for each reason the budget refuses a new check (P3.04).
+_BUDGET_STATUS = {"budget_cap_reached": 402, "daily_quota_reached": 429}
+BUDGET_UNAVAILABLE = "Checks can't start right now because the budget could not be checked. Please try again in a few minutes."
+
+
+async def _refuse_if_over_budget(deps: Deps, user_id: int | None) -> None:
+    """P3.04: no new check (or search, without a user) once the live budget is nearly used, and no new
+    check once the account's daily quota is used. The gateway keeps both; if it can't answer, nothing
+    starts that would fail at its first LLM call anyway (fails closed)."""
+    if deps.gateway is None:
+        return
+    try:
+        status_ = await deps.gateway.budget_status(user_id)
+    except (GatewayError, httpx.HTTPError) as exc:
+        log.warning("budget check failed", extra={"error": type(exc).__name__})
+        raise HTTPException(
+            503, {"code": "budget_unavailable", "message": BUDGET_UNAVAILABLE}
+        ) from None
+    code = status_["code"]
+    if user_id is None and code == "daily_quota_reached":
+        return
+    if not status_["new_checks_allowed"] and code in _BUDGET_STATUS:
+        log.info("job refused by the budget", extra={"code": code, "user_id": user_id})
+        raise HTTPException(
+            _BUDGET_STATUS[code], {"code": code, "message": status_["message"]}
+        )
+
+
 @router.get("")
 async def list_jobs(
     user_id: int, request: Request, limit: Annotated[int, Query(ge=1, le=200)] = 50
@@ -149,13 +187,17 @@ async def get_job_events(job_id: UUID, request: Request) -> list[JobEvent]:
 @router.post(
     "/{job_id}/confirm",
     responses={
+        402: {"description": "This month's budget for checks is used up"},
         404: {"description": "No such job"},
         409: {"description": "The job is not waiting for confirmation"},
+        503: {"description": "The budget could not be checked"},
     },
 )
 async def confirm_job(job_id: UUID, claim: Claim, request: Request) -> Job:
     """Stores the claim as the user confirmed or edited it, then queues the search. Nothing is searched before this."""
     deps = _deps(request)
+    # The search spends most of a check: it doesn't start when the month's budget is nearly used.
+    await _refuse_if_over_budget(deps, None)
     async with deps.pool.connection() as conn:
         try:
             job = await jobs.confirm(conn, job_id, claim)
@@ -191,6 +233,7 @@ def build_app(
         deps = Deps(
             pool=AsyncConnectionPool(conninfo, open=False, min_size=1, max_size=5),
             queue=tasks.make_app(conninfo),
+            gateway=GatewayClient(os.environ["SCC_GATEWAY_URL"]),
         )
 
     @asynccontextmanager

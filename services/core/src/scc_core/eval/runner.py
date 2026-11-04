@@ -177,7 +177,8 @@ async def run_cases(
     pool = AsyncConnectionPool(conninfo, open=False, min_size=1, max_size=4)
     await pool.open()
     gateway = GatewayClient(gateway_url, transport=transport, lane="eval")
-    rt = pipeline.Runtime(pool=pool, gateway=gateway, config=config)
+    # No result reuse (P3.05): repeated runs on one database would measure the cache, not the pipeline.
+    rt = pipeline.Runtime(pool=pool, gateway=gateway, config=config, use_cache=False)
     results = []
     try:
         for case in cases:

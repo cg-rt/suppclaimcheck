@@ -223,3 +223,23 @@ async def exists(conn: AsyncConnection, user_id: int, idempotency_key: str) -> b
         (user_id, idempotency_key),
     )
     return await cur.fetchone() is not None
+
+
+async def fail_stalled(
+    conn: AsyncConnection, states: list[str], minutes: int, code: str, message: str
+) -> list[UUID]:
+    """Moves every job stuck in one of `states` for more than `minutes` to failed, with an event that
+    names `code`, in one guarded statement: a job that moved on meanwhile is left alone (P3.05)."""
+    cur = await conn.execute(
+        "UPDATE core.jobs SET state = 'failed', error = %s, updated_at = now()"
+        " WHERE state = ANY(%s) AND updated_at < now() - make_interval(mins => %s)"
+        " RETURNING id",
+        (message, states, minutes),
+    )
+    ended = [row[0] for row in await cur.fetchall()]
+    for job_id in ended:
+        await conn.execute(
+            "INSERT INTO core.job_events (job_id, state, detail) VALUES (%s, 'failed', %s)",
+            (job_id, code),
+        )
+    return ended
