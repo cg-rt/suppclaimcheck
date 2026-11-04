@@ -74,13 +74,27 @@ class StageUsage(BaseModel):
     p95_latency_ms: float | None
 
 
+class UserUsage(BaseModel):
+    """One account's live spend this month (P3.04); checks are its extraction calls, as the quota counts."""
+
+    user_id: int
+    checks: int
+    checks_today: int
+    calls: int
+    cost_eur: float
+
+
 class Usage(BaseModel):
-    """This month's LLM spend per lane, the last `days` days, and this month by stage and model."""
+    """This month's LLM spend per lane, the last `days` days, this month by stage and model, and by
+    account in the live lane."""
 
     month_start: datetime
     lanes: list[LaneMonth]
     days: list[DayUsage]
     stages: list[StageUsage]
+    users: list[UserUsage] = []
+    # Checks per account per UTC day from the active config; None when off.
+    daily_quota: int | None = None
 
 
 def pool_of(request: Request):
@@ -167,6 +181,20 @@ async def usage(
             GROUP BY 1, 2, 3 ORDER BY 1, 6 DESC
             """,
         )
+        users = await _all(
+            conn,
+            f"""
+            SELECT user_id,
+                   count(DISTINCT job_id) FILTER (WHERE stage = %(stage)s) AS checks,
+                   count(DISTINCT job_id) FILTER (WHERE stage = %(stage)s
+                                                    AND created_at >= {budget.DAY_START}) AS checks_today,
+                   count(*) AS calls, coalesce(sum(cost_eur), 0)::float AS cost_eur
+            FROM gateway.llm_calls
+            WHERE lane = 'live' AND user_id IS NOT NULL AND created_at >= {_MONTH_START}
+            GROUP BY 1 ORDER BY cost_eur DESC, user_id LIMIT 50
+            """,
+            {"stage": budget.CHECK_STAGE},
+        )
     found = {r.pop("lane"): r for r in lanes}
     empty = {
         "spent_eur": 0.0,
@@ -189,4 +217,6 @@ async def usage(
         ],
         days=[DayUsage(**r) for r in by_day],
         stages=[StageUsage(**r) for r in stages],
+        users=[UserUsage(**r) for r in users],
+        daily_quota=config.get("quotas", {}).get("checks_per_user_per_day") or None,
     )
