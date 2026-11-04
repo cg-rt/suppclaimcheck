@@ -115,7 +115,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** a test claim completes; failed jobs retried from admin.
 
 ## RB-09 Budget warning, cap or daily quota
-**Status:** the cap was rehearsed in dev on 2026-10-24 (a job failed with the budget message; the gateway logged `budget cap reached` and raised the alert). The warnings, the stop before a new check, the daily quota and the banner (P3.04, D-053) are covered by `tests/integration/test_budget_guard.py` and `test_resilience.py`; DEV_DRILL
+**Status:** the cap was rehearsed in dev on 2026-10-24 (a job failed with the budget message; the gateway logged `budget cap reached` and raised the alert). The warnings, the stop before a new check, the daily quota and the banner (P3.04, D-053) are covered by `tests/integration/test_budget_guard.py` and `test_resilience.py`. Rehearsed in dev on 2026-11-04: with `SCC_BUDGET_CAP_OVERRIDE_EUR=0.01`, `/budget/status` reported `cap` for both lanes and core-api refused a new check with 402 and the budget message; without it, both lanes were back to `ok`. Not yet seen on the VM.
 - **Symptoms:**
   - A Telegram alert `budget_warning · live_warn_50` or `live_warn_80`: the lane passed 50% or 80% of its cap this month (once per level and month). Admin shows a banner on every page until the month ends.
   - New checks refused with "This month's budget for checks is used up. Checks will work again next month." (core-api 402), and the banner turns red: less than one check's worth is left (`new_check_reserve_eur`, EUR 0.05). A confirmation is refused the same way. A check already running can still fail with `budget_cap_reached` if it hits the cap itself (Telegram `budget_cap_reached`, once an hour at most).
