@@ -28,6 +28,7 @@ SKIP_REASONS = {
     "no_full_text": "no full text",
     "not_in_europe_pmc": "not in Europe PMC",
     "not_by_mouth": "given by injection or infusion, not taken by mouth",
+    "fetch_failed": "the full text didn't download just now",
 }
 VERDICT_CLASS = {
     "Supported": "supported",

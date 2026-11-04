@@ -504,3 +504,55 @@ def test_a_throttled_account_sees_why_it_cannot_start_a_check(migrated_db):
     response = with_web(migrated_db, steps)
     assert response.status_code == 429
     assert message in response.text
+
+
+@pytest.mark.parametrize(
+    "status, code, message",
+    [
+        (402, "budget_cap_reached", "This month's budget for checks is used up. Checks will work again next month."),
+        (429, "daily_quota_reached", "This account has used today's checks. You can start new checks again tomorrow (UTC)."),
+        (503, "budget_unavailable", "Checks can't start right now because the budget could not be checked."),
+    ],
+)  # fmt: skip
+def test_budget_refusals_show_cores_message_and_keep_the_text(
+    migrated_db, status, code, message
+):
+    """P3.04: a check refused by the budget or the daily quota says why, and the text stays."""
+
+    async def steps(client, ctx):
+        ctx["core"].refuse_new = (status, code, message)
+        await sign_in(client)
+        page = await client.get("/checks/new")
+        return await client.post(
+            "/checks",
+            data={"input_text": "Zinc shortens colds.", "csrf_token": token(page.text)},
+        )
+
+    response = with_web(migrated_db, steps)
+    assert response.status_code == status
+    assert message.replace("'", "&#39;") in response.text
+    assert "Zinc shortens colds." in response.text
+
+
+def test_a_confirmation_refused_by_the_budget_says_why(migrated_db):
+    message = (
+        "This month's budget for checks is used up. Checks will work again next month."
+    )
+
+    async def steps(client, ctx):
+        waiting = ctx["core"].add(job(ctx["user"], "awaiting_confirmation"))
+        ctx["core"].refuse_confirm = (402, "budget_cap_reached", message)
+        await sign_in(client)
+        page = await client.get(f"/checks/{waiting['id']}")
+        return await client.post(
+            f"/checks/{waiting['id']}/confirm",
+            data={
+                "supplement": "zinc",
+                "effect": "shortens colds",
+                "csrf_token": token(page.text),
+            },
+        )
+
+    response = with_web(migrated_db, steps)
+    assert response.status_code == 402
+    assert message.replace("'", "&#39;") in response.text

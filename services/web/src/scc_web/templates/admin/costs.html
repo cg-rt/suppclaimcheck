@@ -26,7 +26,33 @@
     </tbody>
   </table>
   {% endcall %}
-  <p class="hint">Per job is this month's spend over the jobs that made at least one call; eval calls name their case, not a job. Warnings at 50% and 80% of a cap come with the budget guard (P3.04); what to do at the cap is <a href="{{ views.rb_link('RB-09') }}" rel="noopener">RB-09</a>.</p>
+  <p class="hint">Per job is this month's spend over the jobs that made at least one call; eval calls name their case, not a job. A Telegram warning goes out once a month at 50% and at 80% of a cap, and a banner shows here until the month ends. New checks stop when less than one check's worth is left; what to do then is <a href="{{ views.rb_link('RB-09') }}" rel="noopener">RB-09</a>.</p>
+</section>
+
+<section class="card" aria-labelledby="users-title">
+  <h2 class="card__title" id="users-title">Live spend by account, this month</h2>
+  <p class="meta">{% if usage.daily_quota %}Each account may start <span class="num">{{ usage.daily_quota }}</span> checks a UTC day; a check counts once, whatever its outcome.{% else %}No daily quota is set.{% endif %}</p>
+  {% if usage.users %}
+  {% call scroll("users-title") %}
+  <table class="data data--stack">
+    <thead><tr><th scope="col">Account</th><th scope="col" class="n">Checks</th><th scope="col" class="n">Today</th><th scope="col" class="n">Calls</th><th scope="col" class="n">Cost</th><th scope="col" class="n">Per check</th></tr></thead>
+    <tbody>
+      {% for u in usage.users %}
+      <tr>
+        <th scope="row" data-label="Account">{{ emails.get(u.user_id, "user " ~ u.user_id) }}</th>
+        <td data-label="Checks" class="n num">{{ u.checks }}</td>
+        <td data-label="Today" class="n num">{{ u.checks_today }}{% if usage.daily_quota %} <span class="meta">of {{ usage.daily_quota }}</span>{% endif %}</td>
+        <td data-label="Calls" class="n num">{{ u.calls }}</td>
+        <td data-label="Cost" class="n num">{{ views.eur(u.cost_eur) }}</td>
+        <td data-label="Per check" class="n num">{{ views.eur(u.cost_eur / u.checks) if u.checks else "–" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% else %}
+  <p>No live checks this month yet.</p>
+  {% endif %}
 </section>
 
 <section class="card" aria-labelledby="stages-title">

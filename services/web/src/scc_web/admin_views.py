@@ -22,7 +22,7 @@ RB = {
     "RB-04": "rb-04-database-down",
     "RB-07": "rb-07-pubmed-or-full-text-source-down",
     "RB-08": "rb-08-llm-provider-errors-or-rate-limits",
-    "RB-09": "rb-09-budget-cap-reached",
+    "RB-09": "rb-09-budget-warning-cap-or-daily-quota",
     "RB-10": "rb-10-suspected-abuse-or-injection-attempts",
     "RB-15": "rb-15-change-activate-or-roll-back-a-config-version",
 }
@@ -42,6 +42,8 @@ CODES = {
     "invalid_output": ("The model's answer failed the schema twice", "RB-08"),
     "unknown_model": ("The model is not in the gateway's price table", "RB-15"),
     "literature_unavailable": ("PubMed or Europe PMC did not answer", "RB-07"),
+    "daily_quota_reached": ("The account had used its checks for the day", "RB-09"),
+    "stalled": ("The check lost its worker; the sweep ended it", "RB-03"),
     "no_claim": (
         "No supplement claim in the text (the user's input, not a fault)",
         None,
@@ -99,6 +101,20 @@ OUTCOME_INK = {
     "follow_up": "contradicted",
 }
 NOTE_MAX = 500
+
+
+def banner_text(lane: dict) -> str:
+    """One lane's budget warning for the admin banner (P3.04)."""
+    share = lane["spent_eur"] / lane["cap_eur"] if lane["cap_eur"] else 1.0
+    spent = f"{eur(lane['spent_eur'], 2)} of {eur(lane['cap_eur'], 2)} ({share:.0%})"
+    if lane["level"] == "cap":
+        stopped = (
+            "new checks are stopped"
+            if lane["lane"] == "live"
+            else "new eval calls are refused"
+        )
+        return f"The {lane['lane']} budget is used up this month: {spent}; {stopped}."
+    return f"The {lane['lane']} lane has spent {spent} of its cap this month."
 
 
 def topic(name: str) -> str:

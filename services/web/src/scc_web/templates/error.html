@@ -5,6 +5,7 @@
 <section class="card">
   <h1 class="title">{{ title }}</h1>
   <p class="lede">{{ message }}</p>
+  {% if reference %}<p class="meta">If you tell us about it, quote this reference: <code>{{ reference }}</code></p>{% endif %}
   <p><a class="button button--secondary" href="/">Go to the start</a></p>
 </section>
 {% endblock %}
