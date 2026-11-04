@@ -101,7 +101,7 @@ window.ARCHITECTURE_MAP = {
       "version": "0.1.2",
       "phase_built": 1,
       "technology": "Python 3.14, FastAPI, Procrastinate, fastembed, pgvector",
-      "purpose": "core-api: jobs and confirmation (REST with OpenAPI); each job is stamped with the config version active when it is created. Read-only admin endpoints (jobs, traces, errors, queue, config) and the retry of a failed job. core-worker: the pipeline, run on the job's config version: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring. In the image, not served: the config CLI (versions, activation, rollback; D-048) and the eval runner (run from the dev PC, D-043).\n",
+      "purpose": "core-api: jobs and confirmation (REST with OpenAPI); each job is stamped with the config version active when it is created, and starts only if the gateway's budget status allows it (cap and daily quota). Read-only admin endpoints (jobs, traces, errors, queue, reviews, injection events, config), the retry of a failed job and the record of a safety review. core-worker: the pipeline, run on the job's config version: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring; reuse of an identical recent result, partial failures with a note, and a five-minute sweep that ends checks that lost their worker. In the image, not served: the config CLI (versions, activation, rollback; D-048) and the eval runner (run from the dev PC, D-043).\n",
       "why_it_exists": "Owns the product's logic and the deterministic parts (quote verification, scoring) that make it trustworthy. One codebase and one version, run as two containers so slow jobs never block the API.\n",
       "ports": {
         "internal": 8000,
@@ -131,7 +131,7 @@ window.ARCHITECTURE_MAP = {
       "version": "0.1.2",
       "phase_built": 1,
       "technology": "Python 3.14, FastAPI, provider SDKs, httpx",
-      "purpose": "The single door to the outside world: the LLM provider (Anthropic Claude for v1, D-033, behind a swappable interface; prompts, token and cost accounting, budget guard), PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts. Read-only admin endpoints over its LLM call records (calls per job, costs and usage) and its config versions.\n",
+      "purpose": "The single door to the outside world: the LLM provider (Anthropic Claude for v1, D-033, behind a swappable interface; prompts, token and cost accounting, budget guard), PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts. The budget guard: monthly caps per lane, warnings at 50% and 80%, the per-account daily quota, and idempotent LLM calls (the same key never charges twice). Read-only admin endpoints over its LLM call records (calls per job, costs and usage, per account) and its config versions.\n",
       "why_it_exists": "Holds every API key, so the budget cap cannot be bypassed and egress is one auditable place. Merges the AI gateway and the sources connector (D-011).\n",
       "ports": {
         "internal": 8000,

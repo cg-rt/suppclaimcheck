@@ -2,6 +2,7 @@
 
 What to do when something breaks. Linked from the admin dashboard (P3.10); admin failure types link to the `RB-nn` entries (D-035).
 Every entry has: **Symptoms → Checks → Commands → Fix → Verify.** After any incident, add an entry to the owner's private log (what happened, cause, fix, downtime, what to change).
+Every error code, what it means for the user and which entry handles it: [ERRORS.md](ERRORS.md).
 
 > **All entries are drafts written before the system exists.** Each one is marked verified only after it has been exercised (P1.15, P3.13). Do not trust an unverified command blindly.
 
@@ -52,6 +53,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   docker compose logs --tail 100 <service>
   ```
 - **Fix:** the usual causes are a bad config or secret, a failed migration, or the database being unreachable. If it started after a deploy, roll back (RB-13). If it's a secret, fix the secret file and `docker compose up -d <service>`.
+- **Checks that lost their worker:** when core-worker restarts mid-check, the check stops moving. Every five minutes the worker's sweep ends any check stuck in a working state for more than `stall_minutes` (20, pipeline config) as failed with `stalled`, and a Telegram alert goes out. Once the worker is healthy, open each one in admin and press Retry: steps whose LLM calls already succeeded are not charged again (idempotency keys, D-053).
 - **Verify:** the service is healthy and stays up for 10 minutes.
 
 ## RB-04 Database down
@@ -112,24 +114,27 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Fix:** 401 means the key is wrong, expired or revoked: rotate the secret and restart `gateway`. 429 means rate-limited: backoff handles short bursts; for sustained limits, check the provider console limits. 5xx means a provider outage: check the provider's status page. v1 has a single provider (D-033), so there is no fallback: jobs fail cleanly at that stage; retry them from admin once the status page shows recovery.
 - **Verify:** a test claim completes; failed jobs retried from admin.
 
-## RB-09 Budget cap reached
-**Status:** rehearsed in dev on 2026-10-24: with the cap lowered to EUR 0.0001, a job failed with the budget message, the gateway logged `budget cap reached` and raised the `budget_cap_reached` alert (Telegram not configured in dev, so it logged `alert not sent`). Alert delivery is covered by `services/gateway/tests/test_alerts.py`; a real phone message comes with C1.3. The admin banner arrives with P3.04.
-- **Symptoms:** a Telegram alert "budget_cap_reached · live" (sent once an hour at most); jobs fail with "This month's budget for checks is used up. Checks will work again next month."; the gateway logs `budget cap reached` with the lane, the spend and the cap.
-- **How the cap works:** before every LLM call, the gateway reserves the call's worst-case cost and refuses it if this month's spend plus that would pass the lane's cap (`live` EUR 15, `eval` EUR 5, in `services/gateway/src/scc_gateway/config/gateway-v0.toml`). If the database can't be reached, no call is made.
-- **Checks:** this month's spend per lane, from the VM:
+## RB-09 Budget warning, cap or daily quota
+**Status:** the cap was rehearsed in dev on 2026-10-24 (a job failed with the budget message; the gateway logged `budget cap reached` and raised the alert). The warnings, the stop before a new check, the daily quota and the banner (P3.04, D-053) are covered by `tests/integration/test_budget_guard.py` and `test_resilience.py`; DEV_DRILL
+- **Symptoms:**
+  - A Telegram alert `budget_warning · live_warn_50` or `live_warn_80`: the lane passed 50% or 80% of its cap this month (once per level and month). Admin shows a banner on every page until the month ends.
+  - New checks refused with "This month's budget for checks is used up. Checks will work again next month." (core-api 402), and the banner turns red: less than one check's worth is left (`new_check_reserve_eur`, EUR 0.05). A confirmation is refused the same way. A check already running can still fail with `budget_cap_reached` if it hits the cap itself (Telegram `budget_cap_reached`, once an hour at most).
+  - A user reports "This account has used today's checks." (core-api 429, `daily_quota_reached`): the account started `checks_per_user_per_day` checks (25) today, UTC.
+- **How it works:** the gateway keeps the budget (D-021, D-053). Before every LLM call it reserves the worst case and refuses it past the lane's cap (`live` EUR 15, `eval` EUR 5). Before a new check or a confirmation, core-api asks the gateway's `/budget/status`; if the gateway can't answer, nothing starts (`budget_unavailable`). The daily quota counts each account's live extraction calls, one per check, whatever the outcome; the eval lane and `exempt_user_ids` are outside it. All of it is in the gateway config (`gateway-v1`).
+- **Checks:** admin's Costs page: spend per lane against the cap, and this month's spend and today's checks per account. Or, on the VM:
   ```bash
   docker compose exec postgres psql -U postgres -d scc -c "SELECT lane, status, count(*), sum(cost_eur) FROM gateway.llm_calls WHERE created_at >= date_trunc('month', now()) GROUP BY 1, 2"
   ```
-  Is this normal use, or a spike from one user (RB-10)? Was there an eval run?
-- **Fix:** if it's abuse, go to RB-10. If it's legitimate, either wait for the next month or, **the owner only**, raise the cap with a new config version and a reason. Never raise it past the EUR 25 total without a DECISIONS entry.
-- **Drill (dev):** `SCC_BUDGET_CAP_OVERRIDE_EUR` lowers every cap, and can never raise one. Restart the gateway with it, submit a claim, and check the job fails with the budget message; then restart without it.
+  Is this normal use, or a spike from one account (RB-10)? Was there an eval run?
+- **Fix:** if it's abuse, go to RB-10. If it's legitimate, wait for the next month (the cap) or the next UTC day (the quota), or, **the owner only**, change the cap, the quota or `exempt_user_ids` with a new gateway config version and a reason (RB-15), then restart the gateway. Never raise a cap past the EUR 25 total without a DECISIONS entry.
+- **Drill (dev):** `SCC_BUDGET_CAP_OVERRIDE_EUR` lowers every cap, and can never raise one. Restart the gateway with it, try a new check (refused, with the message) and open admin (red banner); then restart without it.
   ```bash
-  SCC_BUDGET_CAP_OVERRIDE_EUR=0.0001 docker compose -f deploy/compose.dev.yaml up -d gateway
+  SCC_BUDGET_CAP_OVERRIDE_EUR=0.01 docker compose -f deploy/compose.dev.yaml up -d gateway
   ```
   ```bash
   docker compose -f deploy/compose.dev.yaml up -d gateway
   ```
-- **Verify:** the spend query shows the expected total; new jobs are accepted or refused as intended.
+- **Verify:** the banner and the spend match what you expect; new checks are accepted or refused as intended.
 
 ## RB-10 Suspected abuse or injection attempts
 **Status:** draft; the throttle and the alerts are covered by `tests/integration/test_guardrails.py` (P3.02, D-050), not yet exercised on the VM.
