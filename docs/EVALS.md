@@ -186,6 +186,7 @@ Thresholds are reported, not enforced, until the Phase 3 guardrails exist.
 | 2026-11-03 | evalset-v2 | pipeline-v5 | claude-haiku-5-5 | tuning | 22 | 71% | 73% | 100% | 100% | 100% | 50% | 24.8 / 37.2 | 0.0025 | 0.1658 | `dfda2b3+dirty` | pipeline-v5 (P3.01-P3.03), final: serious illness only for people who have it; claims kept on stopped jobs; mean of 3 runs |
 | 2026-11-03 | evalset-v2 | pipeline-v5 | claude-haiku-5-5 | tuning | 22 | 67% | 73% | 100% | 100% | 100% | 50% | 24.2 / 39.9 | 0.0025 | 0.0550 | `dfda2b3+dirty` | pipeline-v5 as released (P3.01-P3.03): recording and baseline |
 | 2026-11-03 | evalset-v3 | pipeline-v5 | claude-haiku-5-5 | tuning | 23 | 69% | 75% | 100% | 100% | 100% | 50% | 24.2 / 39.2 | 0.0026 | 0.0588 | `d9ae34b` | pipeline-v5 as released (P3.01-P3.03) on evalset-v3 (safety-03 added): recording and baseline |
+| 2026-11-04 | evalset-v3 | pipeline-v6 | claude-haiku-5-5 | tuning | 23 | 81% | 85% | 100% | 100% | 100% | 33% | 26.0 / 41.9 | 0.0026 | 0.1760 | `a679236` | pipeline-v6 arm: query v2 (D-052); mean of 3 runs |
 
 ## Comparisons
 ### Guardrails: pipeline-v5 against v4 (P3.01–P3.03)

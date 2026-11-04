@@ -15,6 +15,7 @@ from procrastinate.testing import InMemoryConnector
 from psycopg_pool import AsyncConnectionPool
 
 from scc_core import api as core_api
+from scc_core import config as core_config
 from scc_core import tasks
 from scc_gateway import config as gateway_config
 from scc_gateway import main as gateway_main
@@ -563,7 +564,8 @@ def test_injections_page_and_the_overview_counts(migrated_db):
     injections, overview = with_admin(migrated_db, steps)
     # The sample holds the admin account at the throttle: 3 checks with instructions in 24 hours.
     assert "Held</span> until" in injections and "owner@example.com" in injections
-    assert "pipeline-v5" in injections and admin_views.RB["RB-10"] in injections
+    assert f"/admin/config/core/{core_config.ACTIVE}" in injections
+    assert admin_views.RB["RB-10"] in injections
     assert "Their own text" in injections and "Article PMC6543210" in injections
     assert injections.count('href="/admin/jobs/') == 5
     assert (
