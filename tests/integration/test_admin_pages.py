@@ -573,3 +573,44 @@ def test_injections_page_and_the_overview_counts(migrated_db):
     )
     assert re.search(r"Safety reviews waiting</dt>\s*<dd><span[^>]*>3</span>", overview)
     assert re.search(r"Accounts throttled now</dt>\s*<dd><span[^>]*>1</span>", overview)
+
+
+def test_a_budget_banner_on_every_admin_page_past_a_warning(migrated_db):
+    """P3.04: past 50% of a cap, every admin page says so; at the cap, it says new checks stopped."""
+
+    async def steps(ctx):
+        out = {}
+        async with admin_client(ctx) as c:
+            out["quiet"] = (await c.get("/admin/jobs")).text
+            async with ctx["pools"]["gateway"].connection() as conn:
+                await conn.execute(
+                    "INSERT INTO gateway.llm_calls (lane, status, stage, job_id, user_id, model, cost_eur)"
+                    " VALUES ('live', 'ok', 'extract', 'big', %s, 'claude-haiku-5-5', 12.4)",
+                    (ctx["user_id"],),
+                )
+            out["warn"] = (await c.get("/admin/users")).text
+            out["costs"] = (await c.get("/admin/costs")).text
+            async with ctx["pools"]["gateway"].connection() as conn:
+                await conn.execute(
+                    "INSERT INTO gateway.llm_calls (lane, status, stage, job_id, user_id, model, cost_eur)"
+                    " VALUES ('live', 'ok', 'assess', 'bigger', 7, 'claude-haiku-5-5', 2.58)"
+                )
+            out["cap"] = (await c.get("/admin")).text
+        return out
+
+    out = with_admin(migrated_db, steps)
+    assert "budget-banner" not in out["quiet"]
+    assert (
+        "The live lane has spent €12.40 of its €15.00 cap this month (83%)."
+        in out["warn"]
+    )
+    assert "notice--warning budget-banner" in out["warn"]
+    assert (
+        "Live spend by account, this month" in out["costs"]
+        and "tester@example.com" in out["costs"]
+    )
+    assert (
+        "The live budget is used up this month (€14.98 of €15.00): new checks are stopped."
+        in out["cap"]
+    )
+    assert "notice--error budget-banner" in out["cap"]

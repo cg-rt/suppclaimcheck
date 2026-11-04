@@ -106,15 +106,15 @@ NOTE_MAX = 500
 def banner_text(lane: dict) -> str:
     """One lane's budget warning for the admin banner (P3.04)."""
     share = lane["spent_eur"] / lane["cap_eur"] if lane["cap_eur"] else 1.0
-    spent = f"{eur(lane['spent_eur'], 2)} of {eur(lane['cap_eur'], 2)} ({share:.0%})"
+    spent, cap = eur(lane["spent_eur"], 2), eur(lane["cap_eur"], 2)
     if lane["level"] == "cap":
         stopped = (
             "new checks are stopped"
             if lane["lane"] == "live"
             else "new eval calls are refused"
         )
-        return f"The {lane['lane']} budget is used up this month: {spent}; {stopped}."
-    return f"The {lane['lane']} lane has spent {spent} of its cap this month."
+        return f"The {lane['lane']} budget is used up this month ({spent} of {cap}): {stopped}."
+    return f"The {lane['lane']} lane has spent {spent} of its {cap} cap this month ({share:.0%})."
 
 
 def topic(name: str) -> str:
