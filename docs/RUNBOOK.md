@@ -255,6 +255,25 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   A core line `purge skipped: the active config has no [retention]` means the active pipeline version predates v8: see RB-15.
 - **Verify:** the person's email no longer appears on Users; the reply is sent; the private log has the date and what was done (no personal details).
 
+
+## RB-17 Link checks fail, or a site asks the reader to stay away
+**Status:** draft; the reader, its address checks and the switch are tested in `services/gateway/tests/test_pages.py` and `tests/integration/test_article_links.py` (P3.12, D-055), and real pages were read through the dev stack; not yet exercised on the VM.
+- **Symptoms:** a `url_blocked` alert (someone gave an address inside a private network, or one that redirects there); many link checks failing with `page_unavailable` or `page_timeout`; a `pages_not_configured` alert; or an email from a site owner about the page reader.
+- **Checks:** which codes, how often, for which sites. The gateway logs the host, never the path:
+  ```bash
+  sudo docker compose logs --since 24h gateway | grep "page not read"
+  ```
+  Admin's Jobs page, filtered to failed: each trace shows the link and the code.
+  - **`url_blocked` from one account, again and again:** someone may be probing. Nothing was fetched: the address is checked before any connection. Look at the account's other checks, and disable it on Users if it goes on.
+  - **`page_unavailable` or `page_timeout` for every site:** the gateway can't reach the internet. Check its egress (RB-07 has the same check for the literature):
+  ```bash
+  sudo docker compose exec gateway python -c "import urllib.request; print(urllib.request.urlopen('https://www.nccih.nih.gov/robots.txt', timeout=10).status)"
+  ```
+  - **`pages_not_configured`:** the active gateway config has no `[pages]` (a rollback to gateway-v2 or older). Activate gateway-v3 or later (RB-15), then restart the gateway.
+- **Switch link checks off, without a release:** export the active pipeline version, set `url = false` under `[inputs]`, name the copy (for example `pipeline-v9-no-links`), then create and activate it as in RB-15 with `--accept-warnings "links off: why"`. The new-check page stops offering links at once; checks already running finish. Activate the previous version to switch them back on.
+- **A site owner asks the reader to stay away:** reply that `User-agent: SuppClaimCheck` with `Disallow: /` in their robots.txt does it within an hour (the `/reader` page says so). To stop at once, add their domain to `blocked_hosts` under `[pages]` in a gateway CLI version (RB-15: `gateway python -m scc_gateway.config`), activate it and restart the gateway; it covers every name under the domain. Note it in the private log.
+- **Verify:** a link check to a page that should read does; for a blocked site, a link check ends with the "asks automated readers not to read this page" message.
+
 ---
 
 ## Release go-live checklist
@@ -265,7 +284,7 @@ To be completed in P3.13. Copy it into the private log for each release and tick
 - [ ] Backup taken today, and a restore verified within the last 30 days
 - [ ] Runbook updated for anything new
 - [ ] Rollback tested for the modules being released
-- [ ] Feature flags set as intended for this rollout stage
+- [ ] Feature flags set as intended for this rollout stage: pipeline `[inputs] url` (article links, P3.12)
 - [ ] `SCC_OPERATOR_NAME` set in `/opt/suppclaimcheck/.env`, so the privacy page names the controller (P3.06)
 - [ ] Owner's go-ahead recorded
 

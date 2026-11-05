@@ -5,7 +5,7 @@
 # Update at every phase gate and whenever a module, port, dependency or version changes.
 
 schema_version: 1
-updated: 2026-11-03
+updated: 2026-11-05
 
 system:
   name: SuppClaimCheck
@@ -101,10 +101,10 @@ modules:
     status: live
     version: 0.1.2
     phase_built: 1
-    technology: Python 3.14, FastAPI, provider SDKs, httpx
+    technology: Python 3.14, FastAPI, provider SDKs, httpx, httpcore (the page reader's guarded connections)
     purpose: >
       The single door to the outside world: the LLM provider (Anthropic Claude for v1, D-033, behind a swappable interface; prompts, token and cost accounting, budget guard),
-      PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts.
+      PubMed E-utilities, Europe PMC and the PMC Cloud Service, the page reader for article links (D-055: every connection to a public address only, redirects included; robots.txt and noai obeyed; 10 s, 2 MB, HTML only), and Telegram alerts.
       The budget guard: monthly caps per lane, warnings at 50% and 80%, the per-account daily quota, and idempotent LLM calls (the same key never charges twice).
       Read-only admin endpoints over its LLM call records (calls per job, costs and usage, per account) and its config versions.
       Privacy: unlinks a deleted account from its call records, and an hourly purge clears stored answers and old account links (D-054).
@@ -137,8 +137,8 @@ modules:
 
 # Steps for the viewer's "follow one claim" mode.
 claim_path:
-  - {step: 1, name: Submit, modules: [edge, web, core], what: "The user submits a claim; core-api creates a job with an idempotency key."}
-  - {step: 2, name: Extract, modules: [core, gateway], what: "The worker asks the LLM, via the gateway, for a structured claim."}
+  - {step: 1, name: Submit, modules: [edge, web, core], what: "The user submits a claim, or a link to a page; core-api creates a job with an idempotency key."}
+  - {step: 2, name: Extract, modules: [core, gateway], what: "For a link, the gateway reads the page first (D-055). The worker asks the LLM, via the gateway, for structured claims."}
   - {step: 3, name: Triage, modules: [core, gateway], what: "The extraction call also labels the request; code applies docs/POLICY.md: refuse, ask for a clearer claim, or continue, with a safety notice and a review flag where needed. Nothing is searched before this."}
   - {step: 4, name: Confirm, modules: [web, core], what: "The user confirms or edits the claim, and may accept PubMed's spelling of the supplement name. Nothing has been searched or spent yet beyond extraction."}
   - {step: 5, name: Search, modules: [core, gateway], what: "The gateway queries PubMed via E-utilities with an open-access filter, under the supplement's other names too; up to five articles, strongest study type first."}

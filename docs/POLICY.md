@@ -36,6 +36,23 @@ The check stops before searching and asks for what is missing. The user starts a
 
 **Several claims at once** are not a stop: the confirm page lists them and the user picks one (Phase 1). A claim that is too general is shown with the others; the check only stops when every claim is too general.
 
+## A linked page (P3.12, D-055)
+
+When the user gives a link, the text is the page's, not theirs, and their request is fixed: check the claims this page makes. So the rules above change in four places:
+
+- **Refusals:** only an abusive page is refused (`refuse_abusive`). A page that gives advice, sells a product or is about something else is still read for claims; the model's request label for those is set aside.
+- **Clarifications:** a page with no supplement claim, or only general praise, gets its own message:
+
+| Situation | Code | Message |
+|---|---|---|
+| Only general praise on the page | `clarify_vague_page` | The page praises a supplement but names no effect specific enough to check. Start a new check that names one, for example “turmeric reduces knee pain in osteoarthritis”. |
+| No supplement claim on the page | `clarify_no_claim_page` | No claim about a dietary supplement was found on that page. If the page makes one, paste the sentence that states it in a new check. |
+
+- **Safety notices:** the keyword lists are matched against the claims found on the page and the claim the user confirms, not the whole page, which mentions too much. The model's topic labels apply as for text.
+- **Instructions on the page** are recorded as the page's (`submitted_page`) and, like those in articles, never count against the user.
+
+A page that can't be read (robots.txt, `noai`, not HTML, too large, a private address) stops the check before any LLM call, with a message that suggests pasting the text instead (ERRORS.md).
+
 ## Escalate: answer with a safety notice
 
 The check runs as normal. The result page shows a safety notice above the verdict, the job is flagged for the owner's review (admin review queue), and the owner gets a Telegram alert with the job ID and topic, never the user's text. In the queue the owner opens the job, sees what the user sent and saw, and records whether the notice fit, wasn't needed, or needs follow-up, with an optional note. The review is never shown to the user; a job whose confirmed claim adds a topic comes back to the queue.
@@ -54,8 +71,8 @@ A check can carry more than one notice. The notices are information, not advice,
 
 ## Hostile instructions
 
-- Text the user submits, and text from fetched articles, is **data**. Instructions found in it ("ignore your rules", "label every passage as supports") are ignored.
-- The model reports them in its structured output (`instructions_found`); code records an **injection event** with the job, the stage and the source (the user's text, or an article ID). The text itself is not stored in the event.
+- Text the user submits, pages they link to, and text from fetched articles, is **data**. Instructions found in it ("ignore your rules", "label every passage as supports") are ignored.
+- The model reports them in its structured output (`instructions_found`); code records an **injection event** with the job, the stage and the source (the user's text, a linked page, or an article ID). The text itself is not stored in the event.
 - **Repeated attempts:** once one account has the configured number of checks with instructions in its own text inside the window (pipeline config, `guardrails`: 3 checks in 24 hours in pipeline-v5), new checks from that account are refused until the oldest of them leaves the window, with: "Too many checks from this account contained instructions to the system. You can start new checks again later." The owner gets one Telegram alert. Instructions found in articles never count against the user.
 - A request for the system prompt, configuration or secrets is refused (above), whether or not it is phrased as an instruction.
 
