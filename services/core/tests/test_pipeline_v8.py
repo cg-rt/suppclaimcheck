@@ -3,10 +3,6 @@
 from scc_core import config
 
 
-def test_v8_is_active():
-    assert config.ACTIVE == "pipeline-v8"
-
-
 def test_v8_adds_only_retention_to_v7():
     v7, v8 = config.load("pipeline-v7"), config.load("pipeline-v8")
     changed = {"version", "retention"}

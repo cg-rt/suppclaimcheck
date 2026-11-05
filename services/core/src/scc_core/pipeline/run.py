@@ -36,6 +36,53 @@ log = logging.getLogger("scc.pipeline")
 # The most articles one check may read (P2.05): cost and latency grow with each one.
 MAX_ARTICLES = 10
 
+# Why a linked page wasn't read (P3.12), by the gateway's code (D-055). Each says what to do instead.
+PAGE_MESSAGES = {
+    "url_invalid": (
+        "That link can't be opened. Check that it is a whole web address starting with http:// or "
+        "https://, or paste the text with the claim instead."
+    ),
+    "url_blocked": (
+        "SuppClaimCheck doesn't read that address: it points into a private network or uses an "
+        "unusual port. Paste the text with the claim instead."
+    ),
+    "robots_disallowed": (
+        "That site asks automated readers not to read this page, so SuppClaimCheck didn't. Paste "
+        "the text with the claim instead."
+    ),
+    "ai_disallowed": (
+        "That page asks not to be read by AI tools, so SuppClaimCheck didn't. Paste the text with the "
+        "claim instead."
+    ),
+    "not_html": (
+        "That link isn't a web page (it may be a PDF or an image), and SuppClaimCheck reads only web "
+        "pages. Paste the text with the claim instead."
+    ),
+    "too_large": "That page is too large to read. Paste the part with the claim instead.",
+    "no_text": (
+        "No article text was found on that page. Pages that need a login or JavaScript can't be read: "
+        "paste the text with the claim instead."
+    ),
+    "page_not_found": (
+        "That page doesn't exist: the site answered “not found”. Check the link, or paste the text "
+        "with the claim instead."
+    ),
+    "site_refused": (
+        "That site refused to give the page to SuppClaimCheck's reader (some sites serve only web "
+        "browsers). Paste the text with the claim instead."
+    ),
+    "page_unavailable": (
+        "The page couldn't be loaded: the site didn't answer, or answered with an error. Check the "
+        "link and try again, or paste the text with the claim instead."
+    ),
+    "page_timeout": (
+        "The page took too long to load. Try again later, or paste the text with the claim instead."
+    ),
+    "pages_not_configured": (
+        "Links can't be read just now. Paste the text with the claim instead."
+    ),
+    "input_disabled": triage.INPUT_DISABLED,
+}
 # Messages users see when a job fails; no stack traces or internal detail (AGENTS.md section 8).
 MESSAGES = {
     "budget_cap_reached": "This month's budget for checks is used up. Checks will work again next month.",
@@ -46,6 +93,7 @@ MESSAGES = {
     "no_claim": "No claim about a dietary supplement was found in the text.",
     "daily_quota_reached": "This account has used today's checks. You can start new checks again tomorrow (UTC).",
     "stalled": "The check stopped unexpectedly and was ended. Please try it again.",
+    **PAGE_MESSAGES,
 }
 # States a job is worked on in; one that stays in them too long has lost its worker (P3.05).
 WORKING_STATES = [
@@ -152,9 +200,15 @@ async def _structured(
     user_id: int,
     data: str,
     output: type[BaseModel],
+    key: str | None = None,
 ):
-    """One LLM call with schema-checked output; an unusable answer is retried once, then the stage fails."""
-    settings = rt.config["llm"][stage]
+    """One LLM call with schema-checked output; an unusable answer is retried once, then the stage fails.
+
+    `key` picks another prompt and settings for the same stage (extract_page for a linked page, P3.12):
+    the gateway still records the stage, so the daily quota counts it.
+    """
+    key = key or stage
+    settings = rt.config["llm"][key]
     schema = strict_schema(output)
     if settings.get("field_order"):
         schema = ordered(schema, settings["field_order"])
@@ -166,7 +220,7 @@ async def _structured(
                 user_id=user_id,
                 settings=settings,
                 model=rt.config["llm"]["model"],
-                instructions=rt.config["prompts"][stage],
+                instructions=rt.config["prompts"][key],
                 data=data,
                 schema=schema,
                 attempt=attempt,
@@ -232,6 +286,10 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
         return
     rt = await rt.for_job(job.config_version)
     await _set(rt, job_id, JobState.extracting)
+    page = job.input_type == "url"
+    data = await _read_page(rt, job) if page else job.input_text
+    if data is None:
+        return
     guarded = "guardrails" in rt.config
     try:
         extraction = await _structured(
@@ -239,8 +297,9 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
             "extract",
             job_id,
             job.user_id,
-            job.input_text,
+            data,
             TriagedExtraction if guarded else Extraction,
+            key="extract_page" if page else None,
         )
     except StageFailed as exc:
         await _fail(rt, job_id, exc.code)
@@ -249,7 +308,7 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
         log.info("extract already running elsewhere", extra={"job_id": str(job_id)})
         return
     if guarded:
-        await _triaged(rt, job, extraction)
+        await _triaged(rt, job, extraction, page)
         return
     if not extraction.claims:
         await _fail(rt, job_id, "no_claim")
@@ -266,11 +325,82 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
     )
 
 
-async def _triaged(rt: Runtime, job: Job, extraction: TriagedExtraction) -> None:
-    """Refuse, clarify or wait for confirmation, as docs/POLICY.md says (P3.01-P3.03, D-050)."""
-    decision = triage.decide(extraction, job.input_text, rt.config["guardrails"])
+async def _read_page(rt: Runtime, job: Job) -> str | None:
+    """Has the gateway read the linked page (P3.12, D-055) and stores what the model will read.
+
+    Returns that text, or None after failing the job with the reason's code. The text is untrusted data,
+    like any submitted text. The model reads the page from the top, up to `url_max_chars`.
+    """
+    inputs = rt.config.get("inputs", {})
+    if not inputs.get("url"):
+        await _fail(rt, job.id, "input_disabled")
+        return None
+    try:
+        page = await rt.gateway.page(job.input_text)
+    except GatewayError as exc:
+        code = exc.code if exc.code in PAGE_MESSAGES else "page_unavailable"
+        log.info("page not read", extra={"job_id": str(job.id), "code": exc.code})
+        await _fail(rt, job.id, code)
+        return None
+    except httpx.HTTPError as exc:
+        log.warning(
+            "page not read: gateway unreachable",
+            extra={"job_id": str(job.id), "error": type(exc).__name__},
+        )
+        await _fail(rt, job.id, "page_unavailable")
+        return None
+    text = page["text"]
+    read = cut_text(text, inputs["url_max_chars"])
+    source = {
+        "url": page["url"],
+        "final_url": page["final_url"],
+        "title": page["title"],
+        "site_name": page["site_name"],
+        "chars": len(text),
+        "chars_read": len(read),
+        "truncated": page["truncated"] or len(read) < len(text),
+    }
+    async with rt.pool.connection() as conn:
+        await jobs.set_source(conn, job.id, source, read)
+    return read
+
+
+def cut_text(text: str, limit: int) -> str:
+    """The text up to `limit` characters, cut at the last paragraph break that fits when there is one."""
+    if len(text) <= limit:
+        return text
+    cut = text.rfind("\n\n", 0, limit + 1)
+    return text[:cut] if cut > 0 else text[:limit]
+
+
+def _claims_text(extraction: TriagedExtraction) -> str:
+    return " ".join(
+        value
+        for claim in extraction.claims
+        for value in claim.model_dump().values()
+        if isinstance(value, str)
+    )
+
+
+async def _triaged(
+    rt: Runtime, job: Job, extraction: TriagedExtraction, page: bool = False
+) -> None:
+    """Refuse, clarify or wait for confirmation, as docs/POLICY.md says (P3.01-P3.03, D-050).
+
+    For a linked page (P3.12) the safety word lists see the claims found, not the whole page, and
+    instructions found on the page are recorded as the page's, not the user's: they don't count towards
+    the account's limit.
+    """
+    decision = triage.decide(
+        extraction,
+        _claims_text(extraction) if page else job.input_text,
+        rt.config["guardrails"],
+        page=page,
+    )
     if decision.instructions_found:
-        await _injection(rt, job, "extract", "submitted_text")
+        await _injection(
+            rt, job, "extract", "submitted_page" if page else "submitted_text"
+        )
     claims = [c.model_dump() for c in extraction.claims]
     if decision.action != "continue":
         state = (

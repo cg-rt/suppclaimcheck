@@ -131,7 +131,11 @@ async def run_case(
             async with rt.pool.connection() as conn:
                 job, _ = await jobs.create(
                     conn,
-                    JobCreate(user_id=EVAL_USER_ID, input_text=case.input),
+                    JobCreate(
+                        user_id=EVAL_USER_ID,
+                        input_type=case.input_type,
+                        input_text=case.input,
+                    ),
                     f"{run_id}-{case.id}",
                     rt.config["version"],
                     correlation_id,

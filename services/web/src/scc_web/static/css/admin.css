@@ -2,7 +2,6 @@
    Admin is a desk tool first, so the column is 1200px and data sits in tables; phones still work. */
 
 :root {
-  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
   --admin-width: 1200px;
 }
 
@@ -61,11 +60,7 @@
 /* Eight characters of a job ID read as one word; never break them down the column. */
 .short-id { white-space: nowrap; }
 
-/* Filter tabs and search */
-.tabs ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); border-bottom: 1px solid var(--line); }
-.tabs a { display: inline-block; padding: var(--space-2) 0; color: var(--ink); font-weight: 600; text-decoration: none; }
-.tabs a:hover { color: var(--action); }
-.tabs a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--ink); }
+/* Filter tabs (.tabs is in app.css: the new-check page uses it too) and search */
 .tabs__n { color: var(--ink-2); font-weight: 400; }
 .search { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
 .search input, .search select {
@@ -93,14 +88,7 @@
 .tiles__n { font-size: var(--text-lg); font-weight: 800; color: var(--ink); }
 
 /* Code, settings and diffs: monospace because they are code. */
-.code {
-  margin: 0; font: 0.8125rem/1.55 var(--mono); color: var(--ink);
-  background: var(--card-quiet); border: 1px solid var(--line); border-radius: var(--radius-sm);
-  padding: var(--space-3) var(--space-4); overflow: auto; max-height: 36rem; tab-size: 2;
-}
-.code code { font-size: inherit; overflow-wrap: normal; }
-.code--wrap { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; }
-.code--wrap code { overflow-wrap: anywhere; }
+/* .code is in app.css: the page reader's page shows code too. */
 .diff code { display: inline-block; min-width: 100%; }
 .diff span { display: block; padding-inline: var(--space-2); margin-inline: calc(-1 * var(--space-2)); }
 .diff__add { background: var(--supported-tint); color: var(--supported); }

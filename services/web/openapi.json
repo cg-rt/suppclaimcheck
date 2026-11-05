@@ -847,6 +847,24 @@
     "/checks/new": {
       "get": {
         "operationId": "new_check_checks_new_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -855,6 +873,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "New Check"
@@ -1119,6 +1147,23 @@
           }
         },
         "summary": "Privacy"
+      }
+    },
+    "/reader": {
+      "get": {
+        "description": "What the page reader does and how a site can say no (P3.12): the page its user agent names.",
+        "operationId": "reader_reader_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reader"
       }
     },
     "/sign-in": {

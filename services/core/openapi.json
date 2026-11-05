@@ -133,6 +133,29 @@
             "title": "Sensitive Topics",
             "type": "array"
           },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "source_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Text"
+          },
           "state": {
             "title": "State",
             "type": "string"
@@ -1168,6 +1191,25 @@
         "title": "InjectionReport",
         "type": "object"
       },
+      "InputTypes": {
+        "description": "What a new check can start from under the active config (P3.12, P3.13). Text is always on.",
+        "properties": {
+          "text": {
+            "default": true,
+            "title": "Text",
+            "type": "boolean"
+          },
+          "url": {
+            "title": "Url",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "InputTypes",
+        "type": "object"
+      },
       "Job": {
         "properties": {
           "config_version": {
@@ -1287,6 +1329,18 @@
             "title": "Sensitive Topics",
             "type": "array"
           },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
           "state": {
             "$ref": "#/components/schemas/JobState"
           },
@@ -1326,8 +1380,11 @@
             "type": "string"
           },
           "input_type": {
-            "const": "text",
             "default": "text",
+            "enum": [
+              "text",
+              "url"
+            ],
             "title": "Input Type",
             "type": "string"
           },
@@ -1418,6 +1475,11 @@
             "title": "Input Text",
             "type": "string"
           },
+          "input_type": {
+            "default": "text",
+            "title": "Input Type",
+            "type": "string"
+          },
           "score": {
             "anyOf": [
               {
@@ -1428,6 +1490,17 @@
               }
             ],
             "title": "Score"
+          },
+          "source_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Title"
           },
           "state": {
             "$ref": "#/components/schemas/JobState"
@@ -2841,6 +2914,28 @@
         ]
       }
     },
+    "/inputs": {
+      "get": {
+        "description": "The input types the new-check page may offer: the active config's [inputs] switches.",
+        "operationId": "input_types_inputs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputTypes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Input Types",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
     "/jobs": {
       "get": {
         "description": "A user's jobs, newest first.",
@@ -2944,7 +3039,7 @@
             "description": "This month's budget for checks is used up"
           },
           "409": {
-            "description": "Key reused with a different body"
+            "description": "Key reused with a different body, or the input type is switched off"
           },
           "422": {
             "content": {

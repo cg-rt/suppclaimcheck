@@ -175,6 +175,23 @@
   <h2 class="card__title" id="input-title">Input and claims</h2>
   <h3 class="subhead">Submitted {{ job.input_type }}</h3>
   <p class="your-text">{{ job.input_text }}</p>
+  {% if job.input_type == "url" %}
+  <h3 class="subhead">The page read</h3>
+  {% if job.source %}
+  {% set s = job.source %}
+  <dl class="facts facts--wide">
+    <div><dt>Title</dt><dd>{{ s.title or "–" }}{% if s.site_name %} · {{ s.site_name }}{% endif %}</dd></div>
+    <div><dt>Address read</dt><dd class="source__url">{{ s.final_url }}{% if s.final_url != s.url %} <span class="meta">(redirected)</span>{% endif %}</dd></div>
+    <div><dt>Text</dt><dd><span class="num">{{ "{:,}".format(s.chars_read) }}</span> characters read by the model, of <span class="num">{{ "{:,}".format(s.chars) }}</span>{% if s.truncated %}; the page was cut{% endif %}</dd></div>
+  </dl>
+  <details>
+    <summary>Text the model read (untrusted page text)</summary>
+    <pre class="code code--wrap"><code>{{ job.source_text }}</code></pre>
+  </details>
+  {% else %}
+  <p class="meta">Not read{% if job.state in ("submitted", "extracting") %} yet{% else %}: see the events{% endif %}.</p>
+  {% endif %}
+  {% endif %}
   <h3 class="subhead">Extracted claims</h3>
   {% if job.extracted_claims %}
   {% call scroll("input-title") %}

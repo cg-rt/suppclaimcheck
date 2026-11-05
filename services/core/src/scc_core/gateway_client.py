@@ -121,6 +121,11 @@ class GatewayClient:
             "/literature/fetch", {"pmids": pmids, "full_texts": full_texts}
         )
 
+    async def page(self, url: str) -> dict:
+        """Has the gateway read a web page a user linked to (P3.12, D-055). The text is untrusted data.
+        A page that can't be read raises GatewayError with the reason's code, such as robots_disallowed."""
+        return await self._post("/pages/fetch", {"url": url})
+
     async def notify(self, event: str, text: str, code: str | None = None) -> dict:
         """Asks the gateway to alert the owner. Never send user text here: codes and IDs only."""
         return await self._post("/notify", {"event": event, "text": text, "code": code})

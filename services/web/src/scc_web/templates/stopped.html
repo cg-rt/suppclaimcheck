@@ -3,6 +3,7 @@
   "refused": "This isn't something SuppClaimCheck can check",
   "needs_clarification": "Tell us a little more",
 }.get(job.state, "This check stopped") %}
+{% set page = job.input_type == "url" %}
 {% block title %}{{ heading }}{% endblock %}
 {% block main %}
 <section class="card">
@@ -10,12 +11,25 @@
   <div class="notice {{ 'notice--error' if job.state == 'failed' else 'notice--hint' }}" role="status">
     <p>{{ job.error or "The check could not be completed." }}</p>
   </div>
+  {% if page %}
+  <div class="stopped__source">
+    <p>Your link:</p>
+    {% include "partials/source.html" %}
+  </div>
+  {% else %}
   <p>Your text: <q>{{ job.input_text }}</q></p>
-  {% if job.state == "failed" %}
+  {% endif %}
+  {% if job.state == "failed" and page and not job.source %}
+  <p>The page wasn't read, so nothing was spent on this check.</p>
+  {% elif job.state == "failed" %}
   <p>A stopped check doesn't repeat itself, so nothing is spent twice. Start a new one when you're ready.</p>
   {% else %}
-  <p>Nothing was searched for this text, and nothing was spent on it.</p>
+  <p>Nothing was searched for this {% if page %}page{% else %}text{% endif %}, and nothing was spent on it.</p>
   {% endif %}
+  {% if page %}
+  <p class="actions"><a class="button" href="/checks/new">Paste the text instead</a> <a class="button button--secondary" href="/checks/new?from=link">Try another link</a></p>
+  {% else %}
   <p><a class="button" href="/checks/new">Start a new check</a></p>
+  {% endif %}
 </section>
 {% endblock %}

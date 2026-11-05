@@ -1,0 +1,20 @@
+id = "link-04"
+category = "article_link"
+input_type = "url"
+input = "https://www.nccih.nih.gov/health/omega3-supplements-what-you-need-to-know"
+
+[expected]
+# Held out (never used for tuning): a third public health page with several claims about omega-3
+# supplements; the user picks one (P3.12).
+behaviour = "pick_claim"
+min_claims = 2
+supplement = ["omega-3", "omega 3", "fish oil", "omega-3 fatty acids", "omega-3 supplements"]
+
+[label]
+rationale = """
+NCCIH's "Omega-3 Supplements: What You Need To Know" discusses heart disease, rheumatoid arthritis, eye
+disease and more, each with its own evidence. Its robots.txt lets the reader in (checked 2026-11-05).
+"""
+pmids = []
+status = "draft"
+drafted_on = 2026-11-05

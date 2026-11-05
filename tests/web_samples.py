@@ -116,6 +116,8 @@ class FakeCore:
         self.refuse_confirm: tuple[int, str, str] | None = None
         # When true, an account deletion fails as it does with the gateway down (P3.06).
         self.refuse_erase = False
+        # The active config's link switch (P3.12): core's GET /inputs, and refusals of url jobs.
+        self.links = True
 
     def add(self, j: dict) -> dict:
         self.jobs[j["id"]] = j
@@ -138,12 +140,27 @@ class FakeCore:
             return httpx.Response(
                 status, json={"detail": {"code": code, "message": message}}
             )
+        if request.method == "GET" and path == "/inputs":
+            return httpx.Response(200, json={"text": True, "url": self.links})
+        if (
+            request.method == "POST"
+            and path == "/jobs"
+            and body.get("input_type") == "url"
+            and not self.links
+        ):
+            detail = {"code": "input_disabled", "message": "Links are switched off."}
+            return httpx.Response(409, json={"detail": detail})
         if request.method == "POST" and path == "/jobs" and self.throttle_message:
             detail = {"code": "injection_throttled", "message": self.throttle_message}
             return httpx.Response(429, json={"detail": detail})
         if request.method == "POST" and path == "/jobs":
             new = self.add(
-                job(body["user_id"], "submitted", input_text=body["input_text"])
+                job(
+                    body["user_id"],
+                    "submitted",
+                    input_type=body.get("input_type", "text"),
+                    input_text=body["input_text"],
+                )
             )
             return httpx.Response(201, json=new)
         if request.method == "GET" and path == "/jobs":
@@ -154,12 +171,14 @@ class FakeCore:
                     for k in (
                         "id",
                         "state",
+                        "input_type",
                         "input_text",
                         "confirmed_claim",
                         "created_at",
                     )
                 }
                 | {
+                    "source_title": (j.get("source") or {}).get("title"),
                     "verdict": (j["result"] or {}).get("verdict"),
                     "score": (j["result"] or {}).get("score"),
                 }

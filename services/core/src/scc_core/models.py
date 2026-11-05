@@ -4,6 +4,7 @@ The LLM output models forbid extra fields; their JSON schema is sent to the gate
 structured-output mode, and the reply is validated against the same model (AGENTS.md section 8).
 """
 
+import re
 from datetime import datetime
 from enum import StrEnum
 from typing import Literal
@@ -38,10 +39,24 @@ class Claim(BaseModel):
     duration: str | None = Field(default=None, max_length=200)
 
 
+# The longest web address a check accepts (P3.12); the gateway checks the rest when it reads the page.
+MAX_URL = 2048
+_URL = re.compile(r"^https?://[^\s/?#@]+(?:[/?#]\S*)?$", re.IGNORECASE)
+
+
 class JobCreate(BaseModel):
     user_id: int
-    input_type: Literal["text"] = "text"
+    # "url": input_text is a web page's address, and the worker has the gateway read the page (P3.12).
+    input_type: Literal["text", "url"] = "text"
     input_text: str = Field(min_length=1, max_length=20_000)
+
+    @model_validator(mode="after")
+    def _one_address(self):
+        if self.input_type == "url" and (
+            len(self.input_text) > MAX_URL or not _URL.match(self.input_text)
+        ):
+            raise ValueError("a link must be one http or https address")
+        return self
 
 
 class FeedbackAnswers(BaseModel):
@@ -82,6 +97,8 @@ class Job(BaseModel):
     state: JobState
     input_type: str
     input_text: str
+    # For a link (P3.12): the address after redirects, title, site name and how much text was read.
+    source: dict | None = None
     extracted_claims: list[dict] | None
     confirmed_claim: Claim | None
     result: dict | None
@@ -103,7 +120,10 @@ class JobSummary(BaseModel):
 
     id: UUID
     state: JobState
+    input_type: str = "text"
     input_text: str
+    # A link's page title, once it has been read (P3.12).
+    source_title: str | None = None
     confirmed_claim: Claim | None
     verdict: str | None
     score: int | None
