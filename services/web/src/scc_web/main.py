@@ -11,10 +11,10 @@ from fastapi.staticfiles import StaticFiles
 from psycopg_pool import AsyncConnectionPool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from scc_common import correlation
+from scc_common import correlation, periodic
 from scc_common.app import Check, create_app, http_check
 from scc_common.db import conninfo_from_env, db_check
-from scc_web import admin_pages, config, pages
+from scc_web import admin_pages, config, erasure, pages
 from scc_web.admin_client import AdminClient
 from scc_web.auth import routes as auth_routes
 from scc_web.context import Deps, SignInRequired, render, sign_in_redirect
@@ -41,6 +41,8 @@ def build_app(
             # The active version in the database (D-048); a new one applies on restart.
             config=config.load_active(conninfo),
             trust_cloudflare=os.environ.get("SCC_TRUST_CLOUDFLARE") == "1",
+            # Who runs the site, for the privacy notice (P3.06). Set on the server, never in the repo.
+            operator=os.environ.get("SCC_OPERATOR_NAME") or None,
             # Without an admin hostname, /admin answers nowhere (P3.08, D-049).
             admin=AdminClient(os.environ["SCC_CORE_URL"], os.environ["SCC_GATEWAY_URL"])
             if os.environ.get("SCC_ADMIN_HOST")
@@ -50,13 +52,21 @@ def build_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        if deps is not None:
-            await deps.pool.open()
-        try:
+        if deps is None:
             yield
+            return
+        await deps.pool.open()
+        minutes = deps.config.get("retention", {}).get("purge_every_minutes", 60)
+
+        async def work() -> None:
+            await erasure.purge(deps)
+
+        try:
+            # Retention and unfinished account deletions (P3.06, D-054).
+            async with periodic.every(deps.pool, "web-purge", work, minutes * 60):
+                yield
         finally:
-            if deps is not None:
-                await deps.pool.close()
+            await deps.pool.close()
 
     app = create_app("web", "SuppClaimCheck web", checks, lifespan=lifespan)
     app.state.deps = deps

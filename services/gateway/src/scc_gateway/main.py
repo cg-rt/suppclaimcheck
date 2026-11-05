@@ -13,10 +13,10 @@ from fastapi import APIRouter, FastAPI, Header, HTTPException, Query, Request
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
-from scc_common import config_admin
+from scc_common import config_admin, periodic
 from scc_common.app import Check, create_app
 from scc_common.db import conninfo_from_env, db_check, read_secret
-from scc_gateway import admin_api, budget, config
+from scc_gateway import admin_api, budget, config, privacy
 from scc_gateway.alerts import AlertFailed, Alerts, AlertsNotConfigured
 from scc_gateway.literature import Literature, LiteratureUnavailable
 from scc_gateway.llm import (
@@ -100,6 +100,8 @@ class NotifyRequest(BaseModel):
         "job_failed",
         "safety_review",
         "injection_throttled",
+        # P3.06: the out-of-band record of deletions, for re-applying them after a restore (RB-12).
+        "account_deleted",
         "test",
     ]
     # A code, never user text: it goes to a phone outside this system.
@@ -109,6 +111,10 @@ class NotifyRequest(BaseModel):
 
 class NotifyReply(BaseModel):
     outcome: Literal["sent", "quiet", "deduplicated"]
+
+
+class EraseReply(BaseModel):
+    llm_calls: int
 
 
 class SearchRequest(BaseModel):
@@ -354,6 +360,24 @@ async def notify(body: NotifyRequest, request: Request) -> NotifyReply:
     return NotifyReply(outcome=outcome)
 
 
+@router.post("/users/{user_id}/erase", tags=["privacy"])
+async def erase_user(user_id: int, request: Request) -> EraseReply:
+    """Removes a deleted account's link from its LLM calls and drops their stored answers (P3.06).
+    Core calls this when an account is deleted. Safe to call again."""
+    async with _deps(request).pool.connection() as conn:
+        calls = await privacy.erase_user(conn, user_id)
+    log.info("account erased", extra={"user_id": user_id, "llm_calls": calls})
+    return EraseReply(llm_calls=calls)
+
+
+async def purge(deps: Deps) -> dict[str, int]:
+    """The retention purge (P3.06, D-054): stored answers, old account links, late calls of deleted accounts."""
+    async with deps.pool.connection() as conn:
+        counts = await privacy.purge(conn, deps.config)
+    log.info("purge finished", extra=counts)
+    return counts
+
+
 @router.post("/literature/search", tags=["literature"])
 async def literature_search(body: SearchRequest, request: Request) -> dict:
     """PubMed search with the open-access filter; PMIDs in relevance order."""
@@ -433,13 +457,20 @@ def build_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        if deps is not None:
-            await deps.pool.open()
-        try:
+        if deps is None:
             yield
+            return
+        await deps.pool.open()
+        minutes = deps.config.get("retention", {}).get("purge_every_minutes", 60)
+
+        async def work() -> None:
+            await purge(deps)
+
+        try:
+            async with periodic.every(deps.pool, "gateway-purge", work, minutes * 60):
+                yield
         finally:
-            if deps is not None:
-                await deps.pool.close()
+            await deps.pool.close()
 
     app = create_app("gateway", "SuppClaimCheck gateway", checks, lifespan=lifespan)
     app.state.deps = deps

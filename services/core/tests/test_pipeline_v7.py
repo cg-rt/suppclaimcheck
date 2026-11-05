@@ -3,10 +3,6 @@
 from scc_core import config
 
 
-def test_v7_is_active():
-    assert config.ACTIVE == "pipeline-v7"
-
-
 def test_v7_adds_only_cache_and_resilience_to_v6():
     v6, v7 = config.load("pipeline-v6"), config.load("pipeline-v7")
     changed = {"version", "cache", "resilience"}

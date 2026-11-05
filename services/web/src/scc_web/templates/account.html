@@ -30,4 +30,21 @@
     <button class="button" type="submit">Change password</button>
   </form>
 </section>
+<section class="card" aria-labelledby="delete-title">
+  <h2 class="card__title" id="delete-title">Delete your account</h2>
+  <p>This deletes your account and every check you made, at once. It can't be undone.</p>
+  <p class="small">Encrypted nightly backups keep a copy until they expire, within {{ backup_months }} months. <a href="/privacy">What is kept, and for how long</a></p>
+  {{ error_box(delete_error) }}
+  <form class="form" method="post" action="/account/delete">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="field">
+      <label for="delete_password">Your password</label>
+      <input id="delete_password" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="choice">
+      <label><input type="checkbox" name="confirm" value="yes" required> I understand my checks will be deleted too</label>
+    </div>
+    <button class="button button--secondary" type="submit">Delete my account</button>
+  </form>
+</section>
 {% endblock %}

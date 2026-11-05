@@ -26,7 +26,7 @@
       <tr>
         <th scope="row" data-label="Email">{{ a.email }}{% if a.id == me %} <span class="meta">(you)</span>{% endif %}</th>
         <td data-label="Role">{{ a.role }}</td>
-        <td data-label="Status">{% if a.disabled_at %}<span class="state state--none">disabled</span> <time class="meta num" datetime="{{ a.disabled_at.isoformat() }}">{{ views.when(a.disabled_at)[:10] }}</time>{% else %}active{% endif %}</td>
+        <td data-label="Status">{% if a.deletion_requested_at %}<span class="state state--contradicted">being deleted</span> <time class="meta num" datetime="{{ a.deletion_requested_at.isoformat() }}">{{ views.when(a.deletion_requested_at)[:10] }}</time>{% elif a.disabled_at %}<span class="state state--none">disabled</span> <time class="meta num" datetime="{{ a.disabled_at.isoformat() }}">{{ views.when(a.disabled_at)[:10] }}</time>{% else %}active{% endif %}</td>
         <td data-label="Created"><time class="num" datetime="{{ a.created_at.isoformat() }}">{{ views.when(a.created_at)[:10] }}</time></td>
         <td data-label="Last sign-in">{% if a.last_sign_in %}<time class="num" datetime="{{ a.last_sign_in.isoformat() }}">{{ views.when(a.last_sign_in) }}</time>{% else %}<span class="meta">never</span>{% endif %}</td>
         <td data-label="Sessions" class="n num">{{ a.sessions }}</td>
@@ -49,6 +49,20 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <p class="hint">They can't sign in again, and their sessions end now. Re-enabling is by hand (database).</p>
                 <button class="button button--small" type="submit">Disable {{ a.email }}</button>
+              </form>
+            </details>
+            {% endif %}
+            {% if not a.deletion_requested_at %}
+            <details class="confirm">
+              <summary>Delete<span class="visually-hidden"> {{ a.email }}</span></summary>
+              <form method="post" action="/admin/users/{{ a.id }}/delete">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <p class="hint">For a person who asked by email. Their account and every check go now, for good (P3.06, <a href="/privacy">privacy notice</a>).</p>
+                <div class="field">
+                  <label for="confirm-{{ a.id }}">Type their email to confirm</label>
+                  <input id="confirm-{{ a.id }}" name="confirm_email" type="email" autocomplete="off" required>
+                </div>
+                <button class="button button--small" type="submit">Delete {{ a.email }}</button>
               </form>
             </details>
             {% endif %}

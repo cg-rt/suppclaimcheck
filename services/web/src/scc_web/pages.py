@@ -1,4 +1,5 @@
-"""The signed-in pages (P1.10): new check, confirm, live progress, result, history."""
+"""The signed-in pages (P1.10): new check, confirm, live progress, result, history; the feedback form
+under a result (P4.03); and the privacy notice (P3.06), which anyone can read."""
 
 import asyncio
 import logging
@@ -106,9 +107,78 @@ async def _own_job(request: Request, job_id: str) -> dict:
     return job
 
 
+@router.get("/privacy")
+async def privacy(request: Request) -> Response:
+    await current_session(
+        request
+    )  # for the header when signed in; the page itself is public
+    d = deps(request)
+    return render(
+        request,
+        "privacy.html",
+        p=d.config["privacy"],
+        login_days=d.config["retention"]["login_attempts_days"],
+        session_rules=d.config["session"],
+        operator=d.operator,
+    )
+
+
+FEEDBACK_CHOICES = {
+    "verdict_right": ("yes", "no", "unsure"),
+    "understandable": ("yes", "partly", "no"),
+}
+FEEDBACK_MAX = 1000
+
+
+@router.post("/checks/{job_id}/feedback")
+async def save_feedback(request: Request, job_id: str) -> Response:
+    """Stores the person's answers about their own result (P4.03), then shows the result again."""
+    session = await require_session(request)
+    job = await _own_job(request, job_id)
+    if job["state"] != "done":
+        raise HTTPException(404)
+    form = await request.form()
+
+    def again(message: str, status_code: int = 400) -> Response:
+        return render(
+            request,
+            "result.html",
+            status_code,
+            job=job,
+            view=views.result_view(job),
+            feedback_error=message,
+        )
+
+    if not tokens_match(session.csrf_token, str(form.get("csrf_token", ""))):
+        return again("This form expired. Choose your answers again and save.")
+    answers = {
+        name: (value if (value := str(form.get(name, ""))) in choices else None)
+        for name, choices in FEEDBACK_CHOICES.items()
+    }
+    missing = str(form.get("missing", "")).strip()
+    if len(missing) > FEEDBACK_MAX:
+        return again(f"Keep the last answer under {FEEDBACK_MAX} characters.")
+    answers["missing"] = missing or None
+    if not any(answers.values()):
+        return again("Answer at least one question, then save.")
+    try:
+        await deps(request).core.save_feedback(job_id, session.user.id, answers)
+    except CoreError as exc:
+        log.warning("feedback not saved", extra={"code": exc.code})
+        return again(
+            "Your answers could not be saved. Please try again in a minute.", 503
+        )
+    return RedirectResponse(
+        f"/checks/{job_id}?feedback=saved#feedback", status_code=303
+    )
+
+
 @router.get("/checks/{job_id}")
 async def show_check(
-    request: Request, job_id: str, spelling: int | None = None
+    request: Request,
+    job_id: str,
+    spelling: int | None = None,
+    feedback: str | None = None,
 ) -> Response:
     job = await _own_job(request, job_id)
     state = job["state"]
@@ -120,7 +190,13 @@ async def show_check(
             claims=views.with_spelling(job["extracted_claims"] or [], spelling),
         )
     if state == "done":
-        return render(request, "result.html", job=job, view=views.result_view(job))
+        return render(
+            request,
+            "result.html",
+            job=job,
+            view=views.result_view(job),
+            feedback_saved=feedback == "saved",
+        )
     if state in {"failed", "refused", "needs_clarification"}:
         return render(request, "stopped.html", job=job)
     events = await deps(request).core.job_events(job_id)

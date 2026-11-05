@@ -110,6 +110,11 @@ class AdminClient:
             params={k: v for k, v in params.items() if v is not None},
         )
 
+    async def outcomes(self, days: int = 30) -> dict:
+        return await self._call(
+            "core-api", "GET", "/admin/outcomes", params={"days": days}
+        )
+
     async def core_errors(self, limit: int = 50) -> list[dict]:
         return await self._call(
             "core-api", "GET", "/admin/errors", params={"limit": limit}

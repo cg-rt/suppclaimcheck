@@ -114,6 +114,8 @@ class FakeCore:
         # When set, (status, code, message): core refuses new jobs or confirmations (P3.04 budget).
         self.refuse_new: tuple[int, str, str] | None = None
         self.refuse_confirm: tuple[int, str, str] | None = None
+        # When true, an account deletion fails as it does with the gateway down (P3.06).
+        self.refuse_erase = False
 
     def add(self, j: dict) -> dict:
         self.jobs[j["id"]] = j
@@ -166,6 +168,14 @@ class FakeCore:
             ]
             return httpx.Response(200, json=rows)
         parts = path.strip("/").split("/")
+        if request.method == "POST" and parts[0] == "users" and parts[2] == "erase":
+            if self.refuse_erase:
+                detail = {"code": "gateway_unavailable", "message": "down"}
+                return httpx.Response(503, json={"detail": detail})
+            gone = [k for k, v in self.jobs.items() if v["user_id"] == int(parts[1])]
+            for k in gone:
+                del self.jobs[k]
+            return httpx.Response(200, json={"checks": len(gone), "llm_calls": 0})
         j = self.jobs.get(parts[1]) if len(parts) >= 2 else None
         if j is None:
             return httpx.Response(
@@ -181,4 +191,10 @@ class FakeCore:
         if parts[2] == "confirm":
             j.update(state="searching", confirmed_claim=body)
             return httpx.Response(202, json=j)
+        if parts[2] == "feedback":
+            if body["user_id"] != j["user_id"]:
+                return httpx.Response(404, json={"detail": {"code": "not_found"}})
+            answers = {k: v for k, v in body.items() if k != "user_id"}
+            j["feedback"] = {**answers, "updated_at": "2026-10-24T10:05:00+00:00"}
+            return httpx.Response(200, json=j["feedback"])
         return httpx.Response(404)

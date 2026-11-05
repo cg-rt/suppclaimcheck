@@ -190,6 +190,19 @@ def licence_label(licence: str | None) -> str:
     return (licence or "unknown licence").upper().replace("CC0", "CC0 1.0")
 
 
+def search_seconds(job: dict) -> int | None:
+    """From confirming the claim to the result (P4.04), in whole seconds. None for a reused result,
+    which took no search, or when the times are missing (checks from before migration 0008)."""
+    if job["result"].get("reused_from") or not (
+        job.get("confirmed_at") and job.get("finished_at")
+    ):
+        return None
+    took = datetime.fromisoformat(job["finished_at"]) - datetime.fromisoformat(
+        job["confirmed_at"]
+    )
+    return max(1, round(took.total_seconds()))
+
+
 def result_view(job: dict) -> dict:
     result = job["result"]
     articles = {a["pmcid"]: a for a in result["articles"]}
@@ -207,6 +220,7 @@ def result_view(job: dict) -> dict:
     skipped = result["searched"].get("skipped", {})
     return {
         "skip_reasons": SKIP_REASONS,
+        "seconds": search_seconds(job),
         "verdict": result["verdict"],
         "verdict_class": VERDICT_CLASS.get(result["verdict"], "none"),
         "explanation": explain(result),

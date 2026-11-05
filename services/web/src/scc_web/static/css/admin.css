@@ -133,6 +133,12 @@
 .mark-key--quoted { background: var(--supported-tint); }
 .mark-key--dropped { background: var(--contradicted-tint); }
 
+/* Outcomes (P4.03, P4.04): one short answer table per question, side by side where there is room. */
+.answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 28rem)); gap: var(--space-4) var(--space-7); }
+.answers > div { display: grid; gap: var(--space-2); align-content: start; min-width: 0; }
+.answers .subhead { margin-top: 0; }
+.data--answers tbody th { font-weight: 400; }
+
 /* Users */
 .actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-4); }
 .confirm > summary { font-weight: 700; }
@@ -140,10 +146,6 @@
 .confirm form { display: grid; gap: var(--space-2); justify-items: start; }
 .confirm[open] > summary { margin-bottom: var(--space-2); }
 .form--inline { grid-template-columns: minmax(0, 24rem) auto auto; align-items: end; gap: var(--space-4) var(--space-5); }
-.choice { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); min-height: 48px; align-items: center; }
-.choice legend { font-weight: 700; padding: 0; margin-bottom: var(--space-1); float: left; width: 100%; }
-.choice label { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 400; cursor: pointer; }
-.choice input { width: 1.125rem; height: 1.125rem; accent-color: var(--action); margin: 0; }
 
 @media (max-width: 900px) {
   .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }

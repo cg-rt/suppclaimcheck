@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% set nav = "privacy" %}
+{% block title %}Privacy{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">Privacy</h1>
+  <p class="lede">What SuppClaimCheck keeps about you, why, for how long, and who else sees it.</p>
+  <p class="meta">Last changed <time class="num" datetime="{{ p.updated }}">{{ p.updated }}</time></p>
+</section>
+
+<section class="card" aria-labelledby="who-title">
+  <h2 class="card__title" id="who-title">Who runs it</h2>
+  <p>SuppClaimCheck is a private, invite-only project{% if operator %}, run by {{ operator }}{% else %}, run by the person who invited you{% endif %}. They decide what is kept and why: in data protection terms, they are the controller.</p>
+  <p>Write to <a href="mailto:contact@suppclaimcheck.com">contact@suppclaimcheck.com</a> about anything on this page.</p>
+</section>
+
+<section class="card" aria-labelledby="kept-title">
+  <h2 class="card__title" id="kept-title">What is kept, and for how long</h2>
+  <dl class="facts facts--privacy">
+    <div>
+      <dt>Your account</dt>
+      <dd>Your email address, your password as a one-way hash (never the password itself), and when the account was made. <strong>Until you delete the account.</strong></dd>
+    </div>
+    <div>
+      <dt>Your checks</dt>
+      <dd>The text you submit, the claim you confirm, the result, each step it went through, and your answers to the questions under a result. <strong><span class="num">{{ p.check_days }}</span> days after you submit a check</strong>, or sooner when you delete your account.</dd>
+    </div>
+    <div>
+      <dt>Signing in</dt>
+      <dd>Each sign-in attempt: the email address typed, the network address it came from, and whether it worked. Used to stop password guessing. <strong><span class="num">{{ login_days }}</span> days.</strong> Your session ends after <span class="num">{{ session_rules.idle_minutes }}</span> minutes without activity, or <span class="num">{{ session_rules.absolute_hours }}</span> hours after you sign in.</dd>
+    </div>
+    <div>
+      <dt>Costs</dt>
+      <dd>For each call to the language model: its size, cost, duration, and which account it was for, to keep the service within its budget. <strong>The link to your account goes after <span class="num">{{ p.llm_link_days }}</span> days</strong>, or when you delete the account; the cost itself stays, belonging to no one.</dd>
+    </div>
+    <div>
+      <dt>Stored answers</dt>
+      <dd>A copy of each answer from the language model, which can repeat your claim, so a check that is restarted isn't paid for twice. <strong><span class="num">{{ p.llm_answer_days }}</span> days.</strong></dd>
+    </div>
+    <div>
+      <dt>Logs</dt>
+      <dd>Technical records of what the service did, with account and check numbers. Never the text you submit or your email address. They are replaced as they fill up and start empty at every update.</dd>
+    </div>
+    <div>
+      <dt>Backups</dt>
+      <dd>An encrypted copy of the database every night, kept for up to <span class="num">{{ p.backup_months }}</span> months, plus a copy before each of the last five updates. A deleted account stays in older copies until they expire; if a copy is ever restored, deletions are made again.</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="card" aria-labelledby="health-title">
+  <h2 class="card__title" id="health-title">Please leave out health details</h2>
+  <p>SuppClaimCheck checks claims about supplements, not people. Don't write about your own health, medicines or conditions in a check, or in your answers under a result: it isn't needed, and that text is kept like any other check.</p>
+</section>
+
+<section class="card" aria-labelledby="why-title">
+  <h2 class="card__title" id="why-title">Why it is kept</h2>
+  <p>To run the checks you ask for, and to keep the service secure and within its budget. In data protection terms: providing the service you asked for (GDPR Article 6(1)(b)), and the controller's legitimate interest in security and in controlling costs (Article 6(1)(f)). Answering the questions under a result is optional.</p>
+</section>
+
+<section class="card" aria-labelledby="others-title">
+  <h2 class="card__title" id="others-title">Who else sees it</h2>
+  <dl class="facts facts--privacy">
+    <div>
+      <dt>Anthropic</dt>
+      <dd>Its Claude API reads the text of your check and passages from articles, to find the claim and weigh the evidence. Under Anthropic's commercial terms, this data isn't used to train its models and is deleted within <span class="num">{{ p.provider_days }}</span> days, kept longer only if flagged for a breach of its usage policy or if the law requires it. Processing can happen in the United States.</dd>
+    </div>
+    <div>
+      <dt>PubMed and Europe PMC</dt>
+      <dd>Receive the search words built from the claim, such as the supplement and the effect. Never your account or the text you submitted.</dd>
+    </div>
+    <div>
+      <dt>Cloudflare</dt>
+      <dd>Carries all traffic to this site, and stores the encrypted backups in its EU jurisdiction.</dd>
+    </div>
+    <div>
+      <dt>Telegram</dt>
+      <dd>Carries alerts to the person who runs the site: check and account numbers and error codes. Never your text or email address.</dd>
+    </div>
+  </dl>
+  <p>No analytics, advertising or tracking services. Nothing is sold or shared for marketing.</p>
+</section>
+
+<section class="card" aria-labelledby="cookies-title">
+  <h2 class="card__title" id="cookies-title">Cookies</h2>
+  <p>Two cookies, both needed to sign in: <code>__Host-scc_session</code> keeps you signed in, and <code>__Host-scc_csrf</code> protects the sign-in form. No tracking or analytics cookies, and no fonts or scripts from other sites.</p>
+</section>
+
+<section class="card" aria-labelledby="rights-title">
+  <h2 class="card__title" id="rights-title">Your rights</h2>
+  <ul class="limits">
+    <li><strong>Delete:</strong> under <a href="/account">Account</a>, "Delete my account" removes your account and every check at once.</li>
+    <li><strong>See or take a copy:</strong> your checks are under History; for everything kept about you, as a file, write to the address above.</li>
+    <li><strong>Correct, restrict or object:</strong> write to the address above.</li>
+    <li><strong>Complain:</strong> to the data protection authority where you live.</li>
+  </ul>
+  <p class="small">A request by email is answered within one month.</p>
+</section>
+{% endblock %}

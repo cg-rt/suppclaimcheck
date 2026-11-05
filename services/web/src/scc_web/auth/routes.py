@@ -5,6 +5,7 @@ import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, Response
 
+from scc_web import erasure
 from scc_web.auth import passwords, store
 from scc_web.context import current_session, deps, render, require_session, safe_next
 from scc_web.security import (
@@ -120,10 +121,21 @@ async def sign_out(request: Request) -> Response:
     return response
 
 
+def _account_page(request: Request, status_code: int = 200, **context) -> Response:
+    privacy = deps(request).config.get("privacy", {})
+    return render(
+        request,
+        "account.html",
+        status_code,
+        backup_months=privacy.get("backup_months", 6),
+        **context,
+    )
+
+
 @router.get("/account")
 async def account(request: Request) -> Response:
     await require_session(request)
-    return render(request, "account.html")
+    return _account_page(request)
 
 
 @router.post("/account/password")
@@ -132,20 +144,16 @@ async def change_password(request: Request) -> Response:
     d = deps(request)
     form = await request.form()
     if not tokens_match(session.csrf_token, str(form.get("csrf_token", ""))):
-        return render(request, "account.html", 400, error=EXPIRED)
+        return _account_page(request, 400, error=EXPIRED)
     current = str(form.get("current_password", ""))
     new = str(form.get("new_password", ""))
     if not passwords.verify(session.user.password_hash, current):
-        return render(
-            request, "account.html", 400, error="Your current password isn't right."
-        )
+        return _account_page(request, 400, error="Your current password isn't right.")
     if new != str(form.get("confirm_password", "")):
-        return render(
-            request, "account.html", 400, error="The two new passwords don't match."
-        )
+        return _account_page(request, 400, error="The two new passwords don't match.")
     problem = passwords.check_new_password(new, d.config)
     if problem:
-        return render(request, "account.html", 400, error=problem)
+        return _account_page(request, 400, error=problem)
     async with d.pool.connection() as conn:
         await store.set_password(conn, session.user.id, passwords.hash_password(new))
         # Every other session ends; this browser gets a fresh one.
@@ -155,8 +163,35 @@ async def change_password(request: Request) -> Response:
         )
     log.info("password changed", extra={"user_id": session.user.id})
     request.state.session = store.Session(session.user, csrf)
-    response = render(request, "account.html", done=True)
+    response = _account_page(request, done=True)
     set_session_cookie(
         response, session_id, d.config["session"]["absolute_hours"] * 3600
     )
+    return response
+
+
+@router.post("/account/delete")
+async def delete_account(request: Request) -> Response:
+    """Deletes the signed-in account and all its checks (P3.06), after the password and a tick."""
+    session = await require_session(request)
+    d = deps(request)
+    form = await request.form()
+    if not tokens_match(session.csrf_token, str(form.get("csrf_token", ""))):
+        return _account_page(request, 400, delete_error=EXPIRED)
+    if not passwords.verify(session.user.password_hash, str(form.get("password", ""))):
+        return _account_page(
+            request,
+            400,
+            delete_error="That password isn't right. Your account is unchanged.",
+        )
+    if form.get("confirm") != "yes":
+        return _account_page(
+            request,
+            400,
+            delete_error="Tick the box to confirm that your checks go too.",
+        )
+    finished = await erasure.delete_account(d, session.user.id, session.user.id)
+    request.state.session = None
+    response = render(request, "account_deleted.html", finished=finished)
+    clear_session_cookie(response)
     return response

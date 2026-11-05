@@ -29,6 +29,8 @@ class Deps:
     # Admin (P3.08-P3.10): its hostname and the client for core's and the gateway's admin endpoints.
     admin: AdminClient | None = None
     admin_host: str | None = None
+    # The person or organisation named as the controller on the privacy page (P3.06).
+    operator: str | None = None
 
 
 class SignInRequired(Exception):

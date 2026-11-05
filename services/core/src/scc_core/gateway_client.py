@@ -125,6 +125,10 @@ class GatewayClient:
         """Asks the gateway to alert the owner. Never send user text here: codes and IDs only."""
         return await self._post("/notify", {"event": event, "text": text, "code": code})
 
+    async def erase_user(self, user_id: int) -> dict:
+        """Asks the gateway to unlink a deleted account from its LLM calls (P3.06)."""
+        return await self._post(f"/users/{user_id}/erase", {})
+
 
 def idempotency_key(body: dict, attempt: int) -> str:
     """The job, the stage, the attempt and a hash of everything else the request says."""

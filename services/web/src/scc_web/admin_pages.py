@@ -20,7 +20,7 @@ from psycopg.rows import dict_row
 
 from scc_common import config_admin
 from scc_common.version import version_info
-from scc_web import admin, admin_views, config
+from scc_web import admin, admin_views, config, erasure
 from scc_web.admin_client import AdminError
 from scc_web.auth import store
 from scc_web.context import deps, render, require_session
@@ -34,6 +34,7 @@ SECTIONS = [
     ("jobs", "Jobs", "/admin/jobs"),
     ("reviews", "Reviews", "/admin/reviews"),
     ("injections", "Injections", "/admin/injections"),
+    ("outcomes", "Outcomes", "/admin/outcomes"),
     ("errors", "Errors", "/admin/errors"),
     ("costs", "Costs", "/admin/costs"),
     ("evals", "Evals", "/admin/evals"),
@@ -125,7 +126,7 @@ async def _accounts(request: Request) -> list[dict]:
     ):
         await cur.execute(
             """
-            SELECT u.id, u.email, u.role, u.created_at, u.disabled_at,
+            SELECT u.id, u.email, u.role, u.created_at, u.disabled_at, u.deletion_requested_at,
                    (SELECT max(a.at) FROM auth.login_attempts a
                      WHERE a.email_lower = lower(u.email) AND a.succeeded) AS last_sign_in,
                    (SELECT count(*) FROM auth.sessions s
@@ -293,13 +294,14 @@ async def _health(request: Request) -> list[dict]:
 async def overview(request: Request) -> Response:
     await admin_session(request)
     d = deps(request)
-    jobs, errors, usage, health, reviews, injections = await asyncio.gather(
+    jobs, errors, usage, health, reviews, injections, outcomes = await asyncio.gather(
         d.admin.jobs(limit=1),
         _errors(request, 10),
         d.admin.usage(days=1),
         _health(request),
         d.admin.reviews(status="open", limit=1),
         d.admin.injections(limit=1),
+        d.admin.outcomes(days=30),
     )
     since = datetime.now(UTC) - timedelta(hours=24)
     recent = [e for e in errors if datetime.fromisoformat(e["at"]) >= since]
@@ -314,6 +316,7 @@ async def overview(request: Request) -> Response:
         unhealthy=[r for r in health if r["ok"] is False],
         reviews_open=reviews["counts"]["open"],
         throttled=sum(1 for a in injections["accounts"] if a["throttled"]),
+        outcomes=outcomes,
     )
 
 
@@ -525,6 +528,26 @@ async def injections(
         page_number=page_number,
         emails=emails,
     )
+
+
+@router.get("/outcomes")
+async def outcomes(request: Request, days: int = 30) -> Response:
+    """Feedback and time to result (P4.03, P4.04) over the last 7, 30 or 90 days."""
+    await admin_session(request)
+    days = days if days in OUTCOME_WINDOWS else 30
+    d = deps(request)
+    found, emails = await asyncio.gather(d.admin.outcomes(days=days), _emails(request))
+    return page(
+        request,
+        "outcomes.html",
+        "outcomes",
+        outcomes=found,
+        emails=emails,
+        windows=OUTCOME_WINDOWS,
+    )
+
+
+OUTCOME_WINDOWS = (7, 30, 90)
 
 
 @router.get("/jobs/{job_id}/passages/{pmcid}")
@@ -761,6 +784,39 @@ async def disable_user(request: Request, user_id: int) -> Response:
     )
     return await _users_page(
         request, done=f"{user.email} is disabled and signed out everywhere."
+    )
+
+
+@router.post("/users/{user_id}/delete")
+async def delete_user(request: Request, user_id: int) -> Response:
+    """Deletes an account and all its checks, for a person who asked by email (P3.06)."""
+    session, form = await _account_form(request)
+    if form is None:
+        return await _users_page(request, 400, error="This form expired. Try again.")
+    if user_id == session.user.id:
+        return await _users_page(
+            request, 400, error="Delete your own account under Account instead."
+        )
+    user = await _target(request, user_id)
+    if form.get("confirm_email", "").strip().lower() != user.email.lower():
+        return await _users_page(
+            request, 400, error=f"Type {user.email} to confirm the deletion."
+        )
+    finished = await erasure.delete_account(deps(request), user.id, session.user.id)
+    log.info(
+        "admin deleted an account",
+        extra={
+            "actor_user_id": session.user.id,
+            "user_id": user.id,
+            "finished": finished,
+        },
+    )
+    return await _users_page(
+        request,
+        done=f"{user.email} is deleted, with all their checks."
+        if finished
+        else f"{user.email} is signed out and closed. Deleting their checks didn't finish; "
+        "the hourly purge finishes it.",
     )
 
 

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Account deleted{% endblock %}
+{% block column_class %} column--narrow{% endblock %}
+{% block main %}
+<section class="card">
+  {% if finished %}
+  <h1 class="title">Your account is deleted</h1>
+  <p>Your account, your checks and your sign-in records are gone, and you are signed out.</p>
+  {% else %}
+  <h1 class="title">Your account is closed</h1>
+  <p>You are signed out, and the account can't be used again. Deleting your checks didn't finish just now; it finishes on its own within the hour.</p>
+  {% endif %}
+  <p class="small">Encrypted backups keep a copy until they expire. <a href="/privacy">How long things are kept</a></p>
+</section>
+{% endblock %}

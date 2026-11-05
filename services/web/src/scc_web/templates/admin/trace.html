@@ -32,6 +32,10 @@
     <div><dt>Job ID</dt><dd><code>{{ job.id }}</code></dd></div>
     <div><dt>User</dt><dd>{{ email or "user " ~ job.user_id }} <span class="meta">(ID <span class="num">{{ job.user_id }}</span>)</span> · <a href="/admin/jobs?q={{ (email or '')|urlencode }}">their jobs</a></dd></div>
     <div><dt>Created</dt><dd><time class="num" datetime="{{ job.created_at }}">{{ views.when(job.created_at) }}</time>, last change <time class="num" datetime="{{ job.updated_at }}">{{ views.when(job.updated_at) }}</time></dd></div>
+    {% if job.finished_at %}
+    {% set took = views.durations(job) %}
+    <div><dt>Time to result</dt><dd><span class="num">{{ views.seconds(took.submit_to_result) }}</span> from submitting{% if took.confirm_to_result is not none %} · <span class="num">{{ views.seconds(took.confirm_to_result) }}</span> from confirming{% endif %} <span class="meta">(finished <time class="num" datetime="{{ job.finished_at }}">{{ views.when(job.finished_at) }}</time>)</span></dd></div>
+    {% endif %}
     <div><dt>Config</dt><dd><a href="/admin/config/core/{{ job.config_version }}"><code>{{ job.config_version }}</code></a>{% if result.query_version or result.searched %} · query <code>{{ (result.searched or {}).query_version or "–" }}</code>{% endif %}{% if result.rubric_version %} · rubric <code>{{ result.rubric_version }}</code>{% endif %}</dd></div>
     <div>
       <dt>Correlation {{ "IDs" if correlation_ids|length > 1 else "ID" }}</dt>
@@ -132,6 +136,19 @@
     </tbody>
   </table>
   {% endcall %}
+</section>
+{% endif %}
+
+{% if trace.feedback %}
+{% set f = trace.feedback %}
+<section class="card" aria-labelledby="feedback-title">
+  <h2 class="card__title" id="feedback-title">The user's feedback</h2>
+  <dl class="facts facts--wide">
+    <div><dt>{{ views.QUESTIONS.verdict_right }}</dt><dd>{% if f.verdict_right %}<span class="state state--{{ views.ANSWER_INK[f.verdict_right] }}">{{ views.answer("verdict_right", f.verdict_right) }}</span>{% else %}<span class="meta">Not answered</span>{% endif %}</dd></div>
+    <div><dt>{{ views.QUESTIONS.understandable }}</dt><dd>{% if f.understandable %}<span class="state state--{{ views.ANSWER_INK[f.understandable] }}">{{ views.answer("understandable", f.understandable) }}</span>{% else %}<span class="meta">Not answered</span>{% endif %}</dd></div>
+    <div><dt>Missing</dt><dd>{% if f.missing %}<p class="data__text">{{ f.missing }}</p>{% else %}<span class="meta">Nothing written</span>{% endif %}</dd></div>
+    <div><dt>Saved</dt><dd><time class="num" datetime="{{ f.updated_at }}">{{ views.when(f.updated_at) }}</time></dd></div>
+  </dl>
 </section>
 {% endif %}
 

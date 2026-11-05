@@ -9,7 +9,7 @@ from enum import StrEnum
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class JobState(StrEnum):
@@ -44,6 +44,38 @@ class JobCreate(BaseModel):
     input_text: str = Field(min_length=1, max_length=20_000)
 
 
+class FeedbackAnswers(BaseModel):
+    """A person's rating of their own result (P4.03). Every answer is optional, but not all at once."""
+
+    verdict_right: Literal["yes", "no", "unsure"] | None = None
+    understandable: Literal["yes", "partly", "no"] | None = None
+    missing: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("missing")
+    @classmethod
+    def _blank_is_none(cls, value: str | None) -> str | None:
+        return value.strip() or None if value is not None else None
+
+    @model_validator(mode="after")
+    def _something(self):
+        if (
+            self.verdict_right is None
+            and self.understandable is None
+            and self.missing is None
+        ):
+            raise ValueError("answer at least one question")
+        return self
+
+
+class FeedbackIn(FeedbackAnswers):
+    # The account sending it: core checks it is the check's own account (web checks too).
+    user_id: int
+
+
+class Feedback(FeedbackAnswers):
+    updated_at: datetime
+
+
 class Job(BaseModel):
     id: UUID
     user_id: int
@@ -60,6 +92,10 @@ class Job(BaseModel):
     needs_review: bool = False
     created_at: datetime
     updated_at: datetime
+    # P4.04: set by the database on every state change (migration 0008).
+    confirmed_at: datetime | None = None
+    finished_at: datetime | None = None
+    feedback: Feedback | None = None
 
 
 class JobSummary(BaseModel):

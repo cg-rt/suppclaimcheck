@@ -60,3 +60,13 @@ class CoreClient:
         return await self._call(
             "GET", "/jobs", params={"user_id": user_id, "limit": limit}
         )
+
+    async def save_feedback(self, job_id: str, user_id: int, answers: dict) -> dict:
+        return await self._call(
+            "PUT", f"/jobs/{job_id}/feedback", json={"user_id": user_id, **answers}
+        )
+
+    async def erase_user(self, user_id: int, requested_by: int) -> dict:
+        return await self._call(
+            "POST", f"/users/{user_id}/erase", json={"requested_by": requested_by}
+        )

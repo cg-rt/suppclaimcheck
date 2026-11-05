@@ -1,0 +1,29 @@
+{# P4.03: the person's rating of their own result. Works without JavaScript: a plain form, then back here. #}
+{% set f = job.feedback or {} %}
+<section class="card" id="feedback" aria-labelledby="feedback-title">
+  <h2 class="card__title" id="feedback-title">How did this check read to you?</h2>
+  <p class="small">Three questions, all optional. Your answers stay with this check and help improve the method. You can change them later.</p>
+  {% if feedback_saved %}<div class="notice notice--ok" role="status"><p>Thank you. Your answers are saved.</p></div>{% endif %}
+  {% if feedback_error %}<div class="notice notice--error" role="alert"><p>{{ feedback_error }}</p></div>{% endif %}
+  <form class="form" method="post" action="/checks/{{ job.id }}/feedback">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <fieldset class="choice">
+      <legend>Does the verdict look right to you?</legend>
+      {% for value, label in [("yes", "Yes"), ("no", "No"), ("unsure", "Not sure")] %}
+      <label><input type="radio" name="verdict_right" value="{{ value }}"{% if f.verdict_right == value %} checked{% endif %}> {{ label }}</label>
+      {% endfor %}
+    </fieldset>
+    <fieldset class="choice">
+      <legend>Was the result easy to understand?</legend>
+      {% for value, label in [("yes", "Yes"), ("partly", "Partly"), ("no", "No")] %}
+      <label><input type="radio" name="understandable" value="{{ value }}"{% if f.understandable == value %} checked{% endif %}> {{ label }}</label>
+      {% endfor %}
+    </fieldset>
+    <div class="field">
+      <label for="missing">Was anything missing? <span class="optional">optional</span></label>
+      <p class="hint" id="missing_hint">Something you expected to be checked, or a study you know of. Please leave out health details.</p>
+      <textarea id="missing" name="missing" rows="3" maxlength="1000" aria-describedby="missing_hint">{{ f.missing or "" }}</textarea>
+    </div>
+    <div><button class="button button--secondary" type="submit">{{ "Update my answers" if job.feedback else "Save my answers" }}</button></div>
+  </form>
+</section>

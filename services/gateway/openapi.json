@@ -264,6 +264,19 @@
         "title": "DayUsage",
         "type": "object"
       },
+      "EraseReply": {
+        "properties": {
+          "llm_calls": {
+            "title": "Llm Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "llm_calls"
+        ],
+        "title": "EraseReply",
+        "type": "object"
+      },
       "EvalResult": {
         "properties": {
           "attached_at": {
@@ -607,6 +620,7 @@
               "job_failed",
               "safety_review",
               "injection_throttled",
+              "account_deleted",
               "test"
             ],
             "title": "Event",
@@ -1676,6 +1690,49 @@
         "summary": "Notify",
         "tags": [
           "alerts"
+        ]
+      }
+    },
+    "/users/{user_id}/erase": {
+      "post": {
+        "description": "Removes a deleted account's link from its LLM calls and drops their stored answers (P3.06).\nCore calls this when an account is deleted. Safe to call again.",
+        "operationId": "erase_user_users__user_id__erase_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EraseReply"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Erase User",
+        "tags": [
+          "privacy"
         ]
       }
     },

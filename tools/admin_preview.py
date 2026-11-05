@@ -4,7 +4,9 @@ Makes a throwaway database `scc_admin_preview` on the test PostgreSQL (SCC_TEST_
 the canned claim end to end through the real pipeline and gateway with their recorded fixtures (no
 live calls, nothing spent), adds sample jobs in every status, and serves web with core-api and the
 gateway in one process at http://admin.localhost:18095/admin. Sign in as admin@example.com with the
-preview-only password below. The database is dropped on a clean stop, and a hard stop's leftover at the next start.
+preview-only password below. The public pages answer at http://localhost:18095 (the tester account,
+with its own preview-only password, owns the canned check, with feedback and times for P4.03 and
+P4.04). The database is dropped on a clean stop, and a hard stop's leftover at the next start.
 
 Run from the repo root (`.claude/launch.json` has it as `admin-preview`):
     uv run python tools/admin_preview.py
@@ -60,6 +62,8 @@ ADMIN_EMAIL = "admin@example.com"
 ADMIN_PASSWORD = (
     "admin preview only"  # a throwaway local database; never a real account
 )
+TESTER_EMAIL = "tester@example.com"
+TESTER_PASSWORD = "tester preview only"  # the same: a throwaway local database
 PORT = 18095
 # The test container from "Working on it" in README.md.
 LOCAL_TEST_DSN = "host=127.0.0.1 port=15433 user=postgres dbname=postgres"
@@ -198,10 +202,7 @@ async def main(admin_dsn: str) -> None:
             conn, ADMIN_EMAIL, passwords.hash_password(ADMIN_PASSWORD), "admin"
         )
         tester = await store.create_user(
-            conn,
-            "tester@example.com",
-            passwords.hash_password(os.urandom(16).hex()),
-            "user",
+            conn, TESTER_EMAIL, passwords.hash_password(TESTER_PASSWORD), "user"
         )
         gone = await store.create_user(
             conn,
@@ -220,6 +221,27 @@ async def main(admin_dsn: str) -> None:
         async with pools["core"].connection() as conn:
             ids = await seed(conn, user=tester, other=admin_id, clear=False)
             await seed_safety(conn, user=tester, other=gone, reviewer=admin_id)
+            # P4.04: the seeded rows are written directly, so they get times the trigger would give.
+            await conn.execute(
+                "UPDATE core.jobs SET confirmed_at = created_at + interval '25 seconds',"
+                " finished_at = created_at + interval '71 seconds'"
+                " WHERE state = 'done' AND finished_at IS NULL"
+            )
+            # P4.03: two ratings, one with a comment.
+            done = await conn.execute(
+                "SELECT id, user_id FROM core.jobs WHERE state = 'done' ORDER BY created_at LIMIT 2"
+            )
+            for (job_id, owner), answers in zip(
+                await done.fetchall(),
+                [("yes", "yes", None),
+                 ("no", "partly", "The 2023 meta-analysis on creatine in women over 60.")],
+                strict=False,
+            ):  # fmt: skip
+                await conn.execute(
+                    "INSERT INTO core.feedback (job_id, user_id, verdict_right, understandable,"
+                    " missing) VALUES (%s, %s, %s, %s, %s)",
+                    (job_id, owner, *answers),
+                )
         async with pools["gateway"].connection() as conn:
             await seed_calls(conn, str(ids["failed_late"]), clear=False)
             # P3.04: this month's live spend past 80% of the cap, so the banner and the
@@ -256,6 +278,7 @@ async def main(admin_dsn: str) -> None:
         print(
             f"admin preview: http://admin.localhost:{PORT}/admin  (sign in as {ADMIN_EMAIL})"
         )
+        print(f"public pages: http://localhost:{PORT}  (sign in as {TESTER_EMAIL})")
         server = uvicorn.Server(
             uvicorn.Config(web, host="127.0.0.1", port=PORT, log_level="warning")
         )
