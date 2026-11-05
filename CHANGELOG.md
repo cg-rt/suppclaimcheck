@@ -39,6 +39,10 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - Eval set v1 (30 labelled claims, all approved by the owner) and the eval runner, `python -m scc_core.eval`, with a free replay of the recorded run in CI (D-043). Development tooling: nothing changes for users.
 
 ### Fixed
+- When PubMed's search was down but answered "200 OK" with an error inside, a check said "Not found" (and reuse would have repeated it for a week). It now retries and, if PubMed stays down, fails with "The literature databases are not answering".
+- The migrate steps of a deploy wait for each other, so two can't collide on the same database grants ("tuple concurrently updated").
+- Stylesheet links carry a hash of the file, so after a deploy no browser or Cloudflare cache pairs the new pages with old styles.
+- The result page says "took 1 second", not "1 seconds".
 - `backup.sh` waits up to 10 minutes for the backup storage host to resolve before starting. A nightly backup missed while the host PC was off runs right at boot, and on 2026-10-26 it failed because DNS through the Hyper-V Default Switch was not answering yet. Host script only: copy it to the VM; no new images.
 - `restore.sh` prints the scratch-database drop command with `sudo`, which the VM needs.
 
