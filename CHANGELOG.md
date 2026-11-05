@@ -14,6 +14,9 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - Checks use pipeline v4 (D-047): hybrid retrieval with matching words weighted 0.7 and meaning 0.3, chosen by comparing three retrieval settings on the eval set. A check takes longer (about 20 seconds in testing) when its articles have not been read before; repeat articles are as fast as before.
 
 ### Added
+- Design pass (P3.11):
+  - **How a check works:** a public page at `/method`, linked from every page's footer, the new-check page and the score workings. It explains, in plain words, how articles are found and weighted, how quotes are checked and how the verdict and score are worked out, with the weights table, the verdict rules and a worked example. Its numbers are the active pipeline config's, kept equal by a test.
+  - **The articles read, numbered:** the result page lists each article with its type of study, its weight and what it found (supports, contradicts, points both ways, or no finding). Each quote names its article ("Article 2: Moabedi et al., 2023") and links to it, instead of repeating the full author list, and the score workings name the article on each line.
 - Article links (P3.12, D-055):
   - **New check from a link:** the new-check page offers "A link to a page" next to Text. SuppClaimCheck reads the page once, lists up to eight claims it makes about supplements, and the user picks one to check; the confirm and result pages name the page that was read.
   - **The page reader** is in the gateway and checks every address first: only http and https on the usual ports, and never an address inside a private network, also after redirects. It obeys robots.txt and `noai`, reads at most 2 MB in 10 seconds, and only web pages. A public page at `/reader` says what it does and how a site can keep it away.
@@ -43,6 +46,9 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - The migrate steps of a deploy wait for each other, so two can't collide on the same database grants ("tuple concurrently updated").
 - Stylesheet links carry a hash of the file, so after a deploy no browser or Cloudflare cache pairs the new pages with old styles.
 - The result page says "took 1 second", not "1 seconds".
+- Pages still described one article per check: the new-check page now says a check reads up to five, and the result page says "The 5 articles that were read".
+- History scrolled sideways on phones when a link check was named by a long address; it wraps now. On the narrowest phones the name and New check share the header's first row again.
+- Admin on phones: tables keep states, models and IDs whole and scroll inside their card instead of breaking words down the column; the Reset, Disable and Delete actions are larger targets with short button labels (the email stays in the name screen readers hear); the overview's status tiles show as links.
 - `backup.sh` waits up to 10 minutes for the backup storage host to resolve before starting. A nightly backup missed while the host PC was off runs right at boot, and on 2026-10-26 it failed because DNS through the Hyper-V Default Switch was not answering yet. Host script only: copy it to the VM; no new images.
 - `restore.sh` prints the scratch-database drop command with `sudo`, which the VM needs.
 

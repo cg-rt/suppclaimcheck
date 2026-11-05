@@ -161,7 +161,9 @@ Phones step the title to 1.625rem and the claim to 1.375rem. The scale is fixed 
 - One column, 720px wide (480px for sign-in, account and errors), 32px side gutters on desktop and 16px at 640px and below. The header row is aligned to the same column.
 - Cards stack with a 16px gap (12px on phones). Inside a card, groups sit 16px apart.
 - At 640px and below: the header puts New check beside the name and the links on a second row; three-up field rows and four-up count tiles collapse to one and two columns; definition lists stack; primary buttons go full width.
-- No horizontal scrolling at 320px.
+- At 360px and below the name steps down to body size, so New check still fits beside it.
+- No horizontal scrolling at 320px. Anything that can be one long word (a link check's address, an article's DOI) wraps anywhere.
+- Running text on reading pages keeps a 65ch measure (`.prose`).
 
 ## Elevation & Depth
 
@@ -185,7 +187,7 @@ Pill, 48px tall (40px small in the header), white text on action orange, 700 wei
 48px tall, 12px corners, 1.5px `line-strong` border; on focus the border turns orange with a 3px `action-tint` halo. Labels sit above in 700; hints below the label in `ink-2`; "optional" is a small grey word after the label.
 
 ### Navigation
-A plain header row: the name in 800 at left, text links (History, Account, Sign out), then the New check pill. The current page gets a 2px ink underline.
+A plain header row: the name in 800 at left, text links (History, Account, Sign out), then the New check pill. The current page gets a 2px ink underline. The footer carries one sentence (what SuppClaimCheck does, not medical advice) and the public reading pages: How a check works, Privacy; the current one turns ink.
 
 ### Tabs
 Two or more views of one page, as links: a row of plain links over a hairline, the current one with the header's 2px ink underline (`.tabs` in `app.css`). The new-check page uses it for "Text" and "A link to a page" (P3.12), each its own form, so it works without JavaScript; admin uses it for filters.
@@ -203,14 +205,25 @@ One row per stage: a drawn mark (check for done, filled dot for current, ring fo
 Verdict word (800, 2rem, verdict ink) with the score "67 out of 100" on the right; a one-sentence explanation; a flat 0–100 bar with a midline at 50 and a mark in verdict ink; four count tiles; "How the score was worked out" opens the rubric arithmetic.
 
 ### Evidence quote
-A 12px-rounded block tinted by direction: the quote in the serif, the reason in our voice, then section, citation and licence in small grey.
+A 12px-rounded block tinted by direction: the quote in the serif, the reason in our voice, then a small grey source line: "Article 2: Moabedi et al., 2023 · Discussion · CC BY". The article reference links to that article in the list below, in `action-hover` so it passes 4.5:1 on the tints.
+
+### The articles read
+A reference list, numbered because quotes cite the numbers: a hanging numeral in `ink-2` 800, the title in 700, then what the article found as a verdict-ink word (Supports the claim, Contradicts the claim, Points both ways, No finding) with its passages, the type of study and its weight in ink, and the citation, licence and links in grey. An article reached from a quote sits on `card-quiet`.
+
+### Reading pages
+Method, privacy and the page reader are Read surfaces in the same stack: a title card with a lede, then one card per question. Inside them:
+- **Tables** (`.table`): hairline rows, a `line-strong` rule under small grey column heads, figures right-aligned in tabular numerals. Row heads in body weight.
+- **Ordered rules** (`.rules`): when the order decides (the verdict rules), a numbered list with hairlines between items and each outcome at the end of its row in its verdict ink.
+- **A worked example** (`.example`): a `card-quiet` tile inside the card, never a nested card, with the arithmetic as a numbered list.
 
 ## Admin
 
 Admin (P3.08–P3.10) uses the same tokens and components from `static/css/admin.css`, loaded after `app.css`. It is a desk tool, so it is denser:
 
 - **Column** 1200px instead of 720px, cards padded 24px, page titles at the claim size (1.625rem).
-- **Data tables** in `.data`: 0.875rem text with tabular figures, hairline rows, numbers right-aligned, a quiet-card row hover. A table wider than its card scrolls inside a focusable region, never the page. At 640px and below, row-shaped tables (`.data--stack`) become one block per row, each cell labelled.
+- **Data tables** in `.data`: 0.875rem text with tabular figures, hairline rows, numbers right-aligned, a quiet-card row hover. States, models, IDs and other code stay on one line, and text columns wrap only between words, so a narrow table never breaks a word down its column; a table wider than its card scrolls inside a focusable region, never the page. At 640px and below, row-shaped tables (`.data--stack`) become one block per row, each cell labelled.
+- **Overview tiles** link to the jobs in each status, so their labels are orange; the count stays ink.
+- **Row actions** (Reset password, Disable, Delete) open in place. Their buttons say what they do in a few words ("Delete the account") and carry the email only in the name screen readers hear, so a long address never makes a three-line pill.
 - **Status** is a coloured word with its drawn mark, like the progress list: green completed, red failed, amber awaiting confirmation, ink in progress, grey refused. Never a filled badge.
 - **Code** (settings, JSON, diffs, commands, IDs) in the platform monospace at 0.8125rem, on `card-quiet` with a hairline border. Diff lines keep their + and − and are tinted with the supported and contradicted tints, so colour is never the only signal. Small inline keys use a 4px radius.
 - Orange stays for what can be pressed: Retry, Search, Create, and the links. A one-time password is shown once, in a bordered code block.
