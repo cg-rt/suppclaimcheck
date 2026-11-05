@@ -138,3 +138,36 @@ def test_metadata_keeps_publication_types_and_mesh_headings():
     (article,) = asyncio.run(lit.fetch(["1"], full_texts=0)).articles
     assert article["pub_types"] == ["Randomized Controlled Trial", "Journal Article"]
     assert article["mesh"] == ["Humans", "Adult"]
+
+
+def test_a_full_text_that_will_not_download_is_skipped_and_counted():
+    """P3.05: one article that keeps failing doesn't fail the fetch; the next allowed one fills its place."""
+    records = [record(p, f"PMC{p}", "cc by") for p in ("1", "2", "3")]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/search"):
+            return httpx.Response(200, json={"resultList": {"result": records}})
+        if request.url.path.endswith("/PMC1/fullTextXML"):
+            return httpx.Response(503, text="down")
+        if request.url.path.endswith("/fullTextXML"):
+            return httpx.Response(200, text="<article/>")
+        return httpx.Response(404)
+
+    cfg = config.load()
+    cfg = {
+        **cfg,
+        "literature": {
+            **cfg["literature"],
+            "backoff_base_s": 0.0,
+            "backoff_max_s": 0.0,
+        },
+    }
+    lit = Literature(cfg, None, None, httpx.MockTransport(handler))
+    result = asyncio.run(lit.fetch(["1", "2", "3"], full_texts=2))
+    assert list(result.full_texts) == ["PMC2", "PMC3"]
+    assert [a.get("skip_reason") for a in result.articles] == [
+        "fetch_failed",
+        None,
+        None,
+    ]
+    assert result.counts["fetch_failed"] == 1

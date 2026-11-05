@@ -47,6 +47,63 @@
         "title": "AuditEntry",
         "type": "object"
       },
+      "BudgetStatus": {
+        "description": "Whether a new check may start (P3.04, D-053), and why not; and where each lane stands.",
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "lanes": {
+            "items": {
+              "$ref": "#/components/schemas/LaneStatus"
+            },
+            "title": "Lanes",
+            "type": "array"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "new_checks_allowed": {
+            "title": "New Checks Allowed",
+            "type": "boolean"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuotaStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "new_checks_allowed",
+          "code",
+          "message",
+          "lanes",
+          "user"
+        ],
+        "title": "BudgetStatus",
+        "type": "object"
+      },
       "ConfigOverview": {
         "description": "Every version, oldest first, and the newest audit entries first.",
         "properties": {
@@ -355,6 +412,34 @@
         "title": "LaneMonth",
         "type": "object"
       },
+      "LaneStatus": {
+        "properties": {
+          "cap_eur": {
+            "title": "Cap Eur",
+            "type": "number"
+          },
+          "lane": {
+            "title": "Lane",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "spent_eur": {
+            "title": "Spent Eur",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lane",
+          "spent_eur",
+          "cap_eur",
+          "level"
+        ],
+        "title": "LaneStatus",
+        "type": "object"
+      },
       "LlmCall": {
         "properties": {
           "correlation_id": {
@@ -518,6 +603,7 @@
           "event": {
             "enum": [
               "budget_cap_reached",
+              "budget_warning",
               "job_failed",
               "safety_review",
               "injection_throttled",
@@ -538,6 +624,24 @@
           "text"
         ],
         "title": "NotifyRequest",
+        "type": "object"
+      },
+      "QuotaStatus": {
+        "properties": {
+          "checks_today": {
+            "title": "Checks Today",
+            "type": "integer"
+          },
+          "quota": {
+            "title": "Quota",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "checks_today",
+          "quota"
+        ],
+        "title": "QuotaStatus",
         "type": "object"
       },
       "SearchRequest": {
@@ -700,6 +804,11 @@
           "output_tokens": {
             "title": "Output Tokens",
             "type": "integer"
+          },
+          "reused": {
+            "default": false,
+            "title": "Reused",
+            "type": "boolean"
           }
         },
         "required": [
@@ -809,8 +918,19 @@
         "type": "object"
       },
       "Usage": {
-        "description": "This month's LLM spend per lane, the last `days` days, and this month by stage and model.",
+        "description": "This month's LLM spend per lane, the last `days` days, this month by stage and model, and by\naccount in the live lane.",
         "properties": {
+          "daily_quota": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Quota"
+          },
           "days": {
             "items": {
               "$ref": "#/components/schemas/DayUsage"
@@ -836,6 +956,14 @@
             },
             "title": "Stages",
             "type": "array"
+          },
+          "users": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/UserUsage"
+            },
+            "title": "Users",
+            "type": "array"
           }
         },
         "required": [
@@ -845,6 +973,40 @@
           "stages"
         ],
         "title": "Usage",
+        "type": "object"
+      },
+      "UserUsage": {
+        "description": "One account's live spend this month (P3.04); checks are its extraction calls, as the quota counts.",
+        "properties": {
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "checks": {
+            "title": "Checks",
+            "type": "integer"
+          },
+          "checks_today": {
+            "title": "Checks Today",
+            "type": "integer"
+          },
+          "cost_eur": {
+            "title": "Cost Eur",
+            "type": "number"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "checks",
+          "checks_today",
+          "calls",
+          "cost_eur"
+        ],
+        "title": "UserUsage",
         "type": "object"
       },
       "ValidationError": {
@@ -1168,6 +1330,57 @@
         ]
       }
     },
+    "/budget/status": {
+      "get": {
+        "description": "Where each lane stands this month, and whether a new live check may start for this account.",
+        "operationId": "budget_status_budget_status_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Budget Status",
+        "tags": [
+          "budget"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "health_health_get",
@@ -1349,6 +1562,28 @@
       "post": {
         "description": "One schema-constrained LLM call, priced, capped, retried on transient errors and recorded.",
         "operationId": "llm_structured_llm_structured_post",
+        "parameters": [
+          {
+            "description": "The same key again returns the stored answer instead of a new, charged call",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9:_-]{8,128}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The same key again returns the stored answer instead of a new, charged call",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1373,6 +1608,9 @@
           "402": {
             "description": "Monthly budget cap reached"
           },
+          "409": {
+            "description": "A call with this Idempotency-Key is still running"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -1382,6 +1620,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "The account's daily quota of checks is used"
           }
         },
         "summary": "Llm Structured",

@@ -72,6 +72,8 @@ class CorrelationMiddleware:
         status = 500
         started = time.perf_counter()
         with bind(incoming) as correlation_id:
+            # Kept on the request too: error handlers run outside this middleware, after the bind ends.
+            scope.setdefault("state", {})["correlation_id"] = correlation_id
 
             async def send_with_header(message):
                 nonlocal status
@@ -97,3 +99,8 @@ class CorrelationMiddleware:
                             ),
                         },
                     )
+
+
+def of_request(request) -> str | None:
+    """The request's correlation ID, also where the bound one is gone (an exception handler)."""
+    return getattr(request.state, "correlation_id", None) or current()

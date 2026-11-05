@@ -38,6 +38,15 @@ def _new_check_page(request: Request, status_code: int = 200, **context) -> Resp
     )
 
 
+# Refusals whose message core wrote for the user (P3.02, P3.04): shown as they are, with core's status.
+USER_FACING = {
+    "injection_throttled",
+    "budget_cap_reached",
+    "daily_quota_reached",
+    "budget_unavailable",
+}
+
+
 @router.get("/checks/new")
 async def new_check(request: Request) -> Response:
     await require_session(request)
@@ -72,10 +81,9 @@ async def create_check(request: Request) -> Response:
         job = await deps(request).core.create_job(session.user.id, text, f"web-{key}")
     except CoreError as exc:
         log.warning("create job failed", extra={"code": exc.code})
-        if (
-            exc.code == "injection_throttled"
-        ):  # P3.02: core's message says what happened and when
-            return _new_check_page(request, 429, text=text, error=exc.message)
+        if exc.code in USER_FACING and exc.message:
+            # Core's message says what happened and when checks work again.
+            return _new_check_page(request, exc.status, text=text, error=exc.message)
         return _new_check_page(
             request,
             503,
@@ -156,13 +164,16 @@ async def confirm_check(request: Request, job_id: str) -> Response:
             exc.status != 409
         ):  # 409: already confirmed, so showing the job is the right answer
             log.warning("confirm failed", extra={"code": exc.code})
+            known = exc.code in USER_FACING and exc.message
             return render(
                 request,
                 "confirm.html",
-                503,
+                exc.status if known else 503,
                 job=job,
                 claims=[claim],
-                error="The search could not be started. Please try again in a minute.",
+                error=exc.message
+                if known
+                else "The search could not be started. Please try again in a minute.",
             )
     return RedirectResponse(f"/checks/{job_id}", status_code=303)
 
