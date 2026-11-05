@@ -91,14 +91,15 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** free space is above 20%; `sudo ./disk-check.sh` prints `disk ok`; all services healthy.
 
 ## RB-07 PubMed or full-text source down
-**Status:** draft, verify in P2
-- **Symptoms:** jobs fail or stall at `searching` or `retrieving`; the gateway logs show timeouts, 5xx or 429 from E-utilities or Europe PMC.
+**Status:** rehearsed in dev on 2026-11-04: a claim was extracted, the gateway was cut off from the internet, and the confirmed claim failed at `searching` 12 seconds later, after three attempts with backoff, as `literature_unavailable` with the message "The literature databases are not answering. Please try again later." Admin's Errors listed it. The failure alert was not sent: Telegram was unreachable too. With the network back, Retry the search from the job's admin page finished the check (Supported, five articles, EUR 0.003). Not yet seen on the VM.
+- **Symptoms:** a Telegram alert for a failed job with `literature_unavailable`; jobs failing at `searching` or `retrieving` in admin's Errors; the gateway logs show timeouts, 5xx or 429 from E-utilities or Europe PMC. If the whole connection is down, the Telegram alert can't go out either; UptimeRobot's email about the site is then the signal (RB-01).
 - **Commands:**
   ```bash
   docker compose logs --since 30m gateway | grep -Ei "eutils|europepmc|timeout|429|5[0-9]{2}"
   ```
-- **Fix:** for 5xx or timeouts, the service is down; retries with backoff run automatically and jobs fail cleanly once retries are exhausted. Retry them from admin later. For 429, check that the NCBI API key is set and the limiter is at 8 requests/s or lower. If Europe PMC is down but PubMed works, jobs fail at `retrieving` with the message "The literature databases are not answering": the PMC Cloud Service fallback (D-017) is not built yet. Articles already in the cache (`gateway.articles`) are still served.
-- **Verify:** a test claim completes; failed jobs retried.
+  Lines with `transient failure, retrying` name the URL that failed; `/literature/search` or `/literature/article` answering 503 means the retries ran out.
+- **Fix:** for 5xx or timeouts, the service is down; retries with backoff run automatically and jobs fail cleanly once retries are exhausted. For 429, check that the NCBI API key is set and the limiter is at 8 requests/s or lower. If Europe PMC is down but PubMed works, jobs fail at `retrieving` with the same message: the PMC Cloud Service fallback (D-017) is not built yet. Articles already in the cache (`gateway.articles`) are still served. Once the source answers again, open each failed job in admin and press **Retry the search** (it runs on the job's own config version and charges its LLM calls again).
+- **Verify:** a test claim completes; each failed job retried shows a result.
 
 ## RB-08 LLM provider errors or rate limits
 **Status:** draft, verify in C3.1
@@ -131,10 +132,15 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** the spend query shows the expected total; new jobs are accepted or refused as intended.
 
 ## RB-10 Suspected abuse or injection attempts
-**Status:** draft, verify in P3
-- **Symptoms:** injection or abuse flags in admin; one account using its quota repeatedly; strange inputs.
-- **Fix:** review the flagged jobs in admin; disable the account if needed; tighten its quota; add a Cloudflare WAF rule if the traffic is external. Record it as an incident.
-- **Verify:** no new flags from that account; costs back to normal.
+**Status:** draft; the throttle and the alerts are covered by `tests/integration/test_guardrails.py` (P3.02, D-050), not yet exercised on the VM.
+- **Symptoms:** a Telegram alert `injection_throttled` naming a user ID; a user reports "Too many checks from this account contained instructions to the system"; many refused checks from one account; strange inputs.
+- **Checks:** admin's **Injections** page lists each account whose own text contained instructions, how many checks count in the window, and until when the throttle holds it, then every event with its job. Each job's trace shows its events and the text. Or from core's database:
+  ```bash
+  sudo docker compose exec postgres psql -U postgres -d scc -c "SELECT e.at, e.stage, e.source, j.state FROM core.injection_events e JOIN core.jobs j ON j.id = e.job_id WHERE e.user_id = <id> ORDER BY e.at DESC LIMIT 20"
+  ```
+  `source = submitted_text` counts against the user; an article ID (`PMC...`) means the instructions were in a fetched article, which never counts against anyone.
+- **Fix:** the throttle lifts by itself 24 hours after the oldest counted check (pipeline-v5, `guardrails`). If the account is abusive, disable it (`python -m scc_web.admin disable <email>`). Instructions in an article: nothing to do for the user; if one article keeps triggering it, note its PMCID in the incident record. External traffic: add a Cloudflare WAF rule. Record it as an incident.
+- **Verify:** no new events from that account; costs back to normal.
 
 ## RB-11 Backup failed
 **Status:** rehearsed in dev on 2026-10-24 against a local restic repository: with the database stopped, `backup.sh` failed, kept no snapshot (3 before, 3 after) and raised the alert. Seen on the VM on 2026-10-26: a backup failed (DNS at boot) and both the Telegram alert and the healthchecks.io email reached the owner.
@@ -249,6 +255,6 @@ To be completed in P3.13. About 15 minutes, every Monday.
 - [ ] healthchecks.io: all backups and disk checks green
 - [ ] Disk usage below 70% (`df -h /`)
 - [ ] Costs this month vs budget; any unusual user
-- [ ] Admin: failed jobs, safety flags, injection flags reviewed
+- [ ] Admin: Reviews has nothing waiting; Injections shows no account held; failed jobs looked at
 - [ ] Dependabot and security alerts triaged
 - [ ] Ubuntu updates applied; reboot the VM if required (`/var/run/reboot-required`)

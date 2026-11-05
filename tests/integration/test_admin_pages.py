@@ -24,7 +24,7 @@ from scc_web.auth import passwords, store
 from scc_web.context import Deps
 from scc_web.core_client import CoreClient
 from scc_web.main import build_app
-from tests.admin_samples import seed, seed_calls
+from tests.admin_samples import PREGNANCY_NOTICE, seed, seed_calls, seed_safety
 from tests.helpers import run_async
 from tests.web_samples import FakeCore
 
@@ -475,3 +475,99 @@ def test_every_runbook_link_points_at_a_heading(entry):
     }
     assert admin_views.RB[entry] in anchors
     assert all(rb in admin_views.RB for _, rb in admin_views.CODES.values() if rb)
+
+
+async def _with_safety(ctx) -> dict:
+    async with ctx["pools"]["core"].connection() as conn:
+        return await seed_safety(
+            conn, user=ctx["user_id"], other=ctx["admin_id"], reviewer=ctx["admin_id"]
+        )
+
+
+def test_review_queue_then_a_review_from_the_job_page(migrated_db):
+    """P3.03 acceptance in admin: the queue, the job as the user saw it, and the review form."""
+
+    async def steps(ctx):
+        safety = await _with_safety(ctx)
+        job = safety["review_done"]
+        out = {"job": job}
+        async with admin_client(ctx) as c:
+            out["queue"] = (await c.get("/admin/reviews")).text
+            out["reviewed tab"] = (
+                await c.get("/admin/reviews", params={"status": "reviewed"})
+            ).text
+            page = (await c.get(f"/admin/jobs/{job}")).text
+            out["page"] = page
+            out["forged"] = await c.post(
+                f"/admin/jobs/{job}/review",
+                data={"csrf_token": "forged", "outcome": "notice_right"},
+            )
+            out["invalid"] = await c.post(
+                f"/admin/jobs/{job}/review",
+                data={"csrf_token": token(page), "outcome": "great"},
+            )
+            out["done"] = await c.post(
+                f"/admin/jobs/{job}/review",
+                data={
+                    "csrf_token": token(page),
+                    "outcome": "follow_up",
+                    "note": "Ask about the dose too.",
+                },
+            )
+            out["after"] = (await c.get(out["done"].headers["location"])).text
+            out["again"] = await c.post(
+                f"/admin/jobs/{job}/review",
+                data={"csrf_token": token(page), "outcome": "notice_right"},
+            )
+            out["page after"] = (await c.get(f"/admin/jobs/{job}")).text
+            out["plain"] = (await c.get(f"/admin/jobs/{ctx['ids']['done']}")).text
+        return out
+
+    out = with_admin(migrated_db, steps)
+    job = out["job"]
+    queue = out["queue"]
+    assert 'Waiting <span class="tabs__n num">3</span>' in queue
+    assert (
+        f'href="/admin/jobs/{job}"' in queue and "Pregnancy or breastfeeding" in queue
+    )
+    assert "Reviewed before, flagged again" in queue
+    assert "No notice was needed" in out["reviewed tab"]
+    assert "A prevention claim: the accepted limit in D-050." in out["reviewed tab"]
+    page = out["page"]
+    assert "Safety review" in page and "Waiting for your review" in page
+    assert PREGNANCY_NOTICE in page and "Mark reviewed" in page
+    assert "Instructions found" in page and "Article PMC6543210" in page
+    assert out["forged"].headers["location"].endswith("?reviewed=expired")
+    assert out["invalid"].headers["location"].endswith("?reviewed=invalid")
+    assert out["done"].headers["location"] == f"/admin/reviews?reviewed={job}"
+    assert "is reviewed" in out["after"] and f'href="/admin/jobs/{job}"' in out["after"]
+    assert 'Waiting <span class="tabs__n num">2</span>' in out["after"]
+    assert out["again"].headers["location"].endswith("?reviewed=not-open")
+    after = out["page after"]
+    assert "Needs follow-up" in after and "Ask about the dose too." in after
+    assert "owner@example.com" in after and "Mark reviewed" not in after
+    assert (
+        "Safety review" not in out["plain"] and "Instructions found" not in out["plain"]
+    )
+
+
+def test_injections_page_and_the_overview_counts(migrated_db):
+    async def steps(ctx):
+        await _with_safety(ctx)
+        async with admin_client(ctx) as c:
+            return (
+                (await c.get("/admin/injections")).text,
+                (await c.get("/admin")).text,
+            )
+
+    injections, overview = with_admin(migrated_db, steps)
+    # The sample holds the admin account at the throttle: 3 checks with instructions in 24 hours.
+    assert "Held</span> until" in injections and "owner@example.com" in injections
+    assert "pipeline-v5" in injections and admin_views.RB["RB-10"] in injections
+    assert "Their own text" in injections and "Article PMC6543210" in injections
+    assert injections.count('href="/admin/jobs/') == 5
+    assert (
+        'href="/admin/reviews"' in overview and 'href="/admin/injections"' in overview
+    )
+    assert re.search(r"Safety reviews waiting</dt>\s*<dd><span[^>]*>3</span>", overview)
+    assert re.search(r"Accounts throttled now</dt>\s*<dd><span[^>]*>1</span>", overview)

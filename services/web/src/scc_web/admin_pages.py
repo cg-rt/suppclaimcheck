@@ -1,4 +1,5 @@
-"""Admin pages (P3.08-P3.10): jobs and traces, errors, costs, evals, health, config and users.
+"""Admin pages (P3.08-P3.10, P3.03): jobs and traces, the safety review queue, injection events,
+errors, costs, evals, health, config and users.
 
 Admin answers only on the admin hostname (`SCC_ADMIN_HOST`), which Cloudflare Access guards (D-027),
 and only to a signed-in account with the admin role. Anywhere else, /admin is a plain 404. Behind the
@@ -31,6 +32,8 @@ router = APIRouter(prefix="/admin")
 SECTIONS = [
     ("overview", "Overview", "/admin"),
     ("jobs", "Jobs", "/admin/jobs"),
+    ("reviews", "Reviews", "/admin/reviews"),
+    ("injections", "Injections", "/admin/injections"),
     ("errors", "Errors", "/admin/errors"),
     ("costs", "Costs", "/admin/costs"),
     ("evals", "Evals", "/admin/evals"),
@@ -278,11 +281,13 @@ async def _health(request: Request) -> list[dict]:
 async def overview(request: Request) -> Response:
     await admin_session(request)
     d = deps(request)
-    jobs, errors, usage, health = await asyncio.gather(
+    jobs, errors, usage, health, reviews, injections = await asyncio.gather(
         d.admin.jobs(limit=1),
         _errors(request, 10),
         d.admin.usage(days=1),
         _health(request),
+        d.admin.reviews(status="open", limit=1),
+        d.admin.injections(limit=1),
     )
     since = datetime.now(UTC) - timedelta(hours=24)
     recent = [e for e in errors if datetime.fromisoformat(e["at"]) >= since]
@@ -295,6 +300,8 @@ async def overview(request: Request) -> Response:
         errors_24h=len(recent),
         lanes=usage["lanes"],
         unhealthy=[r for r in health if r["ok"] is False],
+        reviews_open=reviews["counts"]["open"],
+        throttled=sum(1 for a in injections["accounts"] if a["throttled"]),
     )
 
 
@@ -354,7 +361,10 @@ async def _trace(request: Request, job_id: str) -> dict:
 
 @router.get("/jobs/{job_id}")
 async def job_trace(
-    request: Request, job_id: str, retried: str | None = None
+    request: Request,
+    job_id: str,
+    retried: str | None = None,
+    reviewed: str | None = None,
 ) -> Response:
     await admin_session(request)
     d = deps(request)
@@ -393,6 +403,8 @@ async def job_trace(
         pipeline=None if isinstance(pipeline, BaseException) else pipeline,
         failure=admin_views.explain(trace["failure_code"]),
         retried=retried,
+        reviewed=reviewed,
+        reviewer=emails.get((job["review"] or {}).get("reviewed_by")),
         log_command=admin_views.log_command(correlation_ids),
     )
 
@@ -422,6 +434,84 @@ async def job_retry(request: Request, job_id: str) -> Response:
     )
     return RedirectResponse(
         f"/admin/jobs/{job_id}?retried={job['state']}", status_code=303
+    )
+
+
+@router.post("/jobs/{job_id}/review")
+async def job_review(request: Request, job_id: str) -> Response:
+    """Records the owner's safety review (P3.03), then goes back to the queue for the next one."""
+    session = await admin_session(request)
+    job_id = _job_id(job_id)
+    form = await request.form()
+    back = f"/admin/jobs/{job_id}?reviewed="
+    if not tokens_match(session.csrf_token, str(form.get("csrf_token", ""))):
+        return RedirectResponse(back + "expired", status_code=303)
+    outcome = str(form.get("outcome", ""))
+    note = str(form.get("note", "")).strip()
+    if outcome not in admin_views.OUTCOMES or len(note) > admin_views.NOTE_MAX:
+        return RedirectResponse(back + "invalid", status_code=303)
+    try:
+        await deps(request).admin.review(job_id, session.user.id, outcome, note or None)
+    except AdminError as exc:
+        if exc.status == 404:
+            raise HTTPException(404) from None
+        if exc.status == 409:
+            return RedirectResponse(back + "not-open", status_code=303)
+        raise
+    log.info(
+        "admin reviewed a job",
+        extra={"job_id": job_id, "outcome": outcome, "actor_user_id": session.user.id},
+    )
+    return RedirectResponse(f"/admin/reviews?reviewed={job_id}", status_code=303)
+
+
+@router.get("/reviews")
+async def reviews(
+    request: Request,
+    status: str = "open",
+    reviewed: str | None = None,
+    page_number: Annotated[int, Query(alias="page")] = 1,
+) -> Response:
+    await admin_session(request)
+    status = status if status in ("open", "reviewed") else "open"
+    page_number = max(1, min(page_number, 2000))
+    listing, emails = await asyncio.gather(
+        deps(request).admin.reviews(
+            status=status, limit=PAGE_SIZE, offset=(page_number - 1) * PAGE_SIZE
+        ),
+        _emails(request),
+    )
+    return page(
+        request,
+        "reviews.html",
+        "reviews",
+        listing=listing,
+        status=status,
+        page_number=page_number,
+        emails=emails,
+        reviewed=reviewed if reviewed and admin_views.is_job(reviewed) else None,
+    )
+
+
+@router.get("/injections")
+async def injections(
+    request: Request, page_number: Annotated[int, Query(alias="page")] = 1
+) -> Response:
+    await admin_session(request)
+    page_number = max(1, min(page_number, 2000))
+    report, emails = await asyncio.gather(
+        deps(request).admin.injections(
+            limit=PAGE_SIZE, offset=(page_number - 1) * PAGE_SIZE
+        ),
+        _emails(request),
+    )
+    return page(
+        request,
+        "injections.html",
+        "injections",
+        report=report,
+        page_number=page_number,
+        emails=emails,
     )
 
 

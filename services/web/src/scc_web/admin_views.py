@@ -78,6 +78,38 @@ STATUS_INK = {
     "refused": "none",
 }
 
+# Safety topics from triage (P3.03, docs/POLICY.md), in core's notice order.
+TOPICS = {
+    "pregnancy": "Pregnancy or breastfeeding",
+    "children": "Children",
+    "serious_illness": "Serious illness",
+    "high_dose": "Very high dose",
+    "drug_interaction": "Drug interaction",
+}
+
+# What a safety review found; the first is the default answer.
+OUTCOMES = {
+    "notice_right": "The notice fits",
+    "notice_not_needed": "No notice was needed",
+    "follow_up": "Needs follow-up",
+}
+OUTCOME_INK = {
+    "notice_right": "supported",
+    "notice_not_needed": "mixed",
+    "follow_up": "contradicted",
+}
+NOTE_MAX = 500
+
+
+def topic(name: str) -> str:
+    return TOPICS.get(name, name)
+
+
+def source(value: str) -> str:
+    """Where instructions were found: the user's own text, or an article by its PMCID."""
+    return "Their own text" if value == "submitted_text" else f"Article {value}"
+
+
 # How to find a job's log lines on the VM: every line carries its correlation ID (AGENTS.md section 7).
 LOG_COMMAND = "docker compose logs --since 7d --no-log-prefix web core-api core-worker gateway | grep {pattern}"
 

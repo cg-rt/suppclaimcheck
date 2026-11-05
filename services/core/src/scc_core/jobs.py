@@ -15,7 +15,7 @@ from scc_core.models import Claim, Job, JobCreate, JobEvent, JobState, JobSummar
 
 _COLUMNS = (
     "id, user_id, state, input_type, input_text, extracted_claims, confirmed_claim, result, error, "
-    "config_version, created_at, updated_at"
+    "config_version, sensitive_topics, needs_review, created_at, updated_at"
 )
 
 
@@ -96,14 +96,21 @@ async def set_state(
     **fields,
 ) -> None:
     """Moves a job to a new state, optionally setting extracted_claims, result or error, and logs the event."""
-    allowed = {"extracted_claims", "result", "error"}
+    allowed = {
+        "extracted_claims",
+        "result",
+        "error",
+        "sensitive_topics",
+        "needs_review",
+    }
     if not set(fields) <= allowed:
         raise ValueError(f"unknown job fields: {set(fields) - allowed}")
     assignments = ["state = %s", "updated_at = now()"]
     values: list = [state.value]
     for name, value in fields.items():
         assignments.append(f"{name} = %s")
-        values.append(Jsonb(value) if name != "error" else value)
+        plain = name in {"error", "sensitive_topics", "needs_review"}
+        values.append(value if plain else Jsonb(value))
     await conn.execute(
         f"UPDATE core.jobs SET {', '.join(assignments)} WHERE id = %s",
         (*values, job_id),
@@ -169,3 +176,50 @@ async def events(conn: AsyncConnection, job_id: UUID) -> list[JobEvent]:
             (job_id,),
         )
         return [JobEvent(**row) for row in await cur.fetchall()]
+
+
+async def flag_review(conn: AsyncConnection, job_id: UUID, topics: list[str]) -> None:
+    """Marks a job for the owner's safety review (P3.03) without changing its state."""
+    await conn.execute(
+        "UPDATE core.jobs SET sensitive_topics = %s, needs_review = true, updated_at = now() WHERE id = %s",
+        (topics, job_id),
+    )
+
+
+async def record_injection(
+    conn: AsyncConnection,
+    job_id: UUID,
+    user_id: int,
+    stage: str,
+    source: str,
+    config_version: str,
+    window_hours: int,
+) -> int:
+    """Stores an injection event (P3.02) and returns how many of the user's checks had instructions in
+    their own text inside the window, this one included."""
+    await conn.execute(
+        "INSERT INTO core.injection_events (job_id, user_id, stage, source, config_version)"
+        " VALUES (%s, %s, %s, %s, %s)",
+        (job_id, user_id, stage, source, config_version),
+    )
+    return await injection_checks(conn, user_id, window_hours)
+
+
+async def injection_checks(
+    conn: AsyncConnection, user_id: int, window_hours: int
+) -> int:
+    """The user's checks with instructions in their own submitted text inside the window."""
+    cur = await conn.execute(
+        "SELECT count(DISTINCT job_id) FROM core.injection_events"
+        " WHERE user_id = %s AND source = 'submitted_text' AND at > now() - make_interval(hours => %s)",
+        (user_id, window_hours),
+    )
+    return (await cur.fetchone())[0]
+
+
+async def exists(conn: AsyncConnection, user_id: int, idempotency_key: str) -> bool:
+    cur = await conn.execute(
+        "SELECT 1 FROM core.jobs WHERE user_id = %s AND idempotency_key = %s",
+        (user_id, idempotency_key),
+    )
+    return await cur.fetchone() is not None

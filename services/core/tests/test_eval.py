@@ -45,12 +45,12 @@ def _answer(verdict="Supported", score=75, **kw) -> Observation:
     )
 
 
-def test_eval_set_has_22_tuning_and_8_held_out_cases_one_per_category():
+def test_eval_set_has_23_tuning_and_8_held_out_cases_one_per_category():
     tuning = cases.load(EVALS, "tuning")
     held_out = cases.load(EVALS, "held_out")
     assert (tuning.version, len(tuning.cases), len(held_out.cases)) == (
-        "evalset-v2",
-        22,
+        "evalset-v3",
+        23,
         8,
     )
     # Stratified: every category has tuning cases and exactly one held-out case.
@@ -107,6 +107,18 @@ def test_judge_behaviours():
     assert judge(refuse, Observation(state="refused", behaviour="refuse")).passed
     answered = judge(refuse, _answer())
     assert answered.reasons == ["expected refuse, got answer"]
+
+    # An unexpected notice names its topics, so the failure says which label fired.
+    plain = _case(behaviour="answer", verdicts=["Supported"])
+    noticed = Observation(
+        state="done",
+        behaviour="answer_with_safety_notice",
+        verdict="Supported",
+        safety_topics=["serious_illness"],
+    )
+    assert judge(plain, noticed).reasons == [
+        "expected answer, got answer_with_safety_notice (serious_illness)"
+    ]
 
     pick = _case(behaviour="pick_claim", min_claims=2)
     assert judge(

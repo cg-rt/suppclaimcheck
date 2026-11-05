@@ -1,0 +1,76 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import short_id, scroll %}
+{% from "macros.html" import icon %}
+{% block title %}Injection events{% endblock %}
+{% block main %}
+{% set rb = views.rb_link("RB-10") %}
+<section class="card" aria-labelledby="injections-title">
+  <h1 class="title" id="injections-title">Injection events</h1>
+  <p class="meta">Instructions to the system found in a text a user submitted or in an article the pipeline read. They are ignored either way; the text itself is not stored here, only on the job.</p>
+  {% if report.max_checks %}
+  <p class="meta">Instructions in a user's own text count against their account: <span class="num">{{ report.max_checks }}</span> checks with them inside <span class="num">{{ report.window_hours }}</span> hours stop new checks from that account until the oldest leave the window (<a href="/admin/config/core/{{ report.config_version }}"><code>{{ report.config_version }}</code></a>, the active config). Instructions in an article never count against anyone. What to do: <a class="rb" href="{{ rb }}" rel="noopener">RB-10<span class="visually-hidden"> in the runbook</span></a></p>
+  {% else %}
+  <p class="meta">The active config, <a href="/admin/config/core/{{ report.config_version }}"><code>{{ report.config_version }}</code></a>, has no throttle, so no account is held. What to do: <a class="rb" href="{{ rb }}" rel="noopener">RB-10<span class="visually-hidden"> in the runbook</span></a></p>
+  {% endif %}
+
+  <h2 class="subhead" id="accounts-title">Accounts</h2>
+  {% if report.accounts %}
+  {% call scroll("accounts-title") %}
+  <table class="data data--stack">
+    <thead>
+      <tr><th scope="col">User</th><th scope="col">Throttle</th><th scope="col" class="n">Checks{% if report.window_hours %}, last {{ report.window_hours }} h{% endif %}</th><th scope="col" class="n">All time</th><th scope="col">Latest</th><th scope="col">Jobs</th></tr>
+    </thead>
+    <tbody>
+      {% for a in report.accounts %}
+      {% set email = emails.get(a.user_id) %}
+      <tr>
+        <th scope="row" data-label="User">{{ email or "user " ~ a.user_id }}</th>
+        <td data-label="Throttle">{% if a.throttled %}<span class="state state--contradicted">{{ icon("current") }} Held</span> until <time class="num" datetime="{{ a.throttled_until }}">{{ views.when(a.throttled_until) }}</time>{% elif a.throttled is none %}<span class="meta">No throttle</span>{% else %}Below the limit{% endif %}</td>
+        <td data-label="{{ 'Last ' ~ report.window_hours ~ ' h' if report.window_hours else 'Checks' }}" class="n num">{{ a.checks_in_window }}</td>
+        <td data-label="All time" class="n num">{{ a.checks_total }}</td>
+        <td data-label="Latest"><time class="num" datetime="{{ a.last_at }}">{{ views.when(a.last_at) }}</time></td>
+        <td data-label="Jobs">{% if email %}<a href="/admin/jobs?q={{ email|urlencode }}">Their jobs</a>{% else %}–{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% else %}
+  <p>No user's own text has contained instructions so far.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="events-title">
+  <h2 class="card__title" id="events-title">Every event, newest first</h2>
+  {% if report.events %}
+  {% call scroll("events-title") %}
+  <table class="data data--stack">
+    <thead>
+      <tr><th scope="col">When</th><th scope="col">Job</th><th scope="col">User</th><th scope="col">Stage</th><th scope="col">Found in</th><th scope="col">Config</th></tr>
+    </thead>
+    <tbody>
+      {% for e in report.events %}
+      <tr>
+        <td data-label="When"><time class="num" datetime="{{ e.at }}">{{ views.when(e.at) }}</time></td>
+        <td data-label="Job"><a href="/admin/jobs/{{ e.job_id }}">{{ short_id(e.job_id) }}</a></td>
+        <td data-label="User">{{ emails.get(e.user_id, "user " ~ e.user_id) }}</td>
+        <td data-label="Stage"><code>{{ e.stage }}</code></td>
+        <td data-label="Found in">{{ views.source(e.source) }}</td>
+        <td data-label="Config"><code>{{ e.config_version }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% if page_number > 1 or report.more %}
+  <nav class="pager" aria-label="Pages">
+    {% if page_number > 1 %}<a href="/admin/injections?page={{ page_number - 1 }}">Newer events</a>{% endif %}
+    <span class="meta">Page <span class="num">{{ page_number }}</span></span>
+    {% if report.more %}<a href="/admin/injections?page={{ page_number + 1 }}">Older events</a>{% endif %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <p>No instructions found in any text so far.</p>
+  {% endif %}
+</section>
+{% endblock %}

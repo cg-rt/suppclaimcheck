@@ -10,7 +10,7 @@ def runtime(loader) -> Runtime:
     return Runtime(
         pool=None,
         gateway=None,
-        config=config.load(),
+        config=config.load("pipeline-v4"),
         embedder="model",
         load_config=loader,
     )

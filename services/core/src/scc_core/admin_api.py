@@ -1,8 +1,8 @@
-"""core-api admin endpoints (P3.08, P3.09): jobs by state, per-job traces, recent errors, the queue,
-and a manual retry for failed jobs.
+"""core-api admin endpoints (P3.08, P3.09, P3.03): jobs by state, per-job traces, recent errors, the
+queue, a manual retry for failed jobs, the safety review queue and injection events.
 
 Internal only, for web's admin pages: web may read only its own `auth` schema (D-011), so core data
-reaches admin through here. Everything is read-only except the retry.
+reaches admin through here. Everything is read-only except the retry and marking a job reviewed.
 
 The retry is deliberately simple: a job in `failed` goes back to the start of the phase that failed
 (extraction before confirmation, the search after it) on the config version it was created under,
@@ -11,7 +11,7 @@ queue one task. Idempotency keys on internal calls arrive with P3.05.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -20,8 +20,8 @@ from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 from pydantic import BaseModel, Field
 
-from scc_common import correlation
-from scc_core import tasks
+from scc_common import config_store, correlation
+from scc_core import config, tasks
 
 log = logging.getLogger("scc.admin")
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -80,6 +80,18 @@ class AdminJobList(BaseModel):
     more: bool
 
 
+# What the owner found when reviewing a safety-flagged job (P3.03).
+Outcome = Literal["notice_right", "notice_not_needed", "follow_up"]
+
+
+class Review(BaseModel):
+    reviewed_at: datetime
+    # web's user ID of the admin who reviewed.
+    reviewed_by: int
+    outcome: Outcome
+    note: str | None
+
+
 class AdminJob(BaseModel):
     id: UUID
     user_id: int
@@ -94,6 +106,37 @@ class AdminJob(BaseModel):
     correlation_id: str | None
     created_at: datetime
     updated_at: datetime
+    # Safety topics from triage, whether the job waits in the review queue, and its latest review.
+    sensitive_topics: list[str] = []
+    needs_review: bool = False
+    review: Review | None = None
+
+
+class ReviewRow(AdminJobRow):
+    sensitive_topics: list[str]
+    needs_review: bool
+    review: Review | None
+
+
+class ReviewList(BaseModel):
+    """One page of the safety review queue, and how many jobs are open and reviewed."""
+
+    counts: dict[str, int]
+    jobs: list[ReviewRow]
+    more: bool
+
+
+class InjectionEvent(BaseModel):
+    """Instructions to the system found in a text (P3.02). The text itself is never stored here."""
+
+    id: int
+    at: datetime
+    job_id: UUID
+    user_id: int
+    stage: str
+    # `submitted_text` (the user's own text) or the PMCID of the article they were found in.
+    source: str
+    config_version: str
 
 
 class TraceEvent(BaseModel):
@@ -129,6 +172,29 @@ class JobTrace(BaseModel):
     events: list[TraceEvent]
     passages: list[ArticlePassages]
     dropped_quotes: list[DroppedQuote]
+    injection_events: list[InjectionEvent] = []
+
+
+class InjectionAccount(BaseModel):
+    """One account's checks whose own text instructed the system: what the throttle counts."""
+
+    user_id: int
+    checks_in_window: int
+    checks_total: int
+    last_at: datetime
+    # None when the active config has no throttle (before pipeline-v5).
+    throttled: bool | None
+    # When the account can start checks again, if it is throttled now.
+    throttled_until: datetime | None
+
+
+class InjectionReport(BaseModel):
+    config_version: str
+    window_hours: int | None
+    max_checks: int | None
+    accounts: list[InjectionAccount]
+    events: list[InjectionEvent]
+    more: bool
 
 
 class Passage(BaseModel):
@@ -162,6 +228,34 @@ class QueueStatus(BaseModel):
 class RetryRequest(BaseModel):
     # web's user ID of the admin who asked, recorded in the job's events.
     actor_user_id: int = Field(ge=1)
+
+
+class ReviewRequest(BaseModel):
+    actor_user_id: int = Field(ge=1)
+    outcome: Outcome
+    # The owner's own words, for the owner; never shown to the user.
+    note: str | None = Field(default=None, max_length=500)
+
+
+# AdminJob's columns, for every query that returns one.
+_JOB_COLUMNS = (
+    "j.id, j.user_id, j.state, j.input_type, j.input_text, j.extracted_claims, j.confirmed_claim,"
+    " j.result, j.error, j.config_version, j.correlation_id, j.created_at, j.updated_at,"
+    " j.sensitive_topics, j.needs_review, j.reviewed_at, j.reviewed_by, j.review_outcome,"
+    " j.review_note"
+)
+_REVIEW_FIELDS = ("reviewed_at", "reviewed_by", "review_outcome", "review_note")
+
+
+def _with_review(row: dict) -> dict:
+    """The row with its four review columns folded into one `review` (None until reviewed)."""
+    at, by, outcome, note = (row.pop(k) for k in _REVIEW_FIELDS)
+    review = (
+        Review(reviewed_at=at, reviewed_by=by, outcome=outcome, note=note)
+        if at
+        else None
+    )
+    return {**row, "review": review}
 
 
 def pool_of(request: Request):
@@ -267,9 +361,7 @@ async def job_trace(job_id: UUID, request: Request) -> JobTrace:
         rows = await _all(
             conn,
             f"""
-            SELECT j.id, j.user_id, j.state, j.input_type, j.input_text, j.extracted_claims,
-                   j.confirmed_claim, j.result, j.error, j.config_version, j.correlation_id,
-                   j.created_at, j.updated_at, {_STATUS_SQL} AS status,
+            SELECT {_JOB_COLUMNS}, {_STATUS_SQL} AS status,
                    {_FAILURE_CODE_SQL} AS failure_code, now() AS now
             FROM core.jobs j WHERE j.id = %s
             """,
@@ -294,7 +386,13 @@ async def job_trace(job_id: UUID, request: Request) -> JobTrace:
             " FROM core.hallucination_events WHERE job_id = %s ORDER BY id",
             (job_id,),
         )
-    row = rows[0]
+        injections = await _all(
+            conn,
+            "SELECT id, at, job_id, user_id, stage, source, config_version"
+            " FROM core.injection_events WHERE job_id = %s ORDER BY id",
+            (job_id,),
+        )
+    row = _with_review(rows[0])
     now, status, failure_code = (
         row.pop("now"),
         row.pop("status"),
@@ -322,6 +420,7 @@ async def job_trace(job_id: UUID, request: Request) -> JobTrace:
         events=timed,
         passages=[ArticlePassages(**p) for p in passages],
         dropped_quotes=[DroppedQuote(**d) for d in dropped],
+        injection_events=[InjectionEvent(**e) for e in injections],
     )
 
 
@@ -383,9 +482,8 @@ async def retry_job(job_id: UUID, body: RetryRequest, request: Request) -> Admin
             await conn.execute("DELETE FROM core.passages WHERE job_id = %s", (job_id,))
         rows = await _all(
             conn,
-            "UPDATE core.jobs SET state = %s, error = NULL, result = NULL, updated_at = now()"
-            " WHERE id = %s RETURNING id, user_id, state, input_type, input_text, extracted_claims,"
-            " confirmed_claim, result, error, config_version, correlation_id, created_at, updated_at",
+            "UPDATE core.jobs j SET state = %s, error = NULL, result = NULL, updated_at = now()"
+            f" WHERE j.id = %s RETURNING {_JOB_COLUMNS}",
             (state, job_id),
         )
         await conn.execute(
@@ -409,7 +507,166 @@ async def retry_job(job_id: UUID, body: RetryRequest, request: Request) -> Admin
             "job_correlation_id": job_correlation,
         },
     )
-    return AdminJob(**rows[0])
+    return AdminJob(**_with_review(rows[0]))
+
+
+@router.get("/reviews")
+async def review_queue(
+    request: Request,
+    status: Literal["open", "reviewed"] = "open",
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0, le=100_000)] = 0,
+) -> ReviewList:
+    """Safety-flagged jobs (P3.03). Open ones oldest first, as a queue; reviewed ones newest first."""
+    if status == "open":
+        where, order = "j.needs_review", "j.created_at, j.id"
+    else:
+        where = "j.reviewed_at IS NOT NULL AND NOT j.needs_review"
+        order = "j.reviewed_at DESC, j.id"
+    async with pool_of(request).connection() as conn:
+        rows = await _all(
+            conn,
+            f"""
+            SELECT j.id, j.user_id, j.state, {_STATUS_SQL} AS status,
+                   left(j.input_text, 200) AS input_preview,
+                   coalesce(j.confirmed_claim->>'supplement',
+                            j.extracted_claims->0->>'supplement') AS supplement,
+                   coalesce(j.confirmed_claim->>'effect',
+                            j.extracted_claims->0->>'effect') AS effect,
+                   j.result->>'verdict' AS verdict,
+                   round((j.result->>'score')::numeric)::int AS score,
+                   {_FAILURE_CODE_SQL} AS failure_code,
+                   j.config_version, j.correlation_id, j.created_at, j.updated_at,
+                   j.sensitive_topics, j.needs_review, j.reviewed_at, j.reviewed_by,
+                   j.review_outcome, j.review_note
+            FROM core.jobs j WHERE {where}
+            ORDER BY {order}
+            LIMIT %s OFFSET %s
+            """,
+            (limit + 1, offset),
+        )
+        counted = await _all(
+            conn,
+            "SELECT count(*) FILTER (WHERE needs_review) AS open,"
+            " count(*) FILTER (WHERE reviewed_at IS NOT NULL AND NOT needs_review) AS reviewed"
+            " FROM core.jobs",
+        )
+    return ReviewList(
+        counts=counted[0],
+        jobs=[ReviewRow(**_with_review(r)) for r in rows[:limit]],
+        more=len(rows) > limit,
+    )
+
+
+@router.post(
+    "/jobs/{job_id}/review",
+    responses={
+        404: {"description": "No such job"},
+        409: {"description": "The job is not waiting for a review"},
+    },
+)
+async def review_job(job_id: UUID, body: ReviewRequest, request: Request) -> AdminJob:
+    """Records the owner's review of a safety-flagged job and takes it off the queue.
+
+    Guarded on `needs_review`, so two clicks record one review. A later flag puts the job back.
+    """
+    note = (body.note or "").strip() or None
+    async with pool_of(request).connection() as conn:
+        rows = await _all(
+            conn,
+            "UPDATE core.jobs j SET needs_review = false, reviewed_at = now(),"
+            " reviewed_by = %s, review_outcome = %s, review_note = %s"
+            f" WHERE j.id = %s AND j.needs_review RETURNING {_JOB_COLUMNS}",
+            (body.actor_user_id, body.outcome, note, job_id),
+        )
+        if not rows:
+            if not await _all(conn, "SELECT 1 FROM core.jobs WHERE id = %s", (job_id,)):
+                raise _not_found()
+            raise HTTPException(
+                409,
+                {"code": "not_open", "message": "The job is not waiting for a review."},
+            )
+    log.info(
+        "job reviewed by admin",
+        extra={
+            "job_id": str(job_id),
+            "outcome": body.outcome,
+            "actor_user_id": body.actor_user_id,
+        },
+    )
+    return AdminJob(**_with_review(rows[0]))
+
+
+async def _throttle(request: Request, conn: AsyncConnection) -> tuple[str, dict | None]:
+    """The config version new checks start on, and its throttle settings (None before pipeline-v5)."""
+    version = request.app.state.deps.config_version or (
+        await config_store.active_version_async(conn, config.STORE)
+    )
+    loaded = await config_store.load_version_async(conn, config.STORE, version)
+    return version, loaded.get("guardrails")
+
+
+def _account(
+    user_id: int, times: list[datetime], now: datetime, settings: dict | None
+) -> InjectionAccount:
+    """One account's standing against the throttle; `times` is each check's latest event, oldest first."""
+    if settings is None:
+        recent, throttled, until = [], None, None
+    else:
+        window = timedelta(hours=settings["injection_window_hours"])
+        limit = settings["injection_max_checks"]
+        # A check leaves the window when its latest event does, as jobs.injection_checks counts.
+        recent = [t for t in times if t > now - window]
+        throttled = len(recent) >= limit
+        # Below the limit again once the oldest (count - limit + 1) checks have left the window.
+        until = recent[len(recent) - limit] + window if throttled else None
+    return InjectionAccount(
+        user_id=user_id,
+        checks_in_window=len(recent),
+        checks_total=len(times),
+        last_at=times[-1],
+        throttled=throttled,
+        throttled_until=until,
+    )
+
+
+@router.get("/injections")
+async def injection_report(
+    request: Request,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0, le=100_000)] = 0,
+) -> InjectionReport:
+    """Instructions found in texts (P3.02): per account, what the throttle counts and whether it holds
+    the account now under the active config, throttled first; then every event, newest first."""
+    async with pool_of(request).connection() as conn:
+        version, settings = await _throttle(request, conn)
+        checks = await _all(
+            conn,
+            "SELECT user_id, job_id, max(at) AS at FROM core.injection_events"
+            " WHERE source = 'submitted_text' GROUP BY user_id, job_id ORDER BY user_id, at",
+        )
+        events = await _all(
+            conn,
+            "SELECT id, at, job_id, user_id, stage, source, config_version"
+            " FROM core.injection_events ORDER BY at DESC, id DESC LIMIT %s OFFSET %s",
+            (limit + 1, offset),
+        )
+        now = (await _all(conn, "SELECT now() AS now"))[0]["now"]
+    by_user: dict[int, list[datetime]] = {}
+    for check in checks:
+        by_user.setdefault(check["user_id"], []).append(check["at"])
+    accounts = [_account(u, times, now, settings) for u, times in by_user.items()]
+    accounts.sort(
+        key=lambda a: (not a.throttled, -a.checks_in_window, -a.last_at.timestamp())
+    )
+    return InjectionReport(
+        config_version=version,
+        window_hours=settings["injection_window_hours"] if settings else None,
+        max_checks=settings["injection_max_checks"] if settings else None,
+        accounts=accounts,
+        events=[InjectionEvent(**e) for e in events[:limit]],
+        more=len(events) > limit,
+    )
 
 
 @router.get("/errors")

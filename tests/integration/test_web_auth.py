@@ -403,3 +403,73 @@ def test_admin_cli_creates_accounts_and_refuses_duplicates(
 
     user = run_async(check())
     assert user.disabled and user.role == ("admin" if flag else "user")
+
+
+def test_refused_and_clarify_pages_say_why_and_that_nothing_was_spent(migrated_db):
+    """P3.01: a stop before searching reads differently from a failure."""
+
+    async def steps(client, ctx):
+        core = ctx["core"]
+        await sign_in(client)
+        refused = core.add(
+            job(
+                ctx["user"],
+                "refused",
+                error="SuppClaimCheck checks claims; it doesn't write them.",
+            )
+        )
+        vague = core.add(
+            job(
+                ctx["user"],
+                "needs_clarification",
+                error="Which effect do you want to check?",
+            )
+        )
+        return (
+            (await client.get(f"/checks/{refused['id']}")).text,
+            (await client.get(f"/checks/{vague['id']}")).text,
+        )
+
+    refused, vague = with_web(migrated_db, steps)
+    assert "This isn&#39;t something SuppClaimCheck can check" in refused
+    assert "it doesn&#39;t write them" in refused
+    assert "Tell us a little more" in vague and "Which effect" in vague
+    for page in (refused, vague):
+        assert "nothing was spent on it" in page
+        assert "notice--error" not in page
+
+
+def test_result_page_shows_safety_notices_before_the_verdict(migrated_db):
+    """P3.03: the notice comes first, so it is read before the verdict."""
+    notice = "Research on supplements in pregnancy and breastfeeding is limited."
+
+    async def steps(client, ctx):
+        result = {
+            **job(ctx["user"])["result"],
+            "safety_notices": [{"topic": "pregnancy", "text": notice}],
+        }
+        done = ctx["core"].add(job(ctx["user"], result=result))
+        await sign_in(client)
+        return (await client.get(f"/checks/{done['id']}")).text
+
+    html = with_web(migrated_db, steps)
+    assert "Before you read the result" in html
+    assert html.index(notice) < html.index("What the research says")
+
+
+def test_a_throttled_account_sees_why_it_cannot_start_a_check(migrated_db):
+    """P3.02: core refuses new checks after repeated instructions; web shows core's message."""
+    message = "Too many checks from this account contained instructions to the system."
+
+    async def steps(client, ctx):
+        ctx["core"].throttle_message = message
+        await sign_in(client)
+        page = await client.get("/checks/new")
+        return await client.post(
+            "/checks",
+            data={"input_text": "Zinc shortens colds.", "csrf_token": token(page.text)},
+        )
+
+    response = with_web(migrated_db, steps)
+    assert response.status_code == 429
+    assert message in response.text

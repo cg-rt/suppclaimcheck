@@ -205,6 +205,7 @@ Admin (P3.08–P3.10) uses the same tokens and components from `static/css/admin
 - **Status** is a coloured word with its drawn mark, like the progress list: green completed, red failed, amber awaiting confirmation, ink in progress, grey refused. Never a filled badge.
 - **Code** (settings, JSON, diffs, commands, IDs) in the platform monospace at 0.8125rem, on `card-quiet` with a hairline border. Diff lines keep their + and − and are tinted with the supported and contradicted tints, so colour is never the only signal. Small inline keys use a 4px radius.
 - Orange stays for what can be pressed: Retry, Search, Create, and the links. A one-time password is shown once, in a bordered code block.
+- **Safety review** (P3.03): the notice the user saw sits in the result page's warning tint, so it reads as theirs; the review is the same radio group as the users page plus a note field, ending in one orange button. What a review found is a status word: green the notice fits, amber not needed, red follow-up.
 
 ## Do's and Don'ts
 

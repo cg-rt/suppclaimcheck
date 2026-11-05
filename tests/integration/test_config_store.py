@@ -133,7 +133,7 @@ def test_create_refuses_repo_names_duplicates_and_identical_content(migrated_db)
     with connect(migrated_db, "core") as conn:
         with pytest.raises(ConfigStoreError, match="repo version name"):
             config_store.create(conn, CORE, variant("pipeline-v99"), "owner", "x")
-        with pytest.raises(ConfigStoreError, match="same content as pipeline-v4"):
+        with pytest.raises(ConfigStoreError, match=f"same content as {CORE.shipped}"):
             config_store.create(
                 conn, CORE, variant(unique("same"), top_k=6), "owner", "x"
             )

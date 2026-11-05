@@ -72,6 +72,10 @@ async def create_check(request: Request) -> Response:
         job = await deps(request).core.create_job(session.user.id, text, f"web-{key}")
     except CoreError as exc:
         log.warning("create job failed", extra={"code": exc.code})
+        if (
+            exc.code == "injection_throttled"
+        ):  # P3.02: core's message says what happened and when
+            return _new_check_page(request, 429, text=text, error=exc.message)
         return _new_check_page(
             request,
             503,
@@ -109,7 +113,7 @@ async def show_check(
         )
     if state == "done":
         return render(request, "result.html", job=job, view=views.result_view(job))
-    if state in {"failed", "refused"}:
+    if state in {"failed", "refused", "needs_clarification"}:
         return render(request, "stopped.html", job=job)
     events = await deps(request).core.job_events(job_id)
     return render(

@@ -6,6 +6,7 @@ from procrastinate.testing import InMemoryConnector
 from psycopg_pool import AsyncConnectionPool
 
 from scc_core import api as core_api
+from scc_core import config as core_config
 from scc_core import tasks
 from tests.helpers import run_async
 
@@ -143,4 +144,4 @@ def test_a_new_job_gets_the_version_active_in_the_database(migrated_db):
 
     response = with_core(migrated_db, steps, config_version=None)
     assert response.status_code == 201
-    assert response.json()["config_version"] == "pipeline-v4"
+    assert response.json()["config_version"] == core_config.ACTIVE
