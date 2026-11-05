@@ -289,7 +289,14 @@ def main(argv: list[str] | None = None) -> int:
         report.write_json(
             args.out, report.run_document(meta, summary, comparison, results, repeats)
         )
-    if args.mode == "live" and not partial:
+    outages = outage_cases(results)
+    if outages and args.mode == "live":
+        print(
+            f"Not saved: {len(outages)} case(s) failed because an outside service was down "
+            f"({', '.join(outages)}). An outage measures the provider, not the pipeline; run again "
+            "when it is back. The recording, the baseline and EVALS.md are unchanged."
+        )
+    if args.mode == "live" and not partial and not outages:
         report.write_json(
             args.evals / "runs" / f"{run_id}.json",
             report.run_document(meta, summary, comparison, results, repeats),
@@ -300,7 +307,7 @@ def main(argv: list[str] | None = None) -> int:
         if record:
             transport.save()
         print(f"Saved evals/runs/{run_id}.json and a row in docs/EVALS.md.")
-    if args.write_baseline and not partial:
+    if args.write_baseline and not partial and not outages:
         report.write_json(baseline_path, report.baseline_document(meta, results))
         print(f"Wrote {baseline_path.name}.")
 
@@ -312,6 +319,22 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
     return 0
+
+
+# Failure codes that mean an outside service was down (core's MESSAGES). A live run with any of them is
+# shown but never saved: twice a PubMed outage overwrote the recording (2026-11-04, 2026-11-05).
+OUTAGES = {
+    "literature_unavailable",
+    "provider_unavailable",
+    "provider_not_configured",
+    "page_unavailable",
+    "page_timeout",
+    "pages_not_configured",
+}
+
+
+def outage_cases(results) -> list[str]:
+    return [r.id for r in results if (r.observed or {}).get("error_code") in OUTAGES]
 
 
 if __name__ == "__main__":

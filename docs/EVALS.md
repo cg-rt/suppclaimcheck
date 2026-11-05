@@ -147,6 +147,8 @@ Live tuning run (spends from the eval lane; refreshes the recording, writes `eva
 SCC_EVAL_ADMIN_DSN="host=127.0.0.1 port=15433 user=postgres dbname=postgres" uv run python -m scc_core.eval run --mode live --notes "why this run"
 ```
 
+A live run in which any case failed because an outside service was down (`literature_unavailable`, `provider_unavailable`, `page_unavailable`, `page_timeout` and the like) is shown but not saved: no run file, no row here, no new recording or baseline. Run it again when the service is back.
+
 Other options: `--cases id1,id2` for a partial run (never saved; add `--out file.json` to keep the details), `--write-baseline` to make a run the new baseline, `--config <version>` for another pipeline config, `--config-file <file.toml>` for a config outside the repo (never recorded), `--split held_out --held-out-reason "release candidate X"` for the held-out set.
 
 **Results per config version (D-048).** Every run file records `config_sha256`, a hash of the settings it ran (the version name excluded). In production, `python -m scc_core.config attach-eval <version> --run <file>` links a full run without overrides to the stored version with the same hash; activation then shows that result and warns when it missed a threshold (RUNBOOK RB-15).

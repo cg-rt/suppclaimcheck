@@ -353,3 +353,22 @@ def test_a_long_override_is_shortened_in_the_evals_row_note():
     note = override_note('prompts.assess="""\nline one\nline two\n"""')
     assert "\n" not in note
     assert note.startswith("prompts.assess=<") and "in the run file" in note
+
+
+def test_a_live_run_hit_by_an_outage_is_not_saved():
+    from scc_core.eval.__main__ import outage_cases
+    from scc_core.eval.metrics import CaseResult
+
+    def result(case_id, code):
+        return CaseResult(
+            id=case_id, category="c", expected_behaviour="answer", passed=False,
+            checks={}, reasons=[], observed={"error_code": code},
+        )  # fmt: skip
+
+    results = [
+        result("a", None),
+        result("b", "literature_unavailable"),
+        result("c", "no_claim"),
+    ]
+    assert outage_cases(results) == ["b"]
+    assert outage_cases([result("a", None)]) == []
