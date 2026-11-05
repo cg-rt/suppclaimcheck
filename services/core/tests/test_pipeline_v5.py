@@ -3,8 +3,9 @@
 from scc_core import config
 
 
-def test_v5_is_active():
-    assert config.ACTIVE == "pipeline-v5"
+def test_v5_stays_loadable_for_old_jobs():
+    # pipeline-v6 (D-052) and v7 (D-053) followed it; jobs keep the version they were created under.
+    assert config.load("pipeline-v5")["version"] == "pipeline-v5"
 
 
 def test_v5_changes_only_the_prompts_and_adds_guardrails():

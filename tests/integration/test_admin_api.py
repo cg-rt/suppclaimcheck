@@ -292,7 +292,7 @@ def test_config_versions_are_readable_from_core_and_the_gateway(migrated_db):
     assert core_v4.json()["evals"] == []
     assert missing.status_code == 404 and bad.status_code == 422
     gateway, gateway_v0, _, _ = out["gateway"]
-    assert gateway["active"] == "gateway-v0" and gateway["evaluated"] is False
+    assert gateway["active"] == gateway_config.ACTIVE and gateway["evaluated"] is False
     assert gateway_v0.json()["body"]["budget"]["live_monthly_cap_eur"] == 15.0
 
 

@@ -1,0 +1,73 @@
+# Gateway config v1 (P3.04, P3.05, D-053). Versioned config, never constants in code (AGENTS.md section 8).
+# Changes from v0: budget warnings and the reserve for new checks in [budget], [quotas] and [idempotency].
+version = "gateway-v1"
+
+[budget]
+# Monthly hard caps per lane, in EUR (D-021). New LLM calls are refused once spent + this call's
+# worst-case cost would pass the cap. Provider console limits are a second safety net.
+live_monthly_cap_eur = 15.0
+eval_monthly_cap_eur = 5.0
+# USD to EUR. Deliberately pessimistic (1 USD is less than 1 EUR), so spend is over-counted, never under.
+eur_per_usd = 1.0
+# For the worst-case estimate before a call: characters per input token, rounded down to over-count.
+chars_per_token_estimate = 3
+# Warnings (P3.04): when a lane's spend this month passes one of these shares of its cap, one Telegram
+# alert per level and month, and a banner in admin until the month ends.
+warn_at = [0.5, 0.8]
+# New checks are refused while less than this is left in the live lane: more than one check can cost
+# (about EUR 0.003 each in the evals), so a check that starts can finish.
+new_check_reserve_eur = 0.05
+
+# USD per million tokens. Claude Haiku 5.5: 0.10 / 0.50 for prompts up to 100K tokens, 0.50 / 2.50 beyond.
+[prices."claude-haiku-5-5"]
+input_usd_per_mtok = 0.10
+output_usd_per_mtok = 0.50
+long_prompt_threshold_tokens = 100_000
+long_input_usd_per_mtok = 0.50
+long_output_usd_per_mtok = 2.50
+
+[prices."claude-sonnet-5-5"]
+input_usd_per_mtok = 2.00
+output_usd_per_mtok = 10.00
+
+[llm]
+timeout_s = 90
+max_attempts = 3
+backoff_base_s = 1.0
+backoff_max_s = 20.0
+
+[literature]
+tool = "suppclaimcheck"
+email = "contact@suppclaimcheck.com"
+# NCBI allows 10 requests/s with an API key and 3 without; we stay below both (D-017).
+ncbi_requests_per_second_with_key = 8
+ncbi_requests_per_second_without_key = 3
+timeout_s = 20
+max_attempts = 3
+backoff_base_s = 1.0
+backoff_max_s = 10.0
+# Licences that allow text mining for this non-commercial project (D-017), as Europe PMC writes them.
+licence_allowlist = ["cc0", "cc by", "cc by-sa", "cc by-nd", "cc by-nc", "cc by-nc-sa", "cc by-nc-nd"]
+
+[quotas]
+# Checks per account per UTC day (P3.04), counted from extraction calls in the live lane. 0 turns it off.
+checks_per_user_per_day = 25
+# Web user IDs the quota doesn't apply to, such as the owner's own account while testing.
+exempt_user_ids = []
+
+[idempotency]
+# A call sent again with the same Idempotency-Key gets the stored answer, not a new charge (P3.05).
+# A reserved call older than this is taken as abandoned (its caller died) and its key is free again.
+stale_after_minutes = 10
+# Stored answers can hold the user's claim, so they are deleted after this many days.
+output_retention_days = 7
+
+[alerts]
+# Telegram alerts (P1.14, D-024). A repeat of the same event and code inside this window is held back.
+dedupe_minutes = 60
+# Job failures that are the user's input or already alerted elsewhere, not something to act on.
+quiet_job_failure_codes = ["no_claim", "budget_cap_reached"]
+timeout_s = 10
+max_attempts = 3
+backoff_base_s = 1.0
+backoff_max_s = 8.0

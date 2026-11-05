@@ -68,7 +68,18 @@ async def admin_session(request: Request) -> store.Session:
     if session.user.role != "admin":
         log.warning("admin refused: not an admin", extra={"user_id": session.user.id})
         raise NotAdmin()
+    request.state.budget_banner = await _budget_banner(request)
     return session
+
+
+async def _budget_banner(request: Request) -> list[dict]:
+    """Lanes past a warning level this month (P3.04). Without the gateway, no banner: the page
+    itself names the module that didn't answer."""
+    try:
+        status = await deps(request).admin.budget()
+    except AdminError:
+        return []
+    return [lane for lane in status["lanes"] if lane["level"] != "ok"]
 
 
 def page(request: Request, name: str, section: str, status_code: int = 200, **context):
@@ -79,6 +90,7 @@ def page(request: Request, name: str, section: str, status_code: int = 200, **co
         section=section,
         sections=SECTIONS,
         views=admin_views,
+        budget_banner=getattr(request.state, "budget_banner", []),
         **context,
     )
 
@@ -560,10 +572,10 @@ async def errors(request: Request) -> Response:
 async def costs(request: Request) -> Response:
     await admin_session(request)
     d = deps(request)
-    usage, calls = await asyncio.gather(
-        d.admin.usage(days=14), d.admin.llm_calls(limit=50)
+    usage, calls, emails = await asyncio.gather(
+        d.admin.usage(days=14), d.admin.llm_calls(limit=50), _emails(request)
     )
-    return page(request, "costs.html", "costs", usage=usage, calls=calls)
+    return page(request, "costs.html", "costs", usage=usage, calls=calls, emails=emails)
 
 
 @router.get("/evals")

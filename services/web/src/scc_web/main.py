@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from psycopg_pool import AsyncConnectionPool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from scc_common import correlation
 from scc_common.app import Check, create_app, http_check
 from scc_common.db import conninfo_from_env, db_check
 from scc_web import admin_pages, config, pages
@@ -97,6 +98,7 @@ def build_app(
             500,
             title="Something went wrong",
             message="The page could not be shown. Please try again in a minute.",
+            reference=correlation.of_request(request),
         )
 
     return app

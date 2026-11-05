@@ -127,6 +127,10 @@ class AdminClient:
             params={k: v for k, v in params.items() if v is not None},
         )
 
+    async def budget(self) -> dict:
+        """Each lane's level this month (P3.04), for the banner on every admin page."""
+        return await self._call("gateway", "GET", "/budget/status")
+
     async def usage(self, days: int = 14) -> dict:
         return await self._call("gateway", "GET", "/admin/usage", params={"days": days})
 

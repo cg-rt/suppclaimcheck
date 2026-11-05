@@ -1,13 +1,16 @@
 # How SuppClaimCheck reaches a verdict
 
-The text for the method page (P3.11). It describes pipeline v4 (pipeline v1 with query v1 and hybrid retrieval) with rubric v1 (P2.04, P2.05, P2.07; D-044, D-045, D-047). The language model reads; code decides.
+The text for the method page (P3.11). It describes pipeline v7 (pipeline v1 with query v2, hybrid retrieval and result reuse) with rubric v1 (P2.04, P2.05, P2.07; D-044, D-045, D-047, D-052, D-053). What happens before the search (refusals, questions back, safety notices) is in `docs/POLICY.md`. The language model reads; code decides.
 
 ## In one paragraph
 We search PubMed for open-access studies about the claim, pick the strongest kinds of study first, and read up to five of them. A language model labels passages as supporting the claim, contradicting it, or not relevant, and copies a sentence as proof. Code checks every copied sentence word for word against the article and throws away any that don't match. Code then weighs each article by its type of study and works out the verdict and a 0–100 score. The model never decides the verdict or the score.
 
 ## 1. Finding articles
 - The claim you confirm becomes a PubMed search, built by code from the supplement, the effect and the population.
+- The search also tries the supplement's other names (ashwagandha and *Withania somnifera*) and other spellings of the effect and population words (anaemia and anemia), because PubMed matches a word in a title or abstract only as written.
+- Supplements are taken by mouth, so a study whose title says the substance was injected or given by drip is listed as "found, not read", unless your claim is about injections.
 - Only open-access articles whose licence allows text mining can be read. Others are listed as "found, not assessable".
+- If the same claim (same supplement, effect, population, dose and duration) was checked in the last 7 days with the same method version, that result is shown again, with a note saying so: the literature doesn't change that fast, and it saves the cost of a second run.
 - Up to 20 matches are considered. Code sorts them by **type of study** (below), strongest first; PubMed's own relevance order breaks ties. The first five that can be read are read in full.
 
 ## 2. Types of study and their weight

@@ -45,3 +45,24 @@ def test_deps_failure_is_503_and_names_the_dependency():
     ).get("/health/deps")
     assert response.status_code == 503
     assert response.json()["checks"] == {"database": "ok", "gateway": "failed"}
+
+
+def test_an_unexpected_error_is_a_coded_500_without_a_trace():
+    """P3.05: core and the gateway answer an unhandled error with a code and the correlation ID."""
+    from fastapi.testclient import TestClient
+
+    app = create_app("svc", "Test")
+
+    @app.get("/boom")
+    async def boom():
+        raise RuntimeError("secret internals: /opt/app/thing.py line 42")
+
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.get("/boom", headers={"X-Correlation-ID": "err-cid-000001"})
+    assert response.status_code == 500
+    detail = response.json()["detail"]
+    assert (detail["code"], detail["correlation_id"]) == (
+        "internal_error",
+        "err-cid-000001",
+    )
+    assert "secret internals" not in response.text and "Traceback" not in response.text

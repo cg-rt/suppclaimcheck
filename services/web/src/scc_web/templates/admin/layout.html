@@ -32,6 +32,11 @@
   </div>
 </header>
 <main id="main" class="admin-column">
+{% for lane in budget_banner %}
+<div class="notice {{ 'notice--error' if lane.level == 'cap' else 'notice--warning' }} budget-banner" role="status">
+  <p><strong>{{ views.banner_text(lane) }}</strong> <a href="/admin/costs">Costs</a> · <a class="rb" href="{{ views.rb_link('RB-09') }}" rel="noopener">RB-09<span class="visually-hidden"> in the runbook</span></a></p>
+</div>
+{% endfor %}
 {% block main %}{% endblock %}
 </main>
 <footer class="foot">

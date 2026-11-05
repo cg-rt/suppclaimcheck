@@ -6,6 +6,7 @@ every quote and computes the verdict (AGENTS.md sections 6 and 8).
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 from collections.abc import Awaitable, Callable
@@ -43,7 +44,18 @@ MESSAGES = {
     "literature_unavailable": "The literature databases are not answering. Please try again later.",
     "invalid_output": "The check could not be completed because the model's answer was not usable.",
     "no_claim": "No claim about a dietary supplement was found in the text.",
+    "daily_quota_reached": "This account has used today's checks. You can start new checks again tomorrow (UTC).",
+    "stalled": "The check stopped unexpectedly and was ended. Please try it again.",
 }
+# States a job is worked on in; one that stays in them too long has lost its worker (P3.05).
+WORKING_STATES = [
+    "submitted", "extracting", "searching", "retrieving", "assessing", "verifying", "scoring",
+]  # fmt: skip
+# Partial failures (P3.05): the result uses what could be read and says what couldn't.
+UNANSWERED_NOTE = "{n} article(s) could not be assessed: the language model did not answer. The result uses the others."
+NOT_DOWNLOADED_NOTE = "{n} article(s) could not be downloaded from Europe PMC just now. The result uses the others."
+# A result reused from an identical recent check (P3.05).
+REUSED_NOTE = "This result was reused from an identical check on {date} (UTC), with the same method version."
 
 # Shown when PubMed matched nothing at all (P2.12): the search missed, which is not the same as
 # research saying nothing.
@@ -64,6 +76,9 @@ class Runtime:
     load_config: Callable[[str], Awaitable[dict]] | None = None
     # Versions never change once stored, so each is loaded once.
     loaded: dict[str, dict] = field(default_factory=dict)
+    # Reuse results of identical recent checks (P3.05) when the config allows; the eval runner turns
+    # it off, since repeated runs on one database would otherwise measure the cache.
+    use_cache: bool = True
 
     async def for_job(self, version: str) -> Runtime:
         """This runtime with the config the job was created under: an activation never changes a running check."""
@@ -89,6 +104,10 @@ class StageFailed(Exception):
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
+
+
+class DuplicateRun(Exception):
+    """The gateway is still running this job's call for another worker: that one owns the job (P3.05)."""
 
 
 def strict_schema(model: type[BaseModel]) -> dict:
@@ -150,6 +169,7 @@ async def _structured(
                 instructions=rt.config["prompts"][stage],
                 data=data,
                 schema=schema,
+                attempt=attempt,
             )
             return output.model_validate(reply["output"])
         except ValidationError as exc:
@@ -158,6 +178,8 @@ async def _structured(
                 extra={"stage": stage, "attempt": attempt, "error": str(exc)[:500]},
             )
         except GatewayError as exc:
+            if exc.code == "call_in_progress":
+                raise DuplicateRun(stage) from exc
             if exc.code not in {"output_not_json", "output_truncated"}:
                 raise StageFailed(
                     exc.code if exc.code in MESSAGES else "provider_unavailable"
@@ -185,6 +207,10 @@ async def _fail(rt: Runtime, job_id: UUID, code: str) -> None:
         code,
         error=MESSAGES.get(code, MESSAGES["provider_unavailable"]),
     )
+    await _alert_failed(rt, job_id, code)
+
+
+async def _alert_failed(rt: Runtime, job_id: UUID, code: str) -> None:
     # The gateway decides whether this code is worth a message (P1.14); an alert never fails the job twice.
     try:
         await rt.gateway.notify("job_failed", f"Job {job_id} stopped.", code)
@@ -218,6 +244,9 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
         )
     except StageFailed as exc:
         await _fail(rt, job_id, exc.code)
+        return
+    except DuplicateRun:
+        log.info("extract already running elsewhere", extra={"job_id": str(job_id)})
         return
     if guarded:
         await _triaged(rt, job, extraction)
@@ -362,7 +391,10 @@ async def run(rt: Runtime, job_id: UUID) -> None:
     rt = await rt.for_job(job.config_version)
     topics = await _confirmed_topics(rt, job) if "guardrails" in rt.config else ()
     try:
-        result = await _run(rt, job, job.confirmed_claim)
+        result = await _reused(rt, job) or await _run(rt, job, job.confirmed_claim)
+    except DuplicateRun:
+        log.info("pipeline already running elsewhere", extra={"job_id": str(job_id)})
+        return
     except StageFailed as exc:
         await _fail(rt, job_id, exc.code)
         return
@@ -373,7 +405,81 @@ async def run(rt: Runtime, job_id: UUID) -> None:
         return
     if topics:
         result["safety_notices"] = triage.notices(topics)
-    await _set(rt, job_id, JobState.done, result["verdict"], result=result)
+    if _cache_days(rt):
+        result["claim_key"] = claim_key(job.confirmed_claim)
+    detail = result["verdict"]
+    if result.get("reused_from"):
+        detail += f" (reused from {result['reused_from']['job_id'][:8]})"
+    await _set(rt, job_id, JobState.done, detail, result=result)
+
+
+def _cache_days(rt: Runtime) -> int:
+    return rt.config.get("cache", {}).get("result_days", 0) if rt.use_cache else 0
+
+
+def claim_key(claim: Claim) -> str:
+    """The confirmed claim, case and spacing ignored, as a short hash: equal claims, equal keys."""
+    fields = claim.model_dump(
+        include={"supplement", "effect", "population", "dose", "duration"}
+    )
+    normal = {
+        k: " ".join(str(v).lower().split()) if v else "" for k, v in fields.items()
+    }
+    return hashlib.sha256(json.dumps(normal, sort_keys=True).encode()).hexdigest()[:32]
+
+
+async def _reused(rt: Runtime, job: Job) -> dict | None:
+    """The result of an identical check finished within the config's cache days on the same config
+    version, copied for this job (P3.05): no LLM calls, no spend. Safety notices are this job's own,
+    and a reused result is never reused again."""
+    days = _cache_days(rt)
+    if not days:
+        return None
+    async with rt.pool.connection() as conn:
+        cur = await conn.execute(
+            "SELECT id, result, updated_at FROM core.jobs"
+            " WHERE state = 'done' AND config_version = %s AND id <> %s"
+            " AND result->>'claim_key' = %s AND NOT (result ? 'reused_from')"
+            " AND updated_at > now() - make_interval(days => %s)"
+            " ORDER BY updated_at DESC LIMIT 1",
+            (job.config_version, job.id, claim_key(job.confirmed_claim), days),
+        )
+        row = await cur.fetchone()
+    if row is None:
+        return None
+    source_id, source, finished = row
+    log.info(
+        "result reused",
+        extra={"job_id": str(job.id), "source_job_id": str(source_id)},
+    )
+    result = {k: v for k, v in source.items() if k != "safety_notices"}
+    result["reused_from"] = {
+        "job_id": str(source_id),
+        "finished_at": finished.isoformat(),
+    }
+    result["limitations"] = [
+        REUSED_NOTE.format(date=finished.strftime("%Y-%m-%d %H:%M"))
+    ] + list(source.get("limitations", []))
+    return result
+
+
+async def sweep_stalled(rt: Runtime) -> int:
+    """Ends checks stuck in a working state for longer than the config's stall_minutes, so the user
+    sees a clear failure and the owner an alert, instead of a check that never finishes (P3.05). The
+    admin retry then runs them again; idempotent LLM calls mean finished steps aren't charged twice."""
+    minutes = rt.config.get("resilience", {}).get("stall_minutes")
+    if not minutes:
+        return 0
+    async with rt.pool.connection() as conn:
+        ended = await jobs.fail_stalled(
+            conn, WORKING_STATES, minutes, "stalled", MESSAGES["stalled"]
+        )
+    for job_id in ended:
+        log.warning(
+            "job ended: stalled", extra={"job_id": str(job_id), "minutes": minutes}
+        )
+        await _alert_failed(rt, job_id, "stalled")
+    return len(ended)
 
 
 async def _confirmed_topics(rt: Runtime, job: Job) -> tuple[str, ...]:
@@ -418,17 +524,29 @@ async def _run(rt: Runtime, job: Job, claim: Claim) -> dict:
         # Metadata for every candidate first (the gateway caches it), so code can rank by evidence tier;
         # then full texts for the best N, in that order, skipping any without full text.
         listed = await rt.gateway.fetch(found["pmids"], 0)
+        # Query v2 (D-052): candidates given by injection or infusion are found, not read.
+        listed["articles"], other_route = query.other_route(
+            listed["articles"], claim, cfg.get("query")
+        )
+        if other_route:
+            listed["counts"] = {**listed["counts"], query.NOT_BY_MOUTH: other_route}
         order = [a["pmid"] for a in evidence.rank(listed["articles"], weights, mode)]
         fetched = await rt.gateway.fetch(order, n) if order else listed
     ranked_articles = evidence.rank(fetched["articles"], weights, mode)
     assessed_articles = [
         a for a in ranked_articles if a["pmcid"] in fetched["full_texts"]
     ]
+    not_downloaded = fetched["counts"].get("fetch_failed", 0)
     searched["skipped"] = {
         **listed["counts"],
         "no_full_text": fetched["counts"].get("no_full_text", 0),
     }
+    if not_downloaded:
+        searched["skipped"]["fetch_failed"] = not_downloaded
     searched["ranking"] = mode
+    if not assessed_articles and not_downloaded:
+        # Nothing could be read because the source failed, not because nothing exists (P3.05).
+        raise StageFailed("literature_unavailable")
     if not assessed_articles:
         await _set(rt, job_id, JobState.scoring)
         result = _result(
@@ -460,8 +578,10 @@ async def _run(rt: Runtime, job: Job, claim: Claim) -> dict:
         JobState.assessing,
         f"{total} passages in {len(passages)} article(s)",
     )
-    assessments, unusable = await _assess(rt, job, claim, passages)
-    assessed_articles = [a for a in assessed_articles if a["pmcid"] not in unusable]
+    assessments, unusable, unanswered = await _assess(rt, job, claim, passages)
+    assessed_articles = [
+        a for a in assessed_articles if a["pmcid"] not in unusable | unanswered
+    ]
 
     await _set(rt, job_id, JobState.verifying)
     by_id = {p["passage_id"]: p for ps in passages.values() for p in ps}
@@ -482,6 +602,10 @@ async def _run(rt: Runtime, job: Job, claim: Claim) -> dict:
             0,
             f"{len(unusable)} article(s) could not be assessed: the model's answer was not usable.",
         )
+    if unanswered:
+        result["limitations"].insert(0, UNANSWERED_NOTE.format(n=len(unanswered)))
+    if not_downloaded:
+        result["limitations"].insert(0, NOT_DOWNLOADED_NOTE.format(n=not_downloaded))
     # The top-K passages each assess call read, for the admin trace (P3.08).
     result["retrieved"] = {
         pmcid: [p["passage_id"] for p in items] for pmcid, items in passages.items()
@@ -494,9 +618,10 @@ async def _assess(
     job: Job,
     claim: Claim,
     passages: dict[str, list[dict]],
-) -> tuple[Assessment, set[str]]:
-    """One assess call per article, a few at a time. An article whose answer stays unusable is left out;
-    any other failure (budget, provider down) fails the job. From pipeline-v5 the model also reports
+) -> tuple[Assessment, set[str], set[str]]:
+    """One assess call per article, a few at a time. An article whose answer stays unusable, or that the
+    model didn't answer for after the gateway's retries, is left out with a note (P3.05); the budget
+    cap, or every article failing, fails the job. From pipeline-v5 the model also reports
     instructions found in an article, recorded as injection events against the article (P3.02)."""
     limit = asyncio.Semaphore(rt.config["llm"]["assess"].get("concurrency", 1))
     output = GuardedAssessment if "guardrails" in rt.config else Assessment
@@ -526,18 +651,24 @@ async def _assess(
     )
     merged: list = []
     unusable: set[str] = set()
+    unanswered: set[str] = set()
     for pmcid, outcome in zip(pmcids, outcomes, strict=True):
         if isinstance(outcome, StageFailed) and outcome.code == "invalid_output":
             unusable.add(pmcid)
+        elif (
+            isinstance(outcome, StageFailed) and outcome.code == "provider_unavailable"
+        ):
+            # P3.05: one article the model didn't answer for doesn't sink the others.
+            unanswered.add(pmcid)
         elif isinstance(outcome, BaseException):
             raise outcome
         else:
             merged += outcome.assessments
             if getattr(outcome, "instructions_found", False):
                 await _injection(rt, job, "assess", pmcid)
-    if len(unusable) == len(pmcids):
-        raise StageFailed("invalid_output")
-    return Assessment(assessments=merged), unusable
+    if len(unusable) + len(unanswered) == len(pmcids):
+        raise StageFailed("provider_unavailable" if unanswered else "invalid_output")
+    return Assessment(assessments=merged), unusable, unanswered
 
 
 def _score(cfg: dict, assessed: list[dict], quotes: list[dict]):

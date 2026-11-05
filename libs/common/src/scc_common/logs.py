@@ -1,7 +1,13 @@
-"""JSON logs to stdout, one object per line, each carrying the correlation ID (AGENTS.md section 7)."""
+"""JSON logs to stdout, one object per line, each carrying the correlation ID (AGENTS.md section 7).
+
+Secrets that travel in URLs are masked in every line, whichever logger wrote it: httpx logs each
+request's full URL, and PubMed's API key is a query parameter while Telegram's bot token is part of
+the path (AGENTS.md section 6: never a secret in logs).
+"""
 
 import json
 import logging
+import re
 import sys
 from datetime import UTC, datetime
 
@@ -10,6 +16,26 @@ from scc_common.version import version_info
 
 # Attributes every LogRecord has; anything else on a record came from `extra=` and is logged as a field.
 _STANDARD = set(logging.makeLogRecord({}).__dict__) | {"message", "asctime", "taskName"}
+MASK = "[redacted]"
+_SECRETS = [
+    # A secret in a query string: ?api_key=..., &token=...
+    (
+        re.compile(
+            r"([?&](?:api_key|apikey|key|token|access_token|secret)=)[^&\s\"'\\]+",
+            re.IGNORECASE,
+        ),
+        rf"\1{MASK}",
+    ),
+    # A Telegram bot token in a URL path: /bot123456:ABC-def/sendMessage
+    (re.compile(r"(/bot)\d+:[A-Za-z0-9_-]+"), rf"\1{MASK}"),
+]
+
+
+def redact(text: str) -> str:
+    """The text with secrets in URLs masked."""
+    for pattern, replacement in _SECRETS:
+        text = pattern.sub(replacement, text)
+    return text
 
 
 def _job_correlation_id(record: logging.LogRecord) -> str | None:
@@ -43,7 +69,8 @@ class JsonFormatter(logging.Formatter):
                 entry[key] = value
         if record.exc_info:
             entry["exc"] = self.formatException(record.exc_info)
-        return json.dumps(entry, default=str)
+        # Masked after encoding, so a URL in the message, an extra field or a traceback is covered.
+        return redact(json.dumps(entry, default=str))
 
 
 def configure_logging(service: str, level: str = "INFO") -> None:

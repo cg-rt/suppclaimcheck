@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 import anthropic
+import psycopg
 from psycopg_pool import AsyncConnectionPool
 
 from scc_common import correlation
@@ -45,6 +46,12 @@ class LlmResult:
     output: dict
     usage: budget.Usage
     model: str
+    # The stored answer of an earlier call with the same idempotency key: nothing was charged (P3.05).
+    reused: bool = False
+
+
+class CallInProgress(Exception):
+    """A call with the same idempotency key is still running: the job step is being run twice."""
 
 
 class LlmFailure(Exception):
@@ -131,8 +138,35 @@ async def structured_call(
     stage: str,
     job_id: str | None,
     user_id: int | None,
+    idempotency_key: str | None = None,
 ) -> tuple[LlmResult, int, float]:
-    """Runs one guarded call. Returns the result, the llm_calls row id and the cost in EUR."""
+    """Runs one guarded call. Returns the result, the llm_calls row id and the cost in EUR.
+
+    With an idempotency key (P3.05, D-053), a key that already has an answer returns it at no cost,
+    and a key whose call is still running raises CallInProgress. A failed or abandoned call frees
+    its key. A check's first call (extraction) is refused once the account's daily quota is used.
+    A config without an [idempotency] section (gateway-v0) ignores the key.
+    """
+    if "idempotency" not in config:
+        idempotency_key = None
+    if idempotency_key:
+        async with pool.connection() as conn:
+            found = await _keyed(conn, idempotency_key, config)
+        if found is not None:
+            if found["status"] == "reserved":
+                raise CallInProgress(idempotency_key)
+            log.info(
+                "llm call reused",
+                extra={"stage": stage, "job_id": job_id, "call_id": found["id"]},
+            )
+            usage = budget.Usage(
+                found["input_tokens"] or 0, found["output_tokens"] or 0
+            )
+            return (
+                LlmResult(found["output"], usage, found["model"], reused=True),
+                found["id"],
+                0.0,
+            )
     worst = budget.worst_case_eur(
         request.model,
         len(request.instructions) + len(request.data),
@@ -145,11 +179,18 @@ async def structured_call(
         "user_id": user_id,
         "model": request.model,
         "correlation_id": correlation.current(),
+        "idempotency_key": idempotency_key,
     }
     async with pool.connection() as conn:
-        call_id = await budget.reserve(
-            conn, lane=lane, reserve_eur=worst, config=config, record=record
-        )
+        if stage == budget.CHECK_STAGE and lane == "live":
+            await budget.check_quota(conn, user_id, job_id, config)
+        try:
+            call_id = await budget.reserve(
+                conn, lane=lane, reserve_eur=worst, config=config, record=record
+            )
+        except psycopg.errors.UniqueViolation:
+            # Another call with this key reserved its row between the lookup and now.
+            raise CallInProgress(idempotency_key) from None
 
     started = time.perf_counter()
     llm_cfg = config["llm"]
@@ -173,7 +214,16 @@ async def structured_call(
             "provider_unavailable", "the provider did not answer after retries"
         ) from exc
     cost = budget.cost_eur(request.model, result.usage, config)
-    await _settle(pool, call_id, "ok", result.usage, cost, started, None)
+    await _settle(
+        pool,
+        call_id,
+        "ok",
+        result.usage,
+        cost,
+        started,
+        None,
+        output=result.output if idempotency_key else None,
+    )
     log.info(
         "llm call",
         extra={"stage": stage, "job_id": job_id, "model": result.model, "input_tokens": result.usage.input_tokens,
@@ -182,7 +232,49 @@ async def structured_call(
     return result, call_id, cost
 
 
-async def _settle(pool, call_id, status, usage, cost, started, error) -> None:
+async def _keyed(conn, key: str, config: dict) -> dict | None:
+    """The live or finished call holding this key. A reserved one older than the config's limit was
+    abandoned by its caller: it is marked failed, which frees the key. Old stored answers are cleared."""
+    settings = config["idempotency"]
+    await conn.execute(
+        "UPDATE gateway.llm_calls SET output = NULL WHERE output IS NOT NULL"
+        " AND created_at < now() - make_interval(days => %s)",
+        (settings["output_retention_days"],),
+    )
+    await conn.execute(
+        "UPDATE gateway.llm_calls SET status = 'failed', error = 'abandoned'"
+        " WHERE idempotency_key = %s AND status = 'reserved'"
+        " AND created_at < now() - make_interval(mins => %s)",
+        (key, settings["stale_after_minutes"]),
+    )
+    cur = await conn.execute(
+        "SELECT id, status, model, input_tokens, output_tokens, output FROM gateway.llm_calls"
+        " WHERE idempotency_key = %s AND status IN ('reserved', 'ok')",
+        (key,),
+    )
+    row = await cur.fetchone()
+    if row is None:
+        return None
+    found = dict(
+        zip(
+            ("id", "status", "model", "input_tokens", "output_tokens", "output"),
+            row,
+            strict=True,
+        )
+    )
+    if found["status"] == "ok" and found["output"] is None:
+        # Answered, but the stored answer has been cleared: call again rather than return nothing.
+        await conn.execute(
+            "UPDATE gateway.llm_calls SET idempotency_key = NULL WHERE id = %s",
+            (found["id"],),
+        )
+        return None
+    return found
+
+
+async def _settle(
+    pool, call_id, status, usage, cost, started, error, output: dict | None = None
+) -> None:
     async with pool.connection() as conn:
         await budget.settle(
             conn,
@@ -192,4 +284,5 @@ async def _settle(pool, call_id, status, usage, cost, started, error) -> None:
             cost=cost,
             latency_ms=int((time.perf_counter() - started) * 1000),
             error=error,
+            output=output,
         )

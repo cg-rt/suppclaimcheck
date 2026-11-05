@@ -294,17 +294,28 @@ class Literature:
                     result.counts["no_full_text"] += 1
                 elif len(result.full_texts) < full_texts:
                     xml = (cached.get(pmid) or {}).get("xml")
+                    failed = False
                     if xml is None:
-                        response = await self._get(
-                            client,
-                            EPMC_FULLTEXT.format(pmcid=metadata["pmcid"]),
-                            allow_404=True,
-                        )
+                        try:
+                            response = await self._get(
+                                client,
+                                EPMC_FULLTEXT.format(pmcid=metadata["pmcid"]),
+                                allow_404=True,
+                            )
+                        except LiteratureUnavailable:
+                            # P3.05: one article that won't download after retries is skipped and
+                            # counted; core says so, or fails the check if nothing could be read.
+                            response, failed = None, True
                         xml = response.text if response is not None else None
                         if xml:
                             await self._store(pmid, metadata, xml)
                     if xml:
                         result.full_texts[metadata["pmcid"]] = xml
+                    elif failed:
+                        article["skip_reason"] = "fetch_failed"
+                        result.counts["fetch_failed"] = (
+                            result.counts.get("fetch_failed", 0) + 1
+                        )
                     else:
                         article["skip_reason"] = "no_full_text"
                         result.counts["no_full_text"] += 1

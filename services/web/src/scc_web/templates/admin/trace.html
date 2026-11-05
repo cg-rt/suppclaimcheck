@@ -19,6 +19,9 @@
   {% elif retried %}
   <div class="notice notice--ok" role="status"><p>Retry queued: the job went back to <code>{{ retried }}</code> on <code>{{ job.config_version }}</code>. Reload to follow it.</p></div>
   {% endif %}
+  {% if result.reused_from %}
+  <div class="notice notice--hint" role="note"><p>This result was reused from job <a href="/admin/jobs/{{ result.reused_from.job_id }}">{{ short_id(result.reused_from.job_id) }}</a>, an identical check finished <time class="num" datetime="{{ result.reused_from.finished_at }}">{{ views.when(result.reused_from.finished_at) }}</time> on the same config version: no LLM calls after the extraction (P3.05).</p></div>
+  {% endif %}
   {% if trace.stalled %}
   <div class="notice notice--error" role="alert">
     <h2 class="notice__title">This job looks stuck</h2>

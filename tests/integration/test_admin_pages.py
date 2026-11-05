@@ -15,6 +15,7 @@ from procrastinate.testing import InMemoryConnector
 from psycopg_pool import AsyncConnectionPool
 
 from scc_core import api as core_api
+from scc_core import config as core_config
 from scc_core import tasks
 from scc_gateway import config as gateway_config
 from scc_gateway import main as gateway_main
@@ -563,7 +564,8 @@ def test_injections_page_and_the_overview_counts(migrated_db):
     injections, overview = with_admin(migrated_db, steps)
     # The sample holds the admin account at the throttle: 3 checks with instructions in 24 hours.
     assert "Held</span> until" in injections and "owner@example.com" in injections
-    assert "pipeline-v5" in injections and admin_views.RB["RB-10"] in injections
+    assert f"/admin/config/core/{core_config.ACTIVE}" in injections
+    assert admin_views.RB["RB-10"] in injections
     assert "Their own text" in injections and "Article PMC6543210" in injections
     assert injections.count('href="/admin/jobs/') == 5
     assert (
@@ -571,3 +573,44 @@ def test_injections_page_and_the_overview_counts(migrated_db):
     )
     assert re.search(r"Safety reviews waiting</dt>\s*<dd><span[^>]*>3</span>", overview)
     assert re.search(r"Accounts throttled now</dt>\s*<dd><span[^>]*>1</span>", overview)
+
+
+def test_a_budget_banner_on_every_admin_page_past_a_warning(migrated_db):
+    """P3.04: past 50% of a cap, every admin page says so; at the cap, it says new checks stopped."""
+
+    async def steps(ctx):
+        out = {}
+        async with admin_client(ctx) as c:
+            out["quiet"] = (await c.get("/admin/jobs")).text
+            async with ctx["pools"]["gateway"].connection() as conn:
+                await conn.execute(
+                    "INSERT INTO gateway.llm_calls (lane, status, stage, job_id, user_id, model, cost_eur)"
+                    " VALUES ('live', 'ok', 'extract', 'big', %s, 'claude-haiku-5-5', 12.4)",
+                    (ctx["user_id"],),
+                )
+            out["warn"] = (await c.get("/admin/users")).text
+            out["costs"] = (await c.get("/admin/costs")).text
+            async with ctx["pools"]["gateway"].connection() as conn:
+                await conn.execute(
+                    "INSERT INTO gateway.llm_calls (lane, status, stage, job_id, user_id, model, cost_eur)"
+                    " VALUES ('live', 'ok', 'assess', 'bigger', 7, 'claude-haiku-5-5', 2.58)"
+                )
+            out["cap"] = (await c.get("/admin")).text
+        return out
+
+    out = with_admin(migrated_db, steps)
+    assert "budget-banner" not in out["quiet"]
+    assert (
+        "The live lane has spent €12.40 of its €15.00 cap this month (83%)."
+        in out["warn"]
+    )
+    assert "notice--warning budget-banner" in out["warn"]
+    assert (
+        "Live spend by account, this month" in out["costs"]
+        and "tester@example.com" in out["costs"]
+    )
+    assert (
+        "The live budget is used up this month (€14.98 of €15.00): new checks are stopped."
+        in out["cap"]
+    )
+    assert "notice--error budget-banner" in out["cap"]

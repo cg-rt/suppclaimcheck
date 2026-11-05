@@ -4,9 +4,10 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Mapping
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 
+from scc_common import correlation
 from scc_common.correlation import CorrelationMiddleware
 from scc_common.http import internal_client
 from scc_common.version import version_info
@@ -73,6 +74,21 @@ def create_app(
     @app.get("/version", tags=["ops"])
     async def version() -> dict[str, str]:
         return version_info(service)
+
+    @app.exception_handler(Exception)
+    async def unexpected(request: Request, exc: Exception) -> JSONResponse:
+        # P3.05: a caller never gets a stack trace, only a code and the ID that finds it in the logs.
+        logging.getLogger("scc.errors").exception("unhandled error")
+        return JSONResponse(
+            {
+                "detail": {
+                    "code": "internal_error",
+                    "message": "Something went wrong. The logs have the details under this correlation ID.",
+                    "correlation_id": correlation.of_request(request),
+                }
+            },
+            status_code=500,
+        )
 
     return app
 

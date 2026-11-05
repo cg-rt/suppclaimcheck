@@ -457,6 +457,37 @@ def test_result_page_shows_safety_notices_before_the_verdict(migrated_db):
     assert html.index(notice) < html.index("What the research says")
 
 
+def test_result_page_says_why_an_injected_or_infused_article_was_not_read(migrated_db):
+    """Query v2 (D-052): the reason, and the count next to the other skipped ones."""
+
+    async def steps(client, ctx):
+        base = job(ctx["user"])["result"]
+        result = {
+            **base,
+            "searched": {**base["searched"], "skipped": {"not_by_mouth": 1}},
+            "found_not_assessed": [
+                {
+                    "pmid": "30984714",
+                    "title": "Intravenous iron sucrose in pregnancy",
+                    "skip_reason": "not_by_mouth",
+                },
+                {**base["found_not_assessed"][0], "skip_reason": "not_in_europe_pmc"},
+            ],
+        }
+        done = ctx["core"].add(job(ctx["user"], result=result))
+        await sign_in(client)
+        return (await client.get(f"/checks/{done['id']}")).text
+
+    html = with_web(migrated_db, steps)
+    assert (
+        "Intravenous iron sucrose in pregnancy</a>" not in html
+    )  # no PubMed link given
+    assert "given by injection or infusion, not taken by mouth" in html
+    assert '<span class="num">1</span> given by injection or infusion' in html
+    # Each reason in its own words: Europe PMC no longer reads as "no full text".
+    assert "· not in Europe PMC</li>" in html
+
+
 def test_a_throttled_account_sees_why_it_cannot_start_a_check(migrated_db):
     """P3.02: core refuses new checks after repeated instructions; web shows core's message."""
     message = "Too many checks from this account contained instructions to the system."
@@ -473,3 +504,55 @@ def test_a_throttled_account_sees_why_it_cannot_start_a_check(migrated_db):
     response = with_web(migrated_db, steps)
     assert response.status_code == 429
     assert message in response.text
+
+
+@pytest.mark.parametrize(
+    "status, code, message",
+    [
+        (402, "budget_cap_reached", "This month's budget for checks is used up. Checks will work again next month."),
+        (429, "daily_quota_reached", "This account has used today's checks. You can start new checks again tomorrow (UTC)."),
+        (503, "budget_unavailable", "Checks can't start right now because the budget could not be checked."),
+    ],
+)  # fmt: skip
+def test_budget_refusals_show_cores_message_and_keep_the_text(
+    migrated_db, status, code, message
+):
+    """P3.04: a check refused by the budget or the daily quota says why, and the text stays."""
+
+    async def steps(client, ctx):
+        ctx["core"].refuse_new = (status, code, message)
+        await sign_in(client)
+        page = await client.get("/checks/new")
+        return await client.post(
+            "/checks",
+            data={"input_text": "Zinc shortens colds.", "csrf_token": token(page.text)},
+        )
+
+    response = with_web(migrated_db, steps)
+    assert response.status_code == status
+    assert message.replace("'", "&#39;") in response.text
+    assert "Zinc shortens colds." in response.text
+
+
+def test_a_confirmation_refused_by_the_budget_says_why(migrated_db):
+    message = (
+        "This month's budget for checks is used up. Checks will work again next month."
+    )
+
+    async def steps(client, ctx):
+        waiting = ctx["core"].add(job(ctx["user"], "awaiting_confirmation"))
+        ctx["core"].refuse_confirm = (402, "budget_cap_reached", message)
+        await sign_in(client)
+        page = await client.get(f"/checks/{waiting['id']}")
+        return await client.post(
+            f"/checks/{waiting['id']}/confirm",
+            data={
+                "supplement": "zinc",
+                "effect": "shortens colds",
+                "csrf_token": token(page.text),
+            },
+        )
+
+    response = with_web(migrated_db, steps)
+    assert response.status_code == 402
+    assert message.replace("'", "&#39;") in response.text

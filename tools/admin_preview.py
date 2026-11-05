@@ -222,6 +222,14 @@ async def main(admin_dsn: str) -> None:
             await seed_safety(conn, user=tester, other=gone, reviewer=admin_id)
         async with pools["gateway"].connection() as conn:
             await seed_calls(conn, str(ids["failed_late"]), clear=False)
+            # P3.04: this month's live spend past 80% of the cap, so the banner and the
+            # per-account costs have something to show.
+            await conn.execute(
+                "INSERT INTO gateway.llm_calls (lane, status, stage, job_id, user_id, model,"
+                " input_tokens, output_tokens, cost_eur, latency_ms) VALUES ('live', 'ok', 'extract',"
+                " 'preview-heavy', %s, 'claude-haiku-5-5', 900000, 40000, 12.4, 2100)",
+                (tester,),
+            )
         beat = asyncio.create_task(heartbeat(pools["core"]))
 
         web = build_app(
