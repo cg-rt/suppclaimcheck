@@ -6,7 +6,7 @@ live calls, nothing spent), adds sample jobs in every status, and serves web wit
 gateway in one process at http://admin.localhost:18095/admin. Sign in as admin@example.com with the
 preview-only password below. The public pages answer at http://localhost:18095 (the tester account,
 with its own preview-only password, owns the canned check, with feedback and times for P4.03 and
-P4.04). The database is dropped on a clean stop, and a hard stop's leftover at the next start.
+P4.04, and three link checks for P3.12: one waiting for a pick, one finished, one the site kept out). The database is dropped on a clean stop, and a hard stop's leftover at the next start.
 
 Run from the repo root (`.claude/launch.json` has it as `admin-preview`):
     uv run python tools/admin_preview.py
@@ -28,6 +28,7 @@ import uvicorn
 from procrastinate import App
 from procrastinate.testing import InMemoryConnector
 from psycopg import sql
+from psycopg.types.json import Jsonb
 from psycopg_pool import AsyncConnectionPool
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -68,6 +69,67 @@ PORT = 18095
 # The test container from "Working on it" in README.md.
 LOCAL_TEST_DSN = "host=127.0.0.1 port=15433 user=postgres dbname=postgres"
 FIXTURES = ROOT / "tests" / "fixtures" / "canned_claim"
+# P3.12: sample link checks, as the reader and the page prompt left them for a real page (dev drill).
+LINK = "https://www.nccih.nih.gov/health/melatonin-what-you-need-to-know"
+LINK_SOURCE = {
+    "url": LINK,
+    "final_url": LINK,
+    "title": "Melatonin: What You Need To Know",
+    "site_name": "NCCIH",
+    "chars": 28027,
+    "chars_read": 28027,
+    "truncated": False,
+}
+LINK_CLAIMS = [
+    ("Melatonin", "may help with jet lag symptoms after eastward flights",
+     "travelers crossing multiple time zones",
+     "melatonin may be better than a placebo (an inactive substance) in reducing jet lag symptoms"),
+    ("Melatonin", "reduces anxiety before surgery", "surgical patients",
+     "melatonin is better than placebo at reducing anxiety before surgery"),
+    ("Melatonin", "reduces time to fall asleep in delayed sleep-wake phase disorder",
+     "people with delayed sleep-wake phase disorder",
+     "it took about 22 minutes less for them to fall asleep"),
+]  # fmt: skip
+
+
+async def seed_links(conn, user: int) -> None:
+    claims = [
+        {"supplement": s, "effect": e, "population": p, "dose": None, "duration": None,
+         "quote": q, "specific": True, "spelling_suggestion": None}
+        for s, e, p, q in LINK_CLAIMS
+    ]  # fmt: skip
+    done = await conn.execute(
+        "SELECT confirmed_claim, result FROM core.jobs WHERE state = 'done' AND user_id = %s"
+        " AND input_type = 'text' ORDER BY created_at LIMIT 1",
+        (user,),
+    )
+    confirmed, result = await done.fetchone()
+    rows = [
+        ("awaiting_confirmation", LINK_SOURCE, claims, None, None, None),
+        ("done", LINK_SOURCE, claims, confirmed, result, None),
+        ("failed", None, None, None, None,
+         ("That site asks automated readers not to read this page, so SuppClaimCheck didn't. "
+          "Paste the text with the claim instead.")),
+    ]  # fmt: skip
+    for n, (state, source, extracted, claim, outcome, error) in enumerate(rows):
+        await conn.execute(
+            "INSERT INTO core.jobs (user_id, idempotency_key, request_hash, state, input_type,"
+            " input_text, source, source_text, extracted_claims, confirmed_claim, result, error,"
+            " config_version, created_at) VALUES (%s, %s, 'preview', %s, 'url', %s, %s, %s, %s, %s,"
+            " %s, %s, 'pipeline-v9', now() - make_interval(mins => %s))",
+            (
+                user, f"preview-link-{n}", state,
+                LINK if source else "https://www.example.org/members/fish-oil",
+                Jsonb(source) if source else None,
+                "Melatonin: What You Need To Know\n\nMelatonin is a hormone..." if source else None,
+                Jsonb(extracted) if extracted else None,
+                Jsonb(claim) if claim else None,
+                Jsonb(outcome) if outcome else None,
+                error, 3 - n,
+            ),
+        )  # fmt: skip
+
+
 MODULES = [web_migrate, core_migrate, gateway_migrate]
 
 
@@ -221,6 +283,7 @@ async def main(admin_dsn: str) -> None:
         async with pools["core"].connection() as conn:
             ids = await seed(conn, user=tester, other=admin_id, clear=False)
             await seed_safety(conn, user=tester, other=gone, reviewer=admin_id)
+            await seed_links(conn, tester)
             # P4.04: the seeded rows are written directly, so they get times the trigger would give.
             await conn.execute(
                 "UPDATE core.jobs SET confirmed_at = created_at + interval '25 seconds',"
@@ -258,7 +321,15 @@ async def main(admin_dsn: str) -> None:
             {},
             deps=Deps(
                 AsyncConnectionPool(app_conninfo(conninfo, "web"), open=False),
-                CoreClient("http://core", transport=httpx.ASGITransport(app=core_app)),
+                # The active config (pipeline-v9 and later), so the new-check page offers links.
+                CoreClient(
+                    "http://core",
+                    transport=httpx.ASGITransport(
+                        app=core_api.build_app(
+                            checks={}, deps=core_api.Deps(pools["core"], queue)
+                        )
+                    ),
+                ),
                 web_config.load(),
                 admin=AdminClient(
                     "http://core",

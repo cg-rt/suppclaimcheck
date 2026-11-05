@@ -1,13 +1,16 @@
-"""The signed-in pages (P1.10): new check, confirm, live progress, result, history; the feedback form
-under a result (P4.03); and the privacy notice (P3.06), which anyone can read."""
+"""The signed-in pages (P1.10): new check (text, or a link to a page, P3.12), confirm, live progress,
+result, history; the feedback form under a result (P4.03); and two pages anyone can read: the privacy
+notice (P3.06) and what the page reader does (P3.12)."""
 
 import asyncio
 import logging
+import re
 import time
 import uuid
 from collections.abc import AsyncIterator
 
-from fastapi import APIRouter, HTTPException, Request
+import httpx
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse, Response, StreamingResponse
 
 from scc_web import views
@@ -20,6 +23,9 @@ router = APIRouter()
 
 CLAIM_FIELDS = ("supplement", "effect", "population", "dose", "duration")
 MAX_INPUT = 20_000
+# A link (P3.12): one http or https address, as core accepts it. The gateway checks where it leads.
+MAX_LINK = 2048
+LINK = re.compile(r"^https?://[^\s/?#@]+(?:[/?#]\S*)?$", re.IGNORECASE)
 
 
 @router.get("/")
@@ -28,13 +34,27 @@ async def home(request: Request) -> Response:
     return RedirectResponse(target, status_code=303)
 
 
-def _new_check_page(request: Request, status_code: int = 200, **context) -> Response:
+async def _links_on(request: Request) -> bool:
+    """Whether core's active config lets a check start from a link (P3.12). Off if core can't say."""
+    try:
+        return bool((await deps(request).core.input_types()).get("url"))
+    except (CoreError, httpx.HTTPError) as exc:
+        log.warning("input types unknown", extra={"error": type(exc).__name__})
+        return False
+
+
+async def _new_check_page(
+    request: Request, status_code: int = 200, mode: str = "text", **context
+) -> Response:
+    links = await _links_on(request)
     # A fresh key per form: submitting the same form twice creates one job, not two.
     return render(
         request,
         "new_check.html",
         status_code,
         idempotency_key=str(uuid.uuid4()),
+        links=links,
+        mode=mode if links else "text",
         **context,
     )
 
@@ -45,51 +65,103 @@ USER_FACING = {
     "budget_cap_reached",
     "daily_quota_reached",
     "budget_unavailable",
+    "input_disabled",
 }
 
 
 @router.get("/checks/new")
-async def new_check(request: Request) -> Response:
+async def new_check(
+    request: Request, start_from: str | None = Query(None, alias="from")
+) -> Response:
     await require_session(request)
-    return _new_check_page(request)
+    return await _new_check_page(
+        request, mode="link" if start_from == "link" else "text"
+    )
 
 
 @router.post("/checks")
 async def create_check(request: Request) -> Response:
     session = await require_session(request)
     form = await request.form()
+    if str(form.get("input_type", "text")) == "url":
+        return await _create_from_link(request, session, form)
     text = str(form.get("input_text", "")).strip()
     if not tokens_match(session.csrf_token, str(form.get("csrf_token", ""))):
-        return _new_check_page(
+        return await _new_check_page(
             request,
             400,
             text=text,
             error="This form expired. Your text is still here: send it again.",
         )
     if not text:
-        return _new_check_page(
+        return await _new_check_page(
             request, 400, error="Paste or type the claim you want to check."
         )
     if len(text) > MAX_INPUT:
-        return _new_check_page(
+        return await _new_check_page(
             request,
             400,
             text=text,
             error=f"That's more than {MAX_INPUT:,} characters. Paste the part with the claim.",
         )
+    return await _start(request, session, form, text, "text")
+
+
+def link_from(typed: str) -> str | None:
+    """The address as typed, with https:// added when it has no scheme; None if it isn't one address."""
+    link = typed.strip()
+    if link and "://" not in link and not link.lower().startswith(("http:", "https:")):
+        link = "https://" + link
+    return link if len(link) <= MAX_LINK and LINK.match(link) else None
+
+
+async def _create_from_link(request: Request, session, form) -> Response:
+    typed = str(form.get("input_url", "")).strip()
+    if not tokens_match(session.csrf_token, str(form.get("csrf_token", ""))):
+        return await _new_check_page(
+            request,
+            400,
+            mode="link",
+            url=typed,
+            error="This form expired. Your link is still here: send it again.",
+        )
+    if not typed:
+        return await _new_check_page(
+            request, 400, mode="link", error="Paste the address of the page to check."
+        )
+    link = link_from(typed)
+    if link is None:
+        return await _new_check_page(
+            request,
+            400,
+            mode="link",
+            url=typed,
+            error="That isn't a web address. Copy the whole address from your browser's address "
+            "bar, starting with https://",
+        )
+    return await _start(request, session, form, link, "url")
+
+
+async def _start(
+    request: Request, session, form, text: str, input_type: str
+) -> Response:
+    """Creates the job and goes to its page; a refusal shows the form again with what was typed."""
     key = str(form.get("idempotency_key", "")) or str(uuid.uuid4())
+    kept = {"url": text, "mode": "link"} if input_type == "url" else {"text": text}
     try:
-        job = await deps(request).core.create_job(session.user.id, text, f"web-{key}")
+        job = await deps(request).core.create_job(
+            session.user.id, text, f"web-{key}", input_type
+        )
     except CoreError as exc:
         log.warning("create job failed", extra={"code": exc.code})
         if exc.code in USER_FACING and exc.message:
             # Core's message says what happened and when checks work again.
-            return _new_check_page(request, exc.status, text=text, error=exc.message)
-        return _new_check_page(
+            return await _new_check_page(request, exc.status, error=exc.message, **kept)
+        return await _new_check_page(
             request,
             503,
-            text=text,
             error="The check could not be started. Please try again in a minute.",
+            **kept,
         )
     return RedirectResponse(f"/checks/{job['id']}", status_code=303)
 
@@ -200,12 +272,13 @@ async def show_check(
     if state in {"failed", "refused", "needs_clarification"}:
         return render(request, "stopped.html", job=job)
     events = await deps(request).core.job_events(job_id)
+    names = views.stage_names(job)
     return render(
         request,
         "progress.html",
         job=job,
-        rows=views.progress(state, events),
-        stages=views.STAGES,
+        rows=views.progress(state, events, names),
+        stages=names,
     )
 
 
@@ -280,12 +353,13 @@ async def check_events(request: Request, job_id: str) -> StreamingResponse:
                 continue
             if job["state"] != last:
                 last = job["state"]
-                rows = views.progress(last, events)
+                names = views.stage_names(job)
+                rows = views.progress(last, events, names)
                 yield _sse(
                     "progress",
                     templates.get_template("partials/stages.html").render(rows=rows),
                 )
-                yield _sse("status", views.STAGES.get(last, last))
+                yield _sse("status", names.get(last, last))
             if last in views.SETTLED:
                 yield _sse("settled", "")
                 return
@@ -294,6 +368,27 @@ async def check_events(request: Request, job_id: str) -> StreamingResponse:
     return StreamingResponse(
         stream(), media_type="text/event-stream", headers={"X-Accel-Buffering": "no"}
     )
+
+
+@router.get("/reader")
+async def reader(request: Request) -> Response:
+    """What the page reader does and how a site can say no (P3.12): the page its user agent names."""
+    await current_session(
+        request
+    )  # for the header when signed in; the page itself is public
+    return render(request, "reader.html", reader=READER)
+
+
+# The page reader's manners as the gateway's config sets them (gateway-v3 [pages]); a test keeps the
+# two equal, since web doesn't read the gateway's config.
+READER = {
+    "token": "SuppClaimCheck",
+    "user_agent": "SuppClaimCheck (+https://suppclaimcheck.com/reader)",
+    "timeout_s": 10,
+    "max_mb": 2,
+    "min_interval_s": 1,
+    "robots_cache_minutes": 60,
+}
 
 
 @router.get("/history")

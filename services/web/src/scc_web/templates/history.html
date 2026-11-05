@@ -9,7 +9,7 @@
     {% for j in jobs %}
     {% set c = j.confirmed_claim %}
     <li class="history__item">
-      <a class="history__claim" href="/checks/{{ j.id }}">{% if c %}{{ c.supplement|capitalize }}: {{ c.effect }}{% else %}{{ j.input_text|truncate(90) }}{% endif %}</a>
+      <a class="history__claim" href="/checks/{{ j.id }}">{% if c %}{{ c.supplement|capitalize }}: {{ c.effect }}{% elif j.input_type == "url" %}{{ (j.source_title or j.input_text)|truncate(90) }}{% else %}{{ j.input_text|truncate(90) }}{% endif %}</a>
       <p class="history__meta">
         <time class="num" datetime="{{ j.created_at }}">{{ j.created_at[:10] }}</time>
         <span aria-hidden="true">·</span>

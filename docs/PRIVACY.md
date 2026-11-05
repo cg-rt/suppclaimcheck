@@ -37,7 +37,7 @@ What SuppClaimCheck stores, where, why, for how long, and how it is deleted. The
 
 | Table | Personal data | Purpose | Retention | Deleted by |
 |---|---|---|---|---|
-| `core.jobs` | Account number; submitted text; extracted and confirmed claim; result; safety topics; review by an admin (admin's account number and note); times (P4.04) | The check itself | `check_days` (180) after submission | A, P |
+| `core.jobs` | Account number; submitted text, or a link with the page's title, address and the text the model read (`source`, `source_text`, P3.12); extracted and confirmed claim; result; safety topics; review by an admin (admin's account number and note); times (P4.04) | The check itself | `check_days` (180) after submission | A, P |
 | `core.job_events` | None beyond the check (states, codes; "retry by admin user N") | Progress and trace | With its check | A, P (cascade) |
 | `core.passages` | None (article text) | What was read | With its check | A, P (cascade) |
 | `core.hallucination_events` | None (quotes that failed verification) | Quality evidence | With its check | A, P (cascade) |
@@ -67,6 +67,8 @@ What SuppClaimCheck stores, where, why, for how long, and how it is deleted. The
 | Container logs (Docker `json-file`) | JSON lines with account and check numbers, codes, and a network address only on a blocked sign-in. Never submitted text, email addresses or secrets (`scc_common.logs.redact`) | 5 × 10 MB per container, rotated; recreated containers (every deploy) start empty |
 | Backups (restic, Cloudflare R2, EU jurisdiction, encrypted) | The whole database | Nightly copies: 7 daily, 4 weekly, 6 monthly (D-024). Pre-deploy copies: the last 5 |
 | Telegram | Alerts to the owner: check and account numbers and codes | Until the owner deletes them in the chat |
+| Gateway memory | Each linked site's robots.txt rules and the time of its last request (P3.12): host names, nothing about the user | `robots_cache_minutes` (60); gone on restart |
+| Sites users link to (P3.12) | One request from the gateway for the page and its robots.txt, with the reader's user agent. Never the user's address, account or email | Their own logs |
 | Anthropic (Claude API) | Submitted text, claims and article passages, for extraction and assessment | Not used for training; deleted within 30 days unless flagged for a usage-policy breach or required by law (Anthropic's commercial terms and privacy centre, checked 2026-11-05). May be processed in the US |
 | PubMed (NCBI) and Europe PMC | Search terms built from the claim (supplement, effect, population words). No account, no submitted text | Their own logs |
 | Cloudflare Tunnel | All traffic, terminated at Cloudflare | Cloudflare's own logs |

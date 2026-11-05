@@ -88,3 +88,31 @@ def test_pgvector_is_available_to_core(migrated_db):
             "SELECT '[1,2,3]'::vector(3) <-> '[1,2,4]'::vector(3)"
         ).fetchone()[0]
         assert distance == 1.0
+
+
+def test_bootstraps_take_turns(migrated_db):
+    """Deploys start every migrate step at once; their grants must not collide (2026-11-05, dev)."""
+    import threading
+    import time
+
+    import psycopg
+
+    from scc_common.db import BOOTSTRAP_LOCK, bootstrap
+    from tests.conftest import PASSWORD
+
+    done = threading.Event()
+
+    def run() -> None:
+        with psycopg.connect(migrated_db.admin_conninfo, autocommit=True) as admin:
+            bootstrap(admin, migrated_db.specs["web"], PASSWORD)
+        done.set()
+
+    with psycopg.connect(migrated_db.admin_conninfo, autocommit=True) as holder:
+        holder.execute("SELECT pg_advisory_lock(%s)", (BOOTSTRAP_LOCK,))
+        worker = threading.Thread(target=run)
+        worker.start()
+        time.sleep(0.5)
+        assert not done.is_set(), "a bootstrap waits while another holds the lock"
+        holder.execute("SELECT pg_advisory_unlock(%s)", (BOOTSTRAP_LOCK,))
+        worker.join(timeout=10)
+    assert done.is_set()

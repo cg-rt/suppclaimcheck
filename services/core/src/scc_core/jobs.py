@@ -23,8 +23,9 @@ from scc_core.models import (
 )
 
 _COLUMNS = (
-    "id, user_id, state, input_type, input_text, extracted_claims, confirmed_claim, result, error, "
-    "config_version, sensitive_topics, needs_review, created_at, updated_at, confirmed_at, finished_at"
+    "id, user_id, state, input_type, input_text, source, extracted_claims, confirmed_claim, result, "
+    "error, config_version, sensitive_topics, needs_review, created_at, updated_at, confirmed_at, "
+    "finished_at"
 )
 
 
@@ -198,6 +199,16 @@ async def confirm(conn: AsyncConnection, job_id: UUID, claim: Claim) -> Job:
     return Job(**row)
 
 
+async def set_source(
+    conn: AsyncConnection, job_id: UUID, source: dict, text: str
+) -> None:
+    """Stores what was read from a link (P3.12): the page's details and the text the model read."""
+    await conn.execute(
+        "UPDATE core.jobs SET source = %s, source_text = %s, updated_at = now() WHERE id = %s",
+        (Jsonb(source), text, job_id),
+    )
+
+
 async def correlation_id(conn: AsyncConnection, job_id: UUID) -> str | None:
     cur = await conn.execute(
         "SELECT correlation_id FROM core.jobs WHERE id = %s", (job_id,)
@@ -212,7 +223,8 @@ async def list_for_user(
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
             """
-            SELECT id, state, input_text, confirmed_claim, created_at,
+            SELECT id, state, input_type, input_text, source->>'title' AS source_title,
+                   confirmed_claim, created_at,
                    result->>'verdict' AS verdict, (result->>'score')::int AS score
             FROM core.jobs WHERE user_id = %s ORDER BY created_at DESC LIMIT %s
             """,

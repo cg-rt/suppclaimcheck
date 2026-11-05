@@ -3,7 +3,6 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
@@ -17,12 +16,11 @@ from scc_common.db import conninfo_from_env, db_check
 from scc_web import admin_pages, config, erasure, pages
 from scc_web.admin_client import AdminClient
 from scc_web.auth import routes as auth_routes
-from scc_web.context import Deps, SignInRequired, render, sign_in_redirect
+from scc_web.context import STATIC, Deps, SignInRequired, render, sign_in_redirect
 from scc_web.core_client import CoreClient
 from scc_web.security import SecurityHeadersMiddleware
 
 log = logging.getLogger("scc.web")
-STATIC = Path(__file__).parent / "static"
 
 
 def build_app(

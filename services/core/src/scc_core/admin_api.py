@@ -100,6 +100,9 @@ class AdminJob(BaseModel):
     state: str
     input_type: str
     input_text: str
+    # A link's page (P3.12): its details, and the text the model read.
+    source: dict | None = None
+    source_text: str | None = None
     extracted_claims: list[dict] | None
     confirmed_claim: dict | None
     result: dict | None
@@ -248,7 +251,7 @@ _JOB_COLUMNS = (
     "j.id, j.user_id, j.state, j.input_type, j.input_text, j.extracted_claims, j.confirmed_claim,"
     " j.result, j.error, j.config_version, j.correlation_id, j.created_at, j.updated_at,"
     " j.sensitive_topics, j.needs_review, j.reviewed_at, j.reviewed_by, j.review_outcome,"
-    " j.review_note, j.confirmed_at, j.finished_at"
+    " j.review_note, j.confirmed_at, j.finished_at, j.source, j.source_text"
 )
 _REVIEW_FIELDS = ("reviewed_at", "reviewed_by", "review_outcome", "review_note")
 

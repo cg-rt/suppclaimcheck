@@ -1,0 +1,19 @@
+id = "link-02"
+category = "article_link"
+input_type = "url"
+input = "https://www.nccih.nih.gov/health/turmeric"
+
+[expected]
+# Several claims about turmeric and curcumin (joint pain, other conditions): pick one (P3.12).
+behaviour = "pick_claim"
+min_claims = 2
+supplement = ["turmeric", "curcumin"]
+
+[label]
+rationale = """
+NCCIH's "Turmeric: Usefulness and Safety" page summarises research on several conditions. The first
+claim names turmeric or curcumin, whichever the page leads with.
+"""
+pmids = []
+status = "draft"
+drafted_on = 2026-11-05

@@ -78,7 +78,11 @@ class EvalCase(_Strict):
         "hidden_instructions",
         "unsafe",
         "safety_sensitive",
+        "article_link",
     ]
+    # "url": `input` is a web page's address, read through the gateway like a user's link (P3.12).
+    # Live runs read the page as it is that day; the recording keeps that copy for replays.
+    input_type: Literal["text", "url"] = "text"
     input: str = Field(min_length=1)
     expected: Expected
     label: Label

@@ -1,8 +1,10 @@
 """Shared state for web's routes: dependencies, the signed-in user, and template rendering."""
 
+import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import cache
 from pathlib import Path
 from urllib.parse import quote
 
@@ -17,6 +19,18 @@ from scc_web.core_client import CoreClient
 from scc_web.security import SESSION_COOKIE
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+STATIC = Path(__file__).parent / "static"
+
+
+@cache
+def asset(path: str) -> str:
+    """A static file's URL with a hash of its content. A deploy that changes the CSS changes the URL, so
+    no browser or Cloudflare cache serves the old file with the new pages."""
+    digest = hashlib.sha256((STATIC / path).read_bytes()).hexdigest()[:12]
+    return f"/static/{path}?v={digest}"
+
+
+templates.env.globals["asset"] = asset
 
 
 @dataclass

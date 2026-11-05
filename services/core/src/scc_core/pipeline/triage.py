@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-from scc_core.models import TriagedExtraction
+from scc_core.models import PageExtraction, TriagedExtraction
 
 REFUSALS = {
     "refuse_personal_advice": (
@@ -20,6 +20,7 @@ REFUSALS = {
     "refuse_system_prompt": "SuppClaimCheck can't share how it is set up.",
     "refuse_abusive": "SuppClaimCheck can't help with this.",
 }
+# The _page codes are the same two for a linked page (P3.12): what the user can do differs.
 CLARIFICATIONS = {
     "clarify_vague": (
         "Which effect do you want to check? Research tests specific effects, for example "
@@ -28,6 +29,14 @@ CLARIFICATIONS = {
     "clarify_no_claim": (
         "No claim about a dietary supplement was found. Start a new check with a sentence that names "
         "the supplement and what it is said to do."
+    ),
+    "clarify_no_claim_page": (
+        "No claim about a dietary supplement was found on that page. If the page makes one, paste the "
+        "sentence that states it in a new check."
+    ),
+    "clarify_vague_page": (
+        "The page praises a supplement but names no effect specific enough to check. Start a new check "
+        "that names one, for example “turmeric reduces knee pain in osteoarthritis”."
     ),
 }
 # In display order: a check can carry several.
@@ -52,6 +61,7 @@ SAFETY_NOTICES = {
         "Some supplements change how medicines work. Ask your pharmacist before combining them."
     ),
 }
+INPUT_DISABLED = "Checking a page by its link is switched off just now. Paste the text with the claim instead."
 THROTTLED = (
     "Too many checks from this account contained instructions to the system. You can start new checks "
     "again later."
@@ -92,24 +102,55 @@ def ordered_topics(topics: set[str]) -> tuple[str, ...]:
 
 
 def decide(
-    extraction: TriagedExtraction, input_text: str, guardrails: dict
+    extraction: TriagedExtraction | PageExtraction,
+    input_text: str,
+    guardrails: dict,
+    page: bool = False,
 ) -> Decision:
+    """`input_text` is matched against the safety word lists. For a linked page (`page`) nothing is
+    flagged here: the page mentions too much, so the claim the user picks decides (`page_topics`)."""
     triage = extraction.triage
-    topics = ordered_topics(
-        set(triage.sensitive_topics)
-        | keyword_topics(input_text, guardrails["sensitive_keywords"])
+    topics = (
+        ()
+        if page
+        else ordered_topics(
+            set(triage.sensitive_topics)
+            | keyword_topics(input_text, guardrails["sensitive_keywords"])
+        )
     )
 
     def made(action, code=None):
         return Decision(action, code, topics, triage.instructions_found)
 
-    if triage.request != "claim_check":
-        return made("refuse", f"refuse_{triage.request}")
+    request = triage.request
+    if page and request != "abusive":
+        # The user asked for the page's claims to be checked: advice or sales language on the page,
+        # or a page about something else, is not their request (docs/POLICY.md).
+        request = "claim_check"
+    suffix = "_page" if page else ""
+    if request != "claim_check":
+        return made("refuse", f"refuse_{request}")
     if not extraction.claims:
-        return made("clarify", "clarify_no_claim")
+        return made("clarify", f"clarify_no_claim{suffix}")
     if not any(claim.specific for claim in extraction.claims):
-        return made("clarify", "clarify_vague")
+        return made("clarify", f"clarify_vague{suffix}")
     return made("continue")
+
+
+def _same(a: str | None, b: str | None) -> bool:
+    return " ".join((a or "").lower().split()) == " ".join((b or "").lower().split())
+
+
+def page_topics(extracted: list[dict], confirmed: dict) -> set[str]:
+    """For a linked page: the model's topics for the claim the user picked, found by its effect (a
+    spelling fix changes the supplement, not the effect). An edited effect matches nothing, and the
+    word lists on the confirmed claim (`claim_topics`) still apply."""
+    return {
+        topic
+        for claim in extracted
+        if _same(claim.get("effect"), confirmed.get("effect"))
+        for topic in claim.get("sensitive_topics", [])
+    }
 
 
 def claim_topics(claim: dict, guardrails: dict) -> set[str]:

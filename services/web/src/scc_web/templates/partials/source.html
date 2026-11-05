@@ -1,0 +1,10 @@
+{# The page a link check read (P3.12): its title as a link, the site, the address, and whether it was cut. #}
+{% set s = job.source %}
+{% if s %}
+<p class="source"><a class="source__title" href="{{ s.final_url }}" rel="nofollow noopener noreferrer">{{ s.title or s.final_url }}</a>{% if s.site_name %} <span class="meta">· {{ s.site_name }}</span>{% endif %}</p>
+<p class="meta source__url">{{ s.final_url }}</p>
+{% if s.final_url != s.url %}<p class="meta">Your link led here: <span class="source__url">{{ s.url }}</span></p>{% endif %}
+{% if s.truncated %}<p class="meta">A long page: the claims were looked for in its first <span class="num">{{ "{:,}".format(s.chars_read) }}</span> characters.</p>{% endif %}
+{% else %}
+<p class="source__url">{{ job.input_text }}</p>
+{% endif %}

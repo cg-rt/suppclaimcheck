@@ -187,6 +187,12 @@ Pill, 48px tall (40px small in the header), white text on action orange, 700 wei
 ### Navigation
 A plain header row: the name in 800 at left, text links (History, Account, Sign out), then the New check pill. The current page gets a 2px ink underline.
 
+### Tabs
+Two or more views of one page, as links: a row of plain links over a hairline, the current one with the header's 2px ink underline (`.tabs` in `app.css`). The new-check page uses it for "Text" and "A link to a page" (P3.12), each its own form, so it works without JavaScript; admin uses it for filters.
+
+### The page a link check read
+On the confirm, result and stopped pages: the page's title as a link (`rel="nofollow noopener noreferrer"`), the site name in grey, and the address in grey on its own line, wrapping anywhere so a long address never widens the column (`.source`, `.source__url`). A long page adds one grey line saying how much was read.
+
 ### Choices
 Radio and check boxes share one pattern, `.choice` in `app.css` (admin used it first): a bold question as the legend, then the choices in a row, each label at least 40px tall, the box in action orange. The feedback card under a result and the account-deletion tick use it.
 

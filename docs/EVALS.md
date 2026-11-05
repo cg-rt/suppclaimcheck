@@ -147,7 +147,9 @@ Live tuning run (spends from the eval lane; refreshes the recording, writes `eva
 SCC_EVAL_ADMIN_DSN="host=127.0.0.1 port=15433 user=postgres dbname=postgres" uv run python -m scc_core.eval run --mode live --notes "why this run"
 ```
 
-Other options: `--cases id1,id2` for a partial run (never saved; add `--out file.json` to keep the details), `--write-baseline` to make a run the new baseline, `--config <version>` for another pipeline config, `--config-file <file.toml>` for a config outside the repo (never recorded), `--split held_out --held-out-reason "release candidate X"` for the held-out set.
+A live run in which any case failed because an outside service was down (`literature_unavailable`, `provider_unavailable`, `page_unavailable`, `page_timeout` and the like) is shown but not saved: no run file, no row here, no new recording or baseline. Run it again when the service is back.
+
+Other options: `--cases id1,id2` for a partial run (never saved; add `--out file.json` to keep the details; with `--add-to-recording`, a live partial run adds those cases' requests to the recording, for new cases on a pipeline whose replay shows nothing stale, followed by a full replay with `--write-baseline`), `--write-baseline` to make a run the new baseline, `--config <version>` for another pipeline config, `--config-file <file.toml>` for a config outside the repo (never recorded), `--split held_out --held-out-reason "release candidate X"` for the held-out set.
 
 **Results per config version (D-048).** Every run file records `config_sha256`, a hash of the settings it ran (the version name excluded). In production, `python -m scc_core.config attach-eval <version> --run <file>` links a full run without overrides to the stored version with the same hash; activation then shows that result and warns when it missed a threshold (RUNBOOK RB-15).
 
@@ -191,8 +193,22 @@ Thresholds are reported, not enforced, until the Phase 3 guardrails exist.
 | 2026-11-04 | evalset-v3 | pipeline-v7 | claude-haiku-5-5 | tuning | 23 | 38% | 50% | 100% | 100% | 100% | 0% | 22.1 / 37.6 | 0.0017 | 0.0391 | `d149da4` | **discarded**: PubMed refused connections for about 30 s (16:14 UTC), so 6 cases failed with literature_unavailable; recording and baseline restored, run again below |
 | 2026-11-04 | evalset-v3 | pipeline-v7 | claude-haiku-5-5 | tuning | 23 | 75% | 81% | 100% | 100% | 100% | 50% | 25.0 / 61.9 | 0.0026 | 0.0588 | `d149da4+dirty` | pipeline-v7 as released (P3.05, D-053): v6 plus result reuse and the stall sweep, both outside the eval path; recording and baseline |
 | 2026-11-05 | evalset-v3 | pipeline-v8 | claude-haiku-5-5 | tuning | 23 | 75% | 81% | 100% | 100% | 100% | 50% | – | 0.0026 | 0.0000 | `0744b77+dirty` (code in `127fdb3`) | pipeline-v8 (P3.06, D-054): **replay** of the v7 recording, `20261105-070912-replay-1d2d`; v8 adds only `[retention]`, every request matched the recording, no case changed against the baseline; nothing spent |
+| 2026-11-05 | evalset-v4 | pipeline-v9 | claude-haiku-5-5 | tuning | 26 | 75% | 81% | 100% | 100% | 100% | 50% | – | 0.0024 | 0.0035 | `feat/p3-article-url` | pipeline-v9 (P3.12, D-055): link-01 to link-03 recorded live into the existing recording (`--add-to-recording`, `20261105-111540-live-7fe1`, 3 of 3), then a free **replay** of all 26 (`20261105-111608-replay-d30e`) wrote the baseline: 19 of 26, the text cases exactly as under v8; a full live run that hit an NCBI outage was discarded (`20261105-095842-live-b06d`, EUR 0.0091) |
 
 ## Comparisons
+### pipeline-v9: article links (P3.12, D-055)
+v9 adds `[inputs]`, `[llm.extract_page]` and `prompts.extract_page`; nothing a text check uses changed. A free replay of the v8 (v7) recording under v9 matched every request of the 23 text cases and changed none.
+
+`evalset-v4` adds three link cases on public pages whose robots.txt lets the reader in: NCCIH's melatonin page and its turmeric page (several claims: pick one) and Wikipedia's Teapot article (no supplement claim: ask for one, don't refuse). A fourth, NCCIH's omega-3 page, is held out.
+
+**How it was measured.** NCBI's PubMed search was down for most of the day: it answered 500, or 200 with "Search Backend failed" inside. The first full live run hit that outage: 9 cases failed with `literature_unavailable` and 6 more read the error as "no articles". The run was discarded and the recording restored from git (EUR 0.0091). That run found two problems, both fixed in this release:
+- the "Not found" misreading, now retried and then reported as unavailable;
+- the runner overwriting the recording during an outage, which a live run with any outage code no longer does.
+
+Since the text cases send exactly v8's requests, the link cases were then recorded alone into the existing recording (`--add-to-recording`, live, EUR 0.0035), and a free replay of all 26 wrote the baseline: **19 of 26**, the 16 text cases that passed under v8 plus **3 of 3 link cases**. The page prompt labels safety topics per claim: on the turmeric page, serious illness only on the cancer and liver-disease claims; on the melatonin page, children only on the claim about children.
+
+The link-case labels are drafts until the owner approves them.
+
 ### pipeline-v8: v7 plus retention periods (P3.06, D-054)
 v8 adds a `[retention]` table (how long checks and finished queue entries are kept) that the pipeline never reads, so it sends exactly v7's requests. Its eval is a free replay of the v7 recording with `--config pipeline-v8 --check`: no case was stale (every request matched), and none flipped against the baseline: **16 of 23**, verdict accuracy 75%, the same failing cases as v7. The v7 recording and baseline stay as they are; CI's replay now runs on v8, the active version.
 

@@ -45,6 +45,18 @@ class LiteratureUnavailable(Exception):
     pass
 
 
+def _search_ok(response: httpx.Response) -> None:
+    """ESearch sometimes answers 200 with {"esearchresult": {"ERROR": "Search Backend failed..."}} while
+    PubMed's search is down (seen 2026-11-05). That is a failure to retry, never zero matches: read as
+    zero, it would become a "Not found" verdict, and result reuse would repeat it for days."""
+    try:
+        result = response.json()["esearchresult"]
+    except ValueError, KeyError, TypeError:
+        raise Transient("esearch: no result in the reply") from None
+    if "ERROR" in result or not str(result.get("count", "")).isdigit():
+        raise Transient(f"esearch error: {str(result.get('ERROR', 'no count'))[:120]}")
+
+
 class RateLimiter:
     """At most `per_second` requests start in any second, across all concurrent callers."""
 
@@ -138,7 +150,11 @@ class Literature:
         *,
         limiter=None,
         allow_404=False,
+        check=None,
     ):
+        """A GET with retries on transient errors. `check(response)` may raise Transient for a reply that
+        is an error dressed as a success, so it is retried like a 500."""
+
         async def once():
             if limiter:
                 await limiter.wait()
@@ -152,6 +168,8 @@ class Literature:
                 return None
             if response.status_code >= 400:
                 raise LiteratureUnavailable(f"{url} answered {response.status_code}")
+            if check is not None:
+                check(response)
             return response
 
         try:
@@ -179,12 +197,12 @@ class Literature:
             params["api_key"] = self.api_key
         async with self._client() as client:
             response = await self._get(
-                client, ESEARCH, params, limiter=self.ncbi_limiter
+                client, ESEARCH, params, limiter=self.ncbi_limiter, check=_search_ok
             )
         result = response.json()["esearchresult"]
         return {
             "query": params["term"],
-            "count": int(result.get("count", 0)),
+            "count": int(result["count"]),
             "pmids": [p for p in result.get("idlist", []) if _PMID.match(p)],
             "query_translation": result.get("querytranslation"),
         }

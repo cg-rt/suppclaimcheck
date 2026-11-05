@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}The page reader{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">SuppClaimCheck's page reader</h1>
+  <p class="lede">When someone checking a supplement claim gives SuppClaimCheck the address of a web page, this reader fetches that one page, finds the claims it makes about supplements, and lets the person check one against open-access research.</p>
+</section>
+
+<section class="card" aria-labelledby="does-title">
+  <h2 class="card__title" id="does-title">What it does, and doesn't</h2>
+  <ul class="limits">
+    <li>It reads only the page a person asked for, once, when they ask. It doesn't crawl, follow links, index pages or come back later.</li>
+    <li>It reads the page as a visitor without an account would: no sign-in, no cookies, no JavaScript. Only web pages: PDFs and other files are left alone.</li>
+    <li>It reads robots.txt first and obeys it, and it leaves a page alone that says <code>noai</code>.</li>
+    <li>It waits at least <span class="num">{{ reader.min_interval_s }}</span> second{{ "" if reader.min_interval_s == 1 else "s" }} between requests to the same site, and gives up on a page after <span class="num">{{ reader.timeout_s }}</span> seconds or <span class="num">{{ reader.max_mb }}</span> MB.</li>
+    <li>The text it reads goes to a language model only to find the claims, and is deleted with the check (<a href="/privacy">privacy</a>).</li>
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="block-title">
+  <h2 class="card__title" id="block-title">How to keep it away from your site</h2>
+  <p>It identifies itself with this user agent:</p>
+  <pre class="code code--wrap"><code>{{ reader.user_agent }}</code></pre>
+  <p>Its name in robots.txt is <code>{{ reader.token }}</code>, and it follows the rules for <code>*</code> when you don't name it. To keep it away from the whole site:</p>
+  <pre class="code"><code>User-agent: {{ reader.token }}
+Disallow: /</code></pre>
+  <p>Or send <code>X-Robots-Tag: noai</code>, or put <code>&lt;meta name="robots" content="noai"&gt;</code> in a page. The reader keeps a site's robots.txt for up to <span class="num">{{ reader.robots_cache_minutes }}</span> minutes, so a change applies within that time.</p>
+  <p>Questions or problems: <a href="mailto:contact@suppclaimcheck.com">contact@suppclaimcheck.com</a>.</p>
+</section>
+{% endblock %}

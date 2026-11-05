@@ -5,6 +5,7 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 ## [Unreleased]
 
 ### Changed
+- Checks use pipeline v9 (D-055): v8 plus article links below; a check from pasted text sends exactly what it sent under v8.
 - Checks use pipeline v8 (D-054): v7 plus the retention periods below; prompts, search and scoring are unchanged.
 - Checks use pipeline v6 (D-052): the search also tries other spellings of the effect and population words ("anaemia" finds "anemia" too), and studies whose title says the substance was injected or infused are listed as found but not read, unless the claim is about injections. The result page names each reason an article wasn't read. In the evals, iron claims are right again and verdict accuracy reaches 81%.
 - "No claim found" is now a request for a clearer text instead of a failed check (pipeline v5).
@@ -13,6 +14,12 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - Checks use pipeline v4 (D-047): hybrid retrieval with matching words weighted 0.7 and meaning 0.3, chosen by comparing three retrieval settings on the eval set. A check takes longer (about 20 seconds in testing) when its articles have not been read before; repeat articles are as fast as before.
 
 ### Added
+- Article links (P3.12, D-055):
+  - **New check from a link:** the new-check page offers "A link to a page" next to Text. SuppClaimCheck reads the page once, lists up to eight claims it makes about supplements, and the user picks one to check; the confirm and result pages name the page that was read.
+  - **The page reader** is in the gateway and checks every address first: only http and https on the usual ports, and never an address inside a private network, also after redirects. It obeys robots.txt and `noai`, reads at most 2 MB in 10 seconds, and only web pages. A public page at `/reader` says what it does and how a site can keep it away.
+  - **When a page can't be read,** the check stops before any model call with a message that says why and suggests pasting the text instead.
+  - **A switch in the pipeline config** (`[inputs] url`) turns links off without a release (RUNBOOK RB-17).
+  - **Config and migrations:** `pipeline-v9`, `gateway-v3`; core migration 0009.
 - Privacy (P3.06, D-054, docs/PRIVACY.md):
   - **Privacy notice:** a public page at `/privacy`, linked from every page's footer. It says what is kept, why, for how long and who else sees it, and names the operator from `SCC_OPERATOR_NAME`, set on the server.
   - **Delete my account:** on the Account page, after your password. It removes the account and every check at once; admins can do the same for an emailed request.
@@ -32,6 +39,10 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - Eval set v1 (30 labelled claims, all approved by the owner) and the eval runner, `python -m scc_core.eval`, with a free replay of the recorded run in CI (D-043). Development tooling: nothing changes for users.
 
 ### Fixed
+- When PubMed's search was down but answered "200 OK" with an error inside, a check said "Not found" (and reuse would have repeated it for a week). It now retries and, if PubMed stays down, fails with "The literature databases are not answering".
+- The migrate steps of a deploy wait for each other, so two can't collide on the same database grants ("tuple concurrently updated").
+- Stylesheet links carry a hash of the file, so after a deploy no browser or Cloudflare cache pairs the new pages with old styles.
+- The result page says "took 1 second", not "1 seconds".
 - `backup.sh` waits up to 10 minutes for the backup storage host to resolve before starting. A nightly backup missed while the host PC was off runs right at boot, and on 2026-10-26 it failed because DNS through the Hyper-V Default Switch was not answering yet. Host script only: copy it to the VM; no new images.
 - `restore.sh` prints the scratch-database drop command with `sudo`, which the VM needs.
 

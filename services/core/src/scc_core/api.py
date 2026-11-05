@@ -36,7 +36,7 @@ from scc_core.models import (
     JobEvent,
     JobSummary,
 )
-from scc_core.pipeline.triage import THROTTLED
+from scc_core.pipeline.triage import INPUT_DISABLED, THROTTLED
 
 log = logging.getLogger("scc.jobs")
 IdempotencyKey = Annotated[
@@ -62,6 +62,7 @@ class Deps:
 
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+inputs = APIRouter(tags=["jobs"])
 users = APIRouter(prefix="/users", tags=["privacy"])
 
 
@@ -76,7 +77,9 @@ def _deps(request: Request) -> Deps:
         200: {
             "description": "Same key and body as an earlier request: the existing job"
         },
-        409: {"description": "Key reused with a different body"},
+        409: {
+            "description": "Key reused with a different body, or the input type is switched off"
+        },
         402: {"description": "This month's budget for checks is used up"},
         429: {
             "description": "The account's checks for today are used up, or too many recent checks "
@@ -97,6 +100,8 @@ async def create_job(
         version = deps.config_version or await config_store.active_version_async(
             conn, config.STORE
         )
+        if body.input_type != "text":
+            await _refuse_if_switched_off(conn, body.input_type, version)
         await _refuse_if_throttled(conn, body.user_id, idempotency_key, version)
         if not await jobs.exists(conn, body.user_id, idempotency_key):
             await _refuse_if_over_budget(deps, body.user_id)
@@ -120,6 +125,36 @@ async def create_job(
     )
     log.info("job created", extra={"job_id": str(job.id)})
     return job
+
+
+class InputTypes(BaseModel):
+    """What a new check can start from under the active config (P3.12, P3.13). Text is always on."""
+
+    text: bool = True
+    url: bool
+
+
+async def _switches(conn, version: str) -> dict:
+    return (await config_store.load_version_async(conn, config.STORE, version)).get(
+        "inputs", {}
+    )
+
+
+@inputs.get("/inputs")
+async def input_types(request: Request) -> InputTypes:
+    """The input types the new-check page may offer: the active config's [inputs] switches."""
+    deps = _deps(request)
+    async with deps.pool.connection() as conn:
+        version = deps.config_version or await config_store.active_version_async(
+            conn, config.STORE
+        )
+        switches = await _switches(conn, version)
+    return InputTypes(url=bool(switches.get("url")))
+
+
+async def _refuse_if_switched_off(conn, input_type: str, version: str) -> None:
+    if not (await _switches(conn, version)).get(input_type):
+        raise HTTPException(409, {"code": "input_disabled", "message": INPUT_DISABLED})
 
 
 async def _refuse_if_throttled(conn, user_id: int, key: str, version: str) -> None:
@@ -345,6 +380,7 @@ def build_app(
     app.state.deps = deps
     app.include_router(router)
     app.include_router(users)
+    app.include_router(inputs)
     # Read-only admin views for web's admin pages (P3.08-P3.10), and the one retry action.
     app.include_router(admin_api.router)
     app.include_router(config_admin.router(config.STORE, admin_api.pool_of))

@@ -1,0 +1,21 @@
+id = "link-01"
+category = "article_link"
+input_type = "url"
+input = "https://www.nccih.nih.gov/health/melatonin-what-you-need-to-know"
+
+[expected]
+# A public health page with several claims (sleep onset, jet lag, shift work): the reader reads it, the
+# extraction lists them, and the user picks one (P3.12).
+behaviour = "pick_claim"
+min_claims = 2
+supplement = ["melatonin"]
+
+[label]
+rationale = """
+NCCIH's consumer page on melatonin (US government, public domain) discusses several uses, each with its
+own evidence. Its robots.txt lets the reader in. The page can change: a live run reads it as it is that
+day, and the recording keeps that copy for replays.
+"""
+pmids = []
+status = "draft"
+drafted_on = 2026-11-05

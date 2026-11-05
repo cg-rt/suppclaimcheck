@@ -7,7 +7,10 @@
 <section class="card" aria-labelledby="claim-title">
   <h1 class="card__title" id="claim-title">You asked about</h1>
   <p class="claim">{{ claim.supplement|capitalize }}: {{ claim.effect }}{% if claim.population %}, in {{ claim.population }}{% endif %}.</p>
-  <p class="meta">The claim as you confirmed it{% if claim.dose %} · dose: {{ claim.dose }}{% endif %}{% if claim.duration %} · duration: {{ claim.duration }}{% endif %} · checked <time datetime="{{ job.updated_at }}" class="num">{{ job.updated_at[:10] }}</time>{% if view.seconds %} · took <span class="num">{{ view.seconds }}</span> seconds{% endif %}</p>
+  <p class="meta">The claim as you confirmed it{% if claim.dose %} · dose: {{ claim.dose }}{% endif %}{% if claim.duration %} · duration: {{ claim.duration }}{% endif %} · checked <time datetime="{{ job.updated_at }}" class="num">{{ job.updated_at[:10] }}</time>{% if view.seconds %} · took <span class="num">{{ view.seconds }}</span> second{{ "" if view.seconds == 1 else "s" }}{% endif %}</p>
+  {% if job.input_type == "url" and job.source %}
+  <p class="meta">Found on <a href="{{ job.source.final_url }}" rel="nofollow noopener noreferrer">{{ job.source.title or job.source.final_url }}</a>{% if job.source.site_name %} · {{ job.source.site_name }}{% endif %}</p>
+  {% endif %}
 </section>
 
 {% if r.safety_notices %}

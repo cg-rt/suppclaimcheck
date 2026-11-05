@@ -17,6 +17,12 @@ STAGES = {
     "refused": "Not checked",
     "needs_clarification": "Needs a clearer claim",
 }
+# A check started from a link (P3.12): the first stages read the page, not the user's text.
+LINK_STAGES = {
+    **STAGES,
+    "submitted": "Received your link",
+    "extracting": "Reading the page for claims",
+}
 BEFORE_CONFIRM = ["submitted", "extracting", "awaiting_confirmation"]
 AFTER_CONFIRM = ["searching", "retrieving", "assessing", "verifying", "scoring", "done"]
 # States where the progress stream stops and the page reloads to show what comes next.
@@ -39,7 +45,13 @@ VERDICT_CLASS = {
 }
 
 
-def progress(state: str, events: list[dict]) -> list[dict]:
+def stage_names(job: dict) -> dict[str, str]:
+    return LINK_STAGES if job.get("input_type") == "url" else STAGES
+
+
+def progress(
+    state: str, events: list[dict], names: dict[str, str] = STAGES
+) -> list[dict]:
     """One row per stage of the current phase: done, current or waiting, with the time it started."""
     stages = BEFORE_CONFIRM if state in BEFORE_CONFIRM else AFTER_CONFIRM
     started = {}
@@ -61,7 +73,7 @@ def progress(state: str, events: list[dict]) -> list[dict]:
         rows.append(
             {
                 "state": name,
-                "label": STAGES[name],
+                "label": names[name],
                 "status": status,
                 "at": _clock(at) if at else None,
             }
