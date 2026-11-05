@@ -53,10 +53,13 @@
 .data .n { text-align: right; white-space: nowrap; }
 .data td:first-child, .data th:first-child { padding-left: 0; }
 .data td:last-child, .data th:last-child { padding-right: 0; }
-.data__text { min-width: 16rem; max-width: 40rem; overflow-wrap: anywhere; }
+/* Text columns wrap between words, and inside a word only when one is wider than the column, so a
+   narrow table never breaks words down the column (P3.11; titles read "Comm on questi ons" before). */
+.data__text { min-width: 16rem; max-width: 40rem; overflow-wrap: break-word; }
 /* A short free-text column beside a .data__text one: wraps first, so the table still fits. */
-.data__note { min-width: 10rem; max-width: 24rem; overflow-wrap: anywhere; }
-.data code { font-size: 0.8125rem; }
+.data__note { min-width: 10rem; max-width: 24rem; overflow-wrap: break-word; }
+/* States, models, IDs and codes stay whole in a table; a table too wide for its card scrolls inside it. */
+.data code { font-size: 0.8125rem; white-space: nowrap; }
 /* Eight characters of a job ID read as one word; never break them down the column. */
 .short-id { white-space: nowrap; }
 
@@ -78,13 +81,14 @@
 /* Overview */
 .facts--wide > div { grid-template-columns: 12rem 1fr; }
 .tiles { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
+/* Each tile opens the jobs in that status, so its label is orange like any link (the Pressable Orange Rule). */
 .tiles a {
   display: flex; flex-direction: column; gap: var(--space-1); height: 100%;
   background: var(--card-quiet); border-radius: var(--radius-sm); padding: var(--space-3);
-  color: var(--ink-2); font-size: var(--text-sm); text-decoration: none;
+  color: var(--action); font-size: var(--text-sm); font-weight: 600; text-decoration: none;
   transition: background-color 160ms var(--ease);
 }
-.tiles a:hover { background: var(--action-tint); color: var(--ink); }
+.tiles a:hover { background: var(--action-tint); color: var(--action-hover); }
 .tiles__n { font-size: var(--text-lg); font-weight: 800; color: var(--ink); }
 
 /* Code, settings and diffs: monospace because they are code. */
@@ -129,9 +133,13 @@
 
 /* Users */
 .actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-4); }
-.confirm > summary { font-weight: 700; }
+/* Reset, Disable, Delete: each summary is a comfortable target, and a button naming a long email
+   wraps inside the cell instead of pushing past it (P3.11). */
+.confirm > summary { font-weight: 700; padding-block: var(--space-2); }
+.actions > a { padding-block: var(--space-2); }
 .confirm[open] { flex-basis: 100%; }
 .confirm form { display: grid; gap: var(--space-2); justify-items: start; }
+.confirm .button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
 .confirm[open] > summary { margin-bottom: var(--space-2); }
 .form--inline { grid-template-columns: minmax(0, 24rem) auto auto; align-items: end; gap: var(--space-4) var(--space-5); }
 
@@ -168,6 +176,10 @@
     color: var(--ink-2); font-weight: 700; font-size: var(--text-sm);
   }
   .data--stack .n { text-align: left; }
+  .data--stack code { white-space: normal; overflow-wrap: anywhere; }
+  /* Row actions take the block's whole width, their label above them, so their buttons fit on one line. */
+  .data.data--stack td.data__actions { padding-left: 0; }
+  .data--stack td.data__actions::before { position: static; display: block; width: auto; margin-bottom: var(--space-1); }
   .data.data--stack td[colspan] { padding-left: 0; }
   .data--stack td[colspan]::before { content: none; }
 }

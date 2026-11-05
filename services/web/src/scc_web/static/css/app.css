@@ -202,6 +202,8 @@ time { white-space: nowrap; }
 .notice--error p { color: var(--ink); }
 .notice--ok { background: var(--supported-tint); }
 .notice--hint { background: var(--card-quiet); border: 1px solid var(--line); }
+/* On the green and red tints, action orange falls just under 4.5:1; its hover shade passes. */
+.notice--error a, .notice--ok a { color: var(--action-hover); }
 .field .notice { margin-top: var(--space-2); }
 .notice__title { font-size: var(--text-base); font-weight: 700; }
 
@@ -269,9 +271,25 @@ details[open] > summary { margin-bottom: var(--space-3); }
 .quote__why { color: var(--ink); }
 .quote__source { font-size: var(--text-sm); color: var(--ink-2); overflow-wrap: anywhere; }
 
+.quote__source a { color: var(--action-hover); font-weight: 600; }
+
+/* The articles read, numbered like a reference list: quotes cite them as "Article 2" (P3.11). */
+.articles { list-style: none; padding: 0; counter-reset: article; display: grid; }
+.articles > .citation { counter-increment: article; position: relative; padding-left: 2.25rem; scroll-margin-top: var(--space-5); }
+.articles > .citation::before {
+  content: counter(article); position: absolute; left: 0; top: 0.1rem;
+  font-size: var(--text-lg); font-weight: 800; color: var(--ink-2); font-variant-numeric: tabular-nums lining-nums;
+}
+.articles > .citation + .citation { margin-top: var(--space-4); }
+.articles > .citation + .citation::before { top: calc(var(--space-4) + 0.1rem); }
+/* Followed from a quote: the article sits on the quiet card colour, so the eye lands on it. */
+.articles > .citation:target { background: var(--card-quiet); outline: var(--space-2) solid var(--card-quiet); border-radius: var(--radius-sm); }
 .citation { display: grid; gap: var(--space-1); }
 .citation + .citation { border-top: 1px solid var(--line); padding-top: var(--space-4); }
 .citation__title { font-weight: 700; font-size: var(--text-lg); line-height: 1.35; }
+.citation__finding { padding-top: var(--space-1); }
+.citation__kind { color: var(--ink); }
+.nowrap { white-space: nowrap; }
 .citation__line { color: var(--ink-2); overflow-wrap: anywhere; }
 .citation__links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); padding-top: var(--space-2); font-weight: 600; }
 
@@ -285,14 +303,44 @@ details[open] > summary { margin-bottom: var(--space-3); }
 
 .limits, .not-read ul { padding-left: var(--space-5); display: grid; gap: var(--space-2); }
 
+/* Reading pages (method, privacy, reader): running text keeps a reading measure on the 720px column. */
+.prose { max-width: 65ch; }
+
+/* A table on a reading page (the method's weights, P3.11): hairline rows, figures right-aligned. */
+.table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; }
+.table th, .table td { text-align: left; vertical-align: top; padding: var(--space-2) var(--space-3); }
+.table th:first-child, .table td:first-child { padding-left: 0; }
+.table th:last-child, .table td:last-child { padding-right: 0; }
+.table thead th { font-size: var(--text-sm); font-weight: 700; color: var(--ink-2); border-bottom: 1px solid var(--line-strong); line-height: 1.3; }
+.table tbody th { font-weight: 400; }
+.table tbody tr + tr > * { border-top: 1px solid var(--line); }
+.table .table__n { text-align: right; white-space: nowrap; }
+
+/* Rules applied in order: the number matters, and each verdict sits at the end of its rule. */
+.rules { padding-left: var(--space-5); display: grid; }
+.rules > li { padding: var(--space-2) 0; border-top: 1px solid var(--line); }
+.rules > li:first-child { border-top: 0; padding-top: 0; }
+.rules > li::marker { color: var(--ink-2); font-weight: 700; font-variant-numeric: tabular-nums; }
+.rules__row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 var(--space-4); }
+.rules__row > :last-child { text-align: right; margin-left: auto; }
+
+/* A worked example: a quiet tile inside its card, like the count tiles. */
+.example { background: var(--card-quiet); border-radius: var(--radius-sm); padding: var(--space-4) var(--space-5); display: grid; gap: var(--space-2); }
+.example .subhead { margin-top: 0; }
+.example .workings__steps { margin-bottom: 0; }
+
 /* History */
 .history { list-style: none; padding: 0; display: grid; }
 .history__item { padding: var(--space-3) 0; border-top: 1px solid var(--line); display: grid; gap: var(--space-1); }
 .history__item:first-child { border-top: 0; padding-top: 0; }
-.history__claim { font-weight: 700; font-size: var(--text-lg); line-height: 1.35; }
+/* A link check without a claim yet is named by its address: one long word that must wrap anywhere. */
+.history__claim { font-weight: 700; font-size: var(--text-lg); line-height: 1.35; overflow-wrap: anywhere; }
 .history__meta { font-size: var(--text-sm); color: var(--ink-2); }
 
-.foot { text-align: center; padding: var(--space-5) var(--space-6) var(--space-6); font-size: var(--text-sm); color: var(--ink-2); }
+.foot { text-align: center; padding: var(--space-5) var(--space-6) var(--space-6); font-size: var(--text-sm); color: var(--ink-2); display: grid; gap: var(--space-1); justify-items: center; }
+.foot__links { list-style: none; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 0 var(--space-5); }
+.foot__links a { display: inline-block; padding: var(--space-1) 0; }
+.foot__links a[aria-current="page"] { color: var(--ink); text-decoration-thickness: 2px; }
 
 @media (max-width: 640px) {
   .top__inner { padding: var(--space-4); }
@@ -312,4 +360,11 @@ details[open] > summary { margin-bottom: var(--space-3); }
   .button { width: 100%; }
   .button--small { width: auto; }
   .close .button { width: 100%; }
+}
+
+/* The narrowest phones: the name and New check still share the first row. */
+@media (max-width: 360px) {
+  .top__inner { column-gap: var(--space-3); }
+  .top__name { font-size: var(--text-base); }
+  .button--small { padding-inline: var(--space-3); }
 }
