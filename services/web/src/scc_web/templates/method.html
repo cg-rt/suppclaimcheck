@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% set nav = "method" %}
+{% set pct = "{:.0%}" %}
+{% block title %}How a check works{% endblock %}
+{% block main %}
+<section class="card">
+  <h1 class="title">How a check works</h1>
+  <p class="lede">The language model reads; code decides. A model labels passages and copies sentences out of articles. Code checks every sentence against the article, then works out the verdict and the score.</p>
+  <p class="meta">This page describes the method as it runs now: <code>{{ m.pipeline }}</code> with <code>{{ m.rubric }}</code>. Every result names the version it ran on.</p>
+</section>
+
+<section class="card" aria-labelledby="short-title">
+  <h2 class="card__title" id="short-title">In one paragraph</h2>
+  <p class="prose">SuppClaimCheck searches PubMed for open-access studies about the claim, takes the strongest kinds of study first, and reads up to <span class="num">{{ m.read }}</span> of them. A language model labels passages as supporting the claim, contradicting it, or not about it, and copies a sentence as proof. Code checks every copied sentence word for word against the article and throws away any that don't match. Code then weighs each article by its type of study and works out the verdict and a score from <span class="num">0</span> to <span class="num">100</span>. The model never decides the verdict or the score.</p>
+</section>
+
+<section class="card" aria-labelledby="claim-title">
+  <h2 class="card__title" id="claim-title">Where the claim comes from</h2>
+  <ul class="limits prose">
+    <li>You paste a text, or give a link to a page: an article, a blog post or a product page.</li>
+    <li>For a link, the page reader fetches that one page, if the site allows it, and keeps its readable text. The model looks for claims in the first <span class="num">{{ "{:,}".format(m.page_chars) }}</span> characters and lists them, the most prominent first. <a href="/reader">What the page reader does</a>.</li>
+    <li>You confirm one claim, and can correct it, before anything is searched or spent.</li>
+    <li>Some requests are refused or answered with a question instead, such as personal dosing advice or several claims at once. Claims about pregnancy, children, serious illness, very high doses or medicines get a safety notice above the result.</li>
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="find-title">
+  <h2 class="card__title" id="find-title">Finding articles</h2>
+  <ul class="limits prose">
+    <li>Code builds a PubMed search from the supplement, the effect and the population you confirmed.</li>
+    <li>The search also tries the supplement's other names (ashwagandha and <i>Withania somnifera</i>) and other spellings (anaemia and anemia), because PubMed matches a word in a title or abstract only as written.</li>
+    <li>Up to <span class="num">{{ m.considered }}</span> matches are considered. Code sorts them by type of study, strongest first, and PubMed's own order breaks ties. The first <span class="num">{{ m.read }}</span> that can be read are read in full.</li>
+    <li>Only open-access articles whose licence allows text mining can be read. The others are listed under the result as found, not read.</li>
+    <li>Supplements are taken by mouth, so a study whose title says the substance was injected or given by drip is listed as not read, unless your claim is about injections.</li>
+    <li>If the same claim was checked in the last <span class="num">{{ m.reuse_days }}</span> days on the same method version, that result is shown again, with a note saying so.</li>
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="types-title">
+  <h2 class="card__title" id="types-title">Types of study and their weight</h2>
+  <p class="prose">Code reads each article's publication types and subject headings in PubMed and puts it in one group. An article too new to have headings is placed by a few words in its title, such as “rats” or “patients”, and failing that it is “type unknown”.</p>
+  <table class="table">
+    <thead><tr><th scope="col">Type of study</th><th scope="col" class="table__n">Weight</th><th scope="col">Human evidence</th></tr></thead>
+    <tbody>
+      {% for name, weight, human in tiers %}
+      <tr><th scope="row">{{ name }}</th><td class="table__n num">{{ "%.2f"|format(weight) }}</td><td>{{ "Yes" if human else "No" }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="small">The weights are versioned settings, not fixed rules: changing one means running the evaluation set again. Sample size isn't used, because PubMed's records don't give it.</p>
+</section>
+
+<section class="card" aria-labelledby="read-title">
+  <h2 class="card__title" id="read-title">Reading each article</h2>
+  <ul class="limits prose">
+    <li>Each article is split into passages. The <span class="num">{{ m.passages }}</span> that best match the claim go to the model, one article at a time. “Best match” blends two rankings: passages that share the claim's words (weight <span class="num">{{ "%.1f"|format(m.keyword_weight) }}</span>) and passages close to it in meaning, from a small model that runs on SuppClaimCheck's own server (weight <span class="num">{{ "%.1f"|format(1 - m.keyword_weight) }}</span>).</li>
+    <li>For each passage the model gives a label (supports, contradicts or not about the claim), an exact quote and a one-sentence reason. A finding that the supplement does the opposite of the claim counts as contradicting it.</li>
+    <li>Code checks every quote against the passage it came from. Only typesetting may differ: line breaks, dashes, curly quotation marks and letters set as one character (ligatures). One changed, added or missing word, a changed number or a different capital letter fails the check. A quote that fails is dropped and logged. It never counts and is never shown.</li>
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="verdict-title">
+  <h2 class="card__title" id="verdict-title">From quotes to a verdict</h2>
+  <p class="prose">Each article counts once, however many quotes it has. Its <strong>stance</strong> is its quotes for the claim minus its quotes against, divided by all its verified quotes: <span class="num">+1</span> if they all agree with the claim, <span class="num">−1</span> if they all disagree. An article without a verified quote has no finding and doesn't count.</p>
+  <dl class="facts facts--method">
+    <div><dt>Direction</dt><dd>The stances, averaged by weight: from <span class="num">−1</span>, all against, to <span class="num">+1</span>, all for.</dd></div>
+    <div><dt>Strength</dt><dd>The total weight of the articles with a finding, divided by <span class="num">{{ "%.1f"|format(m.full_strength) }}</span>, at most <span class="num">1</span>. Two systematic reviews give full strength.</dd></div>
+    <div><dt>Score</dt><dd><span class="num">50 + 50 × direction × strength</span>, rounded. <span class="num">0</span> is consistent strong evidence against, <span class="num">50</span> balanced or too weak to call, <span class="num">100</span> consistent strong evidence for.</dd></div>
+  </dl>
+  <h3 class="subhead">The verdict is the first rule that applies</h3>
+  <ol class="rules">
+    <li><span class="rules__row"><span>No article could be read.</span> <span class="verdict-ink verdict-ink--none">Not found</span></span></li>
+    <li><span class="rules__row"><span>No article has a verified finding.</span> <span class="verdict-ink verdict-ink--none">Insufficient evidence</span></span></li>
+    <li><span class="rules__row"><span>The only findings come from animal, lab or unknown types of study.</span> <span class="verdict-ink verdict-ink--none">Insufficient evidence</span></span></li>
+    <li><span class="rules__row"><span>Strength is below <span class="num">{{ "%.2f"|format(m.min_strength) }}</span>.</span> <span class="verdict-ink verdict-ink--none">Insufficient evidence</span></span></li>
+    <li><span class="rules__row"><span>The smaller side holds at least <span class="num">{{ pct.format(m.mixed_share) }}</span> of the weighted evidence.</span> <span class="verdict-ink verdict-ink--mixed">Mixed</span></span></li>
+    <li><span class="rules__row"><span>Otherwise, by the direction.</span> <span><span class="verdict-ink verdict-ink--supported">Supported</span> or <span class="verdict-ink verdict-ink--contradicted">Contradicted</span></span></span></li>
+  </ol>
+  <div class="example">
+    <h3 class="subhead">An example</h3>
+    <p>A meta-analysis supports the claim (weight <span class="num">{{ "%.2f"|format(m.weights.systematic_review) }}</span>), a randomised trial supports it (<span class="num">{{ "%.2f"|format(m.weights.rct) }}</span>), and a narrative review contradicts it (<span class="num">{{ "%.2f"|format(m.weights.narrative_review) }}</span>).</p>
+    <ol class="workings__steps num">
+      <li>Weight for <span class="num">{{ "%.2f"|format(example.w_for) }}</span>, against <span class="num">{{ "%.2f"|format(example.w_against) }}</span>: the smaller side is <span class="num">{{ pct.format(example.share) }}</span> of <span class="num">{{ "%.2f"|format(example.total) }}</span>, {% if example.mixed %}so it is Mixed{% else %}under <span class="num">{{ pct.format(m.mixed_share) }}</span>, so not Mixed{% endif %}.</li>
+      <li>Direction: (<span class="num">{{ "%.2f"|format(example.w_for) }} − {{ "%.2f"|format(example.w_against) }}</span>) ÷ <span class="num">{{ "%.2f"|format(example.total) }} = {{ "%+.2f"|format(example.direction) }}</span></li>
+      <li>Strength: <span class="num">{{ "%.2f"|format(example.total) }} ÷ {{ "%.2f"|format(m.full_strength) }}</span>, at most <span class="num">1</span>, is <span class="num">{{ "%.2f"|format(example.strength) }}</span></li>
+      <li>Score: <span class="num">50 + 50 × {{ "%+.2f"|format(example.direction) }} × {{ "%.2f"|format(example.strength) }} = {{ example.score }}</span></li>
+    </ol>
+    <p>The verdict: {% if example.mixed %}<span class="verdict-ink verdict-ink--mixed">Mixed</span>{% elif example.direction > 0 %}<span class="verdict-ink verdict-ink--supported">Supported</span>{% else %}<span class="verdict-ink verdict-ink--contradicted">Contradicted</span>{% endif %}, <span class="num">{{ example.score }}</span> out of <span class="num">100</span>.</p>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="limits-title">
+  <h2 class="card__title" id="limits-title">What it can't do</h2>
+  <ul class="limits prose">
+    <li>It reads only open-access articles, and at most <span class="num">{{ m.read }}</span> per claim. Strong evidence behind a paywall is missed.</li>
+    <li>Labelling passages is the model's judgement and can be wrong. Quotes are always verified; labels are not. An evaluation set measures how often the verdict is right, and every change to the method is run against it.</li>
+    <li>The type of study comes from PubMed's records, which can be missing or coarse. “Human study, design not stated” can be anything from a trial to a survey.</li>
+    <li>A linked page is read as it is at that moment, from the top: a claim near the end of a long page can be missed. Pages that need a login or JavaScript, and PDFs, can't be read.</li>
+    <li>A verdict describes what the articles read say about the claim as you confirmed it. It isn't medical advice, and it says nothing about whether a dose is right or safe for you.</li>
+  </ul>
+</section>
+
+<section class="card card--quiet" aria-labelledby="more-title">
+  <h2 class="card__title" id="more-title">More detail</h2>
+  <p>The method, the rules for refusing and questioning a request, and the evaluation results are written up in the project's public repository: <a href="https://github.com/cg-rt/suppclaimcheck/blob/main/docs/METHOD.md" rel="noopener">METHOD.md</a>, <a href="https://github.com/cg-rt/suppclaimcheck/blob/main/docs/POLICY.md" rel="noopener">POLICY.md</a> and <a href="https://github.com/cg-rt/suppclaimcheck/blob/main/docs/EVALS.md" rel="noopener">EVALS.md</a>.</p>
+</section>
+{% endblock %}

@@ -48,7 +48,7 @@
 </section>
 <section class="card card--quiet" aria-labelledby="does-title">
   <h2 class="card__title" id="does-title">What this check does, and doesn't</h2>
-  <p>It searches PubMed for open-access articles, reads one whose licence allows it, and shows the sentences that support or contradict the claim, each checked word for word against the article.</p>
-  <p>It doesn't give medical advice or tell you whether to take anything. It can't read articles that aren't open access.</p>
+  <p>It searches PubMed for open-access articles, reads up to <span class="num">{{ method.read }}</span> of the strongest studies whose licence allows it, and shows the sentences that support or contradict the claim, each checked word for word against its article.</p>
+  <p>It doesn't give medical advice or tell you whether to take anything. It can't read articles that aren't open access. <a href="/method">How a check works</a></p>
 </section>
 {% endblock %}
