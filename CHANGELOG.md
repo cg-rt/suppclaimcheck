@@ -5,6 +5,7 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 ## [Unreleased]
 
 ### Changed
+- Checks use pipeline v8 (D-054): v7 plus the retention periods below; prompts, search and scoring are unchanged.
 - Checks use pipeline v6 (D-052): the search also tries other spellings of the effect and population words ("anaemia" finds "anemia" too), and studies whose title says the substance was injected or infused are listed as found but not read, unless the claim is about injections. The result page names each reason an article wasn't read. In the evals, iron claims are right again and verdict accuracy reaches 81%.
 - "No claim found" is now a request for a clearer text instead of a failed check (pipeline v5).
 - Checks use pipeline v1 (D-044, docs/METHOD.md): up to five open-access articles per claim instead of one, chosen by type of study (systematic reviews and trials first), each assessed separately; rubric v1 weighs each article by its type of study and needs human evidence for a verdict. The result page explains the score article by article. Verdicts can differ from 0.1.x for the same claim.
@@ -12,6 +13,14 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - Checks use pipeline v4 (D-047): hybrid retrieval with matching words weighted 0.7 and meaning 0.3, chosen by comparing three retrieval settings on the eval set. A check takes longer (about 20 seconds in testing) when its articles have not been read before; repeat articles are as fast as before.
 
 ### Added
+- Privacy (P3.06, D-054, docs/PRIVACY.md):
+  - **Privacy notice:** a public page at `/privacy`, linked from every page's footer. It says what is kept, why, for how long and who else sees it, and names the operator from `SCC_OPERATOR_NAME`, set on the server.
+  - **Delete my account:** on the Account page, after your password. It removes the account and every check at once; admins can do the same for an emailed request.
+  - **Retention:** checks are deleted 180 days after submission, sign-in attempts after 30 days, the account link on LLM cost records after 180 days, and stored model answers after 7 days, by purges in each module.
+  - **Config and migrations:** `web-v1`, `pipeline-v8`, `gateway-v2`; migrations web 0004, core 0008, gateway 0005.
+- Feedback and time to result (P4.03, P4.04):
+  - **Under every result:** three optional questions (does the verdict look right, was it easy to understand, was anything missing). The result also says how long the search took.
+  - **Admin's new Outcomes page:** the answers, what people said was missing, and the median and 90th-percentile time from submitting and from confirming to the result. Each job's trace shows its feedback and times.
 - Budget guard (P3.04, D-053): a Telegram warning once a month at 50% and 80% of a budget, and a banner in admin; new checks and confirmations stop with a plain message when less than one check's worth is left; each account may start 25 checks a UTC day; admin's Costs page shows spend per account. Gateway config `gateway-v1`; gateway migration 0004.
 - Resilience (P3.05, D-053): every LLM call carries an idempotency key, so a repeated job step never charges twice; a check whose claim matches one finished in the last 7 days reuses its result and says so; an article the model doesn't answer for, or that won't download, is left out with a note instead of failing the check; checks that lose their worker are ended after 20 minutes with an alert, so admin can retry them; core and the gateway answer unexpected errors with a code and the correlation ID, which web's error page quotes as a reference. `docs/ERRORS.md` lists every error code. Checks use pipeline v7 (v6 plus the reuse and stall settings).
 - Admin pages on the admin hostname, behind Cloudflare Access and the admin role (P3.08-P3.10, D-049): jobs by status with search; a per-job trace (timeline, input and claims, every LLM call with tokens, cost and latency, search and passages, verified and dropped quotes, result, prompts, correlation ID and the log command) with a retry for failed jobs; recent errors with runbook links; costs and usage from the LLM call records; eval results per pipeline version; module health and versions; config versions and diffs (read-only); and users (create, reset password, disable). core-api and the gateway gained read-only admin endpoints for them. Production needs the `admin.suppclaimcheck.com` hostname and its Access application in Cloudflare first.

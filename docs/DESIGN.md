@@ -187,6 +187,9 @@ Pill, 48px tall (40px small in the header), white text on action orange, 700 wei
 ### Navigation
 A plain header row: the name in 800 at left, text links (History, Account, Sign out), then the New check pill. The current page gets a 2px ink underline.
 
+### Choices
+Radio and check boxes share one pattern, `.choice` in `app.css` (admin used it first): a bold question as the legend, then the choices in a row, each label at least 40px tall, the box in action orange. The feedback card under a result and the account-deletion tick use it.
+
 ### Live progress list
 One row per stage: a drawn mark (check for done, filled dot for current, ring for waiting), the stage name, and the time it started. The current row sits on `card-quiet` in bold, and its dot pulses gently unless reduced motion is set. Changes are announced through a polite live region.
 
@@ -205,6 +208,7 @@ Admin (P3.08–P3.10) uses the same tokens and components from `static/css/admin
 - **Status** is a coloured word with its drawn mark, like the progress list: green completed, red failed, amber awaiting confirmation, ink in progress, grey refused. Never a filled badge.
 - **Code** (settings, JSON, diffs, commands, IDs) in the platform monospace at 0.8125rem, on `card-quiet` with a hairline border. Diff lines keep their + and − and are tinted with the supported and contradicted tints, so colour is never the only signal. Small inline keys use a 4px radius.
 - Orange stays for what can be pressed: Retry, Search, Create, and the links. A one-time password is shown once, in a bordered code block.
+- **Outcomes** (P4.03, P4.04): one short answer table per feedback question, side by side where there is room; answers are coloured words (green yes, red no, amber partly, grey not sure); what people wrote sits in a `.data__text` column; time to result is a plain table of median and 90th percentile.
 - **Safety review** (P3.03): the notice the user saw sits in the result page's warning tint, so it reads as theirs; the review is the same radio group as the users page plus a note field, ending in one orange button. What a review found is a status word: green the notice fits, amber not needed, red follow-up.
 
 ## Do's and Don'ts

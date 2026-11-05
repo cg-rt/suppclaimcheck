@@ -294,3 +294,24 @@ Project-management decisions are kept in a private repository and share this num
   - pipeline-v7 = pipeline-v6 + `[cache]` and `[resilience]`; prompts, search and scoring are v6's.
 - **Alternatives:** quotas and the cap check in core (core can't read the gateway's call records, and two places would count spend); a quota in EUR (accurate for the budget, but a user can't predict it); Procrastinate task retries (they would rerun a job step without knowing what was charged); reusing results across config versions (another version is another method); storing every answer (more user text kept for no use).
 - **Trade-offs:** a new check costs one more internal call (the status). The quota counts a failed check too. A reused result is as old as its source, up to 7 days. Stored answers hold extracted claims for up to 7 days in the gateway's schema (part of P3.06's data inventory).
+
+### D-054 · 2026-11-05 · User data: retention, account deletion, feedback and time to result · [Agent]
+- **Decision:**
+  - **Retention is versioned config, per module** (P3.06): web-v1 `[retention]` (sign-in attempts 30 days), pipeline-v8 `[retention]` (checks 180 days after submission, finished queue entries 30 days), gateway-v2 `[retention]` (the account link on LLM call rows 180 days; stored answers stay at `[idempotency]`'s 7). Each module purges its own schema: core in a nightly Procrastinate task, web and the gateway every hour inside their processes, holding a Postgres advisory lock (`scc_common.periodic`), because neither has a worker.
+  - **Cost rows are kept, unlinked**: `gateway.llm_calls` is the budget's record and the evidence for cost per check; deleting an account or passing `user_link_days` clears `user_id` and the stored answer, never the row.
+  - **Deleting an account** (from Account, after the password and a tick; or by an admin for an emailed request, typing the email) runs in this order:
+    1. web disables the account and ends its sessions;
+    2. core deletes the checks (everything else cascades) and asks the gateway to unlink the account's calls, remembering the ID in `gateway.erased_users` so a call that was still running is unlinked by the next purge;
+    3. web deletes the account row and its sign-in attempts.
+
+    Each step can run again. If one fails, the account stays closed and marked, and web's purge finishes it. Every deletion sends an `account_deleted` alert, so a restore can apply deletions again (RB-12).
+  - **The privacy notice** (`/privacy`, public) restates the periods from web-v1 `[privacy]`; a test keeps them equal to the active configs of core and the gateway. The controller's name comes from `SCC_OPERATOR_NAME` on the server, never the repo. `docs/PRIVACY.md` is the data inventory, and a test fails when a table is missing from it.
+  - **Feedback** (P4.03): three optional questions under a result (does the verdict look right, was it easy to understand, was anything missing), one row per check in `core.feedback`, replaced when changed, deleted with the check. Core checks that the account owns the finished check. The free text never reaches a model.
+  - **Time to result** (P4.04): `jobs.confirmed_at` and `jobs.finished_at`, set by a database trigger on every state change, so every code path records them (pipeline, confirmation, the stalled sweep, admin retry). Admin's Outcomes page shows the median and 90th percentile, from submitting and from confirming, leaving reused results out; the result page says how long the search took.
+  - pipeline-v8 = v7 + `[retention]`: a free replay of the v7 recording matches every request and every case.
+- **Alternatives:** one purge for all modules (it would need every schema's privileges); deleting cost rows with the account (loses the budget record; the row holds nothing personal once unlinked); a soft delete only (keeps the email); a JSON export button (a request by email covers the few testers); timing from `job_events` at query time (the events are deleted with the check, and every query would repeat the reconstruction); a separate config store for retention (a fourth kind of config).
+- **Trade-offs:**
+  - **Rollback stops the purge:** rolling back to a pipeline version without `[retention]` stops core's purge until a version with it is active again; the worker logs each skipped run.
+  - **Deleting mid-check:** a check deleted while its worker runs ends with a database error in that task, not a clean stop.
+  - **Backups:** keep a deleted account for up to six months, and longer in the last five pre-deploy copies if deploys are rare.
+  - **Logs:** rotate by size, not by time.

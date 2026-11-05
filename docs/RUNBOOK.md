@@ -173,7 +173,8 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   ```bash
   sudo ./restore.sh latest --replace
   ```
-- **Verify:** row counts look as expected; the smoke test passed; record it in the private log.
+- **After a real restore, apply deletions again (P3.06):** a snapshot brings back any account deleted after it was taken. In Telegram, find every `account_deleted` alert sent since the snapshot's time. Each one names an account number. Delete each of those accounts again from admin's Users page, Delete; their checks go with them. Note the account numbers in the private log; never their email addresses.
+- **Verify:** row counts look as expected; the smoke test passed; deletions applied again; record it in the private log.
 
 ## RB-13 Deploy and roll back
 **Status:** rehearsed in dev on 2026-10-24 with production's compose file and scripts (`tools/rehearse_deploy.py`): first deploy, upgrade, a deliberately failing deploy, rollback after the failure, rollback after a good deploy, and a deploy with the pre-deploy backup. The first VM deploy is C1.3.
@@ -241,6 +242,19 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Never:** edit the config tables by hand. Versions, evals and the audit are append-only (database triggers refuse changes); only the pointer moves.
 - **Verify:** `list` shows the `*` on the version you meant; `history` shows your line first; for core, the next check's job has that `config_version`.
 
+## RB-16 Someone asks about their data
+**Status:** draft; the deletion and the purges are tested in `tests/integration/test_privacy.py` (P3.06, D-054), not yet exercised on the VM.
+- **When:** an email to `contact@suppclaimcheck.com` asks for a copy of a person's data, a correction or a deletion. Answer within one month. What is kept, and for how long: [PRIVACY.md](PRIVACY.md).
+- **Deletion:** admin's Users page, Delete on their row, type their email, confirm. The account, its checks and its sign-in records go at once; its LLM cost rows stay, unlinked. If the page says the deletion didn't finish, the hourly purge finishes it: check the row shows "being deleted" for no more than an hour. A person can also delete their own account under Account.
+- **A copy:** their checks are on admin's Jobs page (search by email); open each trace for the text, claim and result. Send them as text. Their account row holds only the email, the role and dates.
+- **Correction:** only the email address can be wrong. Create a new account with the right one, then delete the old one when they agree; checks don't move between accounts.
+- **Checks that the purges run:** each module logs `purge finished` with counts (core at 03:30 UTC, web and the gateway hourly):
+  ```bash
+  sudo docker compose logs --since 25h core-worker web gateway | grep "purge"
+  ```
+  A core line `purge skipped: the active config has no [retention]` means the active pipeline version predates v8: see RB-15.
+- **Verify:** the person's email no longer appears on Users; the reply is sent; the private log has the date and what was done (no personal details).
+
 ---
 
 ## Release go-live checklist
@@ -252,6 +266,7 @@ To be completed in P3.13. Copy it into the private log for each release and tick
 - [ ] Runbook updated for anything new
 - [ ] Rollback tested for the modules being released
 - [ ] Feature flags set as intended for this rollout stage
+- [ ] `SCC_OPERATOR_NAME` set in `/opt/suppclaimcheck/.env`, so the privacy page names the controller (P3.06)
 - [ ] Owner's go-ahead recorded
 
 ## Weekly ops checklist
@@ -261,5 +276,6 @@ To be completed in P3.13. About 15 minutes, every Monday.
 - [ ] Disk usage below 70% (`df -h /`)
 - [ ] Costs this month vs budget; any unusual user
 - [ ] Admin: Reviews has nothing waiting; Injections shows no account held; failed jobs looked at
+- [ ] Admin: Outcomes read (new feedback and what people said was missing); no account on Users "being deleted" for more than an hour
 - [ ] Dependabot and security alerts triaged
 - [ ] Ubuntu updates applied; reboot the VM if required (`/var/run/reboot-required`)

@@ -30,7 +30,7 @@ Every quote shown has been checked word for word by code against the article it 
 
 - Server-rendered pages (FastAPI, Jinja2, htmx with server-sent events). Little JavaScript; pages must work without it except live progress.
 - Input types now: text and pasted ad text. Later, behind flags: article URL, ad screenshot, pasted YouTube transcript.
-- Undecided: the method page wording (P3.11), the privacy page (P3.06).
+- Undecided: the method page wording (P3.11). The privacy page (`/privacy`, P3.06) is written: a Read surface in the same cards, its periods restated from config.
 
 ## Brand Commitments
 

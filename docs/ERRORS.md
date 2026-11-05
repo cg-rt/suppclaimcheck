@@ -48,6 +48,7 @@ Answered by core-api to web, which shows the message and keeps the user's text.
 | `not_open` | 409 | A safety review recorded for a job that isn't waiting for one. | – |
 | `not_found` | 404 | No such job. | – |
 | `internal_error` | 500 | An unexpected error in core or the gateway; the reply carries the correlation ID. | RB-03 |
+| `gateway_unavailable` | 503 | An account deletion reached core but not the gateway: core deleted the checks, the account waits, and web's hourly purge finishes it (P3.06). | RB-03 |
 
 ## Gateway answers to core
 

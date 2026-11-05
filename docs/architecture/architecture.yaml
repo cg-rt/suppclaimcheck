@@ -57,9 +57,10 @@ modules:
     phase_built: 1
     technology: Python 3.14, FastAPI, Jinja2, htmx, server-sent events
     purpose: >
-      Public pages (sign in, submit, confirm, progress, result, history, method, privacy), the admin pages on their own hostname
-      (jobs and per-job traces with retry, errors, costs, evals, config versions, users, health; D-049), and login (accounts, sessions,
-      CSRF, lockout) as a separate package with its own schema and database role. Admin reads core and gateway data through their read-only admin endpoints.
+      Public pages (sign in, submit, confirm, progress, result with a feedback form, history, method, privacy), the admin pages on their own hostname
+      (jobs and per-job traces with retry, safety reviews, injection events, outcomes, errors, costs, evals, config versions, users, health; D-049), and login (accounts, sessions,
+      CSRF, lockout, account deletion) as a separate package with its own schema and database role. Admin reads core and gateway data through their read-only admin endpoints.
+      An hourly purge deletes old sign-in attempts and ended sessions and finishes any account deletion a module missed (D-054).
     why_it_exists: >
       The only module users talk to. Login lives here with its own least-privilege role, so core, which handles hostile text,
       can never read password hashes. Admin code answers only on the admin hostname, behind Cloudflare Access and the admin role.
@@ -80,7 +81,8 @@ modules:
     technology: Python 3.14, FastAPI, Procrastinate, fastembed, pgvector
     purpose: >
       core-api: jobs and confirmation (REST with OpenAPI); each job is stamped with the config version active when it is created, and starts only if the gateway's budget status allows it (cap and daily quota). Read-only admin endpoints (jobs, traces, errors, queue, reviews, injection events, config), the retry of a failed job and the record of a safety review.
-      core-worker: the pipeline, run on the job's config version: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring; reuse of an identical recent result, partial failures with a note, and a five-minute sweep that ends checks that lost their worker.
+      Feedback on a result, the erasure of a deleted account's checks, and the outcomes summary (feedback, time to result; D-054).
+      core-worker: the pipeline, run on the job's config version: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring; reuse of an identical recent result, partial failures with a note, a five-minute sweep that ends checks that lost their worker, and a nightly purge of checks past their retention.
       In the image, not served: the config CLI (versions, activation, rollback; D-048) and the eval runner (run from the dev PC, D-043).
     why_it_exists: >
       Owns the product's logic and the deterministic parts (quote verification, scoring) that make it trustworthy.
@@ -105,6 +107,7 @@ modules:
       PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts.
       The budget guard: monthly caps per lane, warnings at 50% and 80%, the per-account daily quota, and idempotent LLM calls (the same key never charges twice).
       Read-only admin endpoints over its LLM call records (calls per job, costs and usage, per account) and its config versions.
+      Privacy: unlinks a deleted account from its call records, and an hourly purge clears stored answers and old account links (D-054).
     why_it_exists: >
       Holds every API key, so the budget cap cannot be bypassed and egress is one auditable place.
       Merges the AI gateway and the sources connector (D-011).
