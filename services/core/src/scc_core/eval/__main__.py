@@ -99,6 +99,13 @@ def _parser() -> argparse.ArgumentParser:
         "--check", action="store_true", help="exit 1 on stale cases or new failures"
     )
     run.add_argument(
+        "--add-to-recording",
+        action="store_true",
+        help="live, with --cases: add these cases' requests to the tuning recording instead of "
+        "replacing it. Only when a replay of the recording under this config shows no stale case "
+        "(new cases on an unchanged pipeline). Then replay the whole split with --write-baseline.",
+    )
+    run.add_argument(
         "--repeat",
         type=int,
         default=1,
@@ -196,6 +203,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     config = apply_overrides(base, args.set)
     store = args.evals / "recordings" / "tuning"
+    if args.add_to_recording and (
+        args.mode != "live"
+        or not partial
+        or held_out
+        or args.repeat != 1
+        or args.set
+        or args.config_file
+        or args.write_baseline
+    ):
+        print(
+            "--add-to-recording needs a live tuning run of chosen --cases on a repo config, "
+            "without --repeat, --set, --config-file or --write-baseline.",
+            file=sys.stderr,
+        )
+        return 2
     # A recording belongs to one real config version: never from repeats or overrides.
     record = (
         args.mode == "live"
@@ -206,7 +228,8 @@ def main(argv: list[str] | None = None) -> int:
         and not args.config_file
     )
     transport = EvalTransport(
-        args.mode, store if (record or args.mode == "replay") else None
+        args.mode,
+        store if (record or args.add_to_recording or args.mode == "replay") else None,
     )
 
     now = datetime.datetime.now(datetime.UTC)
@@ -307,6 +330,12 @@ def main(argv: list[str] | None = None) -> int:
         if record:
             transport.save()
         print(f"Saved evals/runs/{run_id}.json and a row in docs/EVALS.md.")
+    if args.add_to_recording and not outages:
+        transport.save(add=True)
+        print(
+            f"Added {len(selected)} case(s) to the recording. Replay the whole split with "
+            "--write-baseline next, and record that replay in EVALS.md."
+        )
     if args.write_baseline and not partial and not outages:
         report.write_json(baseline_path, report.baseline_document(meta, results))
         print(f"Wrote {baseline_path.name}.")

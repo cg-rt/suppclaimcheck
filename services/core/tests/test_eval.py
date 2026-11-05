@@ -245,6 +245,39 @@ def test_record_then_replay_round_trip(tmp_path):
         _run(changed_prompt())
 
 
+def test_adding_cases_keeps_the_rest_of_the_recording(tmp_path):
+    """--add-to-recording (M5): new cases join the recording; what was recorded before still replays."""
+
+    def gateway(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"echo": json.loads(request.content)})
+
+    async def post(transport, body):
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://gateway"
+        ) as client:
+            return (await client.post("/pages/fetch", json=body)).json()
+
+    first = EvalTransport("live", tmp_path, inner=httpx.MockTransport(gateway))
+    _run(post(first, {"url": "https://a.example/"}))
+    first.save()
+    added = EvalTransport("live", tmp_path, inner=httpx.MockTransport(gateway))
+    _run(post(added, {"url": "https://b.example/"}))
+    added.save(add=True)
+    replay = EvalTransport("replay", tmp_path)
+    assert _run(post(replay, {"url": "https://a.example/"})) == {
+        "echo": {"url": "https://a.example/"}
+    }
+    assert _run(post(replay, {"url": "https://b.example/"})) == {
+        "echo": {"url": "https://b.example/"}
+    }
+    # A plain save still replaces the recording.
+    again = EvalTransport("live", tmp_path, inner=httpx.MockTransport(gateway))
+    _run(post(again, {"url": "https://b.example/"}))
+    again.save()
+    with pytest.raises(StaleRecording):
+        _run(post(EvalTransport("replay", tmp_path), {"url": "https://a.example/"}))
+
+
 def test_evals_md_row_lands_at_the_end_of_the_results_table(tmp_path):
     doc = tmp_path / "EVALS.md"
     doc.write_text(

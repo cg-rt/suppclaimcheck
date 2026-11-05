@@ -106,21 +106,29 @@ class EvalTransport(httpx.AsyncBaseTransport):
         self.cost_eur[job_id] += json.loads(body).get("cost_eur", 0.0)
         self.llm_calls[job_id] += 1
 
-    def save(self) -> None:
+    def save(self, add: bool = False) -> None:
         """Writes the recording, replacing the old one, so requests no longer made drop out.
 
-        Bodies are stored once each, gzipped (article full texts are large) and named by their hash.
+        With `add`, the requests of this run join the existing recording instead (`--add-to-recording`:
+        new cases on a pipeline whose other requests are unchanged); a request made again replaces its
+        old answers. Bodies are stored once each, gzipped (article full texts are large) and named by
+        their hash.
         """
         if self.mode != "live" or self.store is None:
             return
         self.store.mkdir(parents=True, exist_ok=True)
-        for old in self.store.glob("*.json.gz"):
-            old.unlink()
+        index = self.store / "index.json"
+        recorded = dict(self.recorded)
+        if add and index.exists():
+            recorded = {**json.loads(index.read_text("utf-8")), **recorded}
+        else:
+            for old in self.store.glob("*.json.gz"):
+                old.unlink()
         for name, body in self.bodies.items():
             # mtime=0 keeps the bytes identical for identical bodies, so git sees no change.
             (self.store / name).write_bytes(gzip.compress(body, mtime=0))
-        (self.store / "index.json").write_text(
-            json.dumps(self.recorded, indent=1, sort_keys=True) + "\n",
+        index.write_text(
+            json.dumps(recorded, indent=1, sort_keys=True) + "\n",
             "utf-8",
             newline="\n",
         )
