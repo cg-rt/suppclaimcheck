@@ -183,6 +183,22 @@ class TriagedExtraction(_Strict):
     triage: Triage
 
 
+# A linked page (P3.12, pipeline-v9): a page mentions many topics, so the model labels each claim's
+# own, and the user's pick decides which notices apply (docs/POLICY.md).
+class PageClaim(TriagedClaim):
+    sensitive_topics: list[SensitiveTopic]
+
+
+class PageTriage(_Strict):
+    request: RequestKind
+    instructions_found: bool
+
+
+class PageExtraction(_Strict):
+    claims: list[PageClaim]
+    triage: PageTriage
+
+
 class PassageAssessment(_Strict):
     passage_id: str
     label: Literal["supports", "contradicts", "not_relevant"]

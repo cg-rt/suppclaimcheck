@@ -134,3 +134,22 @@ def test_pages_get_their_own_clarifications():
     )
     assert (none.code, vague.code) == ("clarify_no_claim_page", "clarify_vague_page")
     assert "on that page" in none.message and "The page" in vague.message
+
+
+def test_page_topics_follow_the_picked_claim():
+    extracted = [
+        {"effect": "helps with jet lag", "sensitive_topics": []},
+        {"effect": "helps children  sleep", "sensitive_topics": ["children"]},
+    ]
+    assert triage.page_topics(extracted, {"effect": "Helps children sleep"}) == {
+        "children"
+    }
+    assert triage.page_topics(extracted, {"effect": "helps with jet lag"}) == set()
+    # An edited effect matches no claim: only the word lists on the confirmed claim apply.
+    assert triage.page_topics(extracted, {"effect": "helps toddlers sleep"}) == set()
+
+
+def test_the_page_prompt_asks_for_topics_per_claim_not_per_page():
+    prompt = V9["prompts"]["extract_page"]
+    assert "sensitive_topics: the topics that apply to this claim itself" in prompt
+    assert prompt.count("sensitive_topics") == 1

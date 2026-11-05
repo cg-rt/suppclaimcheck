@@ -48,7 +48,7 @@ When the user gives a link, the text is the page's, not theirs, and their reques
 | Only general praise on the page | `clarify_vague_page` | The page praises a supplement but names no effect specific enough to check. Start a new check that names one, for example “turmeric reduces knee pain in osteoarthritis”. |
 | No supplement claim on the page | `clarify_no_claim_page` | No claim about a dietary supplement was found on that page. If the page makes one, paste the sentence that states it in a new check. |
 
-- **Safety notices:** the keyword lists are matched against the claims found on the page and the claim the user confirms, not the whole page, which mentions too much. The model's topic labels apply as for text.
+- **Safety notices:** a health page mentions pregnancy, children and medicines somewhere, so nothing is flagged when the page is read. The model labels each claim's own topics, and the claim the user confirms decides: its labels (found by its effect) plus the keyword lists on the confirmed claim. A jet-lag claim from a page that also discusses children gets no children notice; the page's claim about children does. If the user rewrites the effect, only the keyword lists apply, so serious illness (which has no list) can be missed for an edited claim.
 - **Instructions on the page** are recorded as the page's (`submitted_page`) and, like those in articles, never count against the user.
 
 A page that can't be read (robots.txt, `noai`, not HTML, too large, a private address) stops the check before any LLM call, with a message that suggests pasting the text instead (ERRORS.md).

@@ -19,11 +19,11 @@ from scc_core import api as core_api
 from scc_core import config as core_config
 from scc_core import jobs, tasks
 from scc_core.gateway_client import GatewayError
-from scc_core.models import JobCreate
+from scc_core.models import Claim, JobCreate
 from scc_core.pipeline import run
 from scc_web import pages as web_pages
 from tests.helpers import run_async
-from tests.integration.test_guardrails import claim, reply
+from tests.integration.test_guardrails import claim
 from tests.integration.test_web_auth import sign_in, token, with_web
 from tests.web_samples import job as sample_job
 
@@ -37,6 +37,20 @@ PAGE = {
     "text": "Fish oil lowers triglycerides\n\nTaking fish oil lowers blood triglycerides in adults.",
     "truncated": False,
 }
+
+
+def page_claim(
+    supplement="melatonin", effect="helps with jet lag", topics=(), specific=True
+):
+    return {**claim(supplement, effect, specific), "sensitive_topics": list(topics)}
+
+
+def reply(request="claim_check", claims=None, instructions=False):
+    """The page prompt's shape (PageExtraction): topics per claim, none for the page."""
+    return {
+        "claims": [page_claim()] if claims is None else claims,
+        "triage": {"request": request, "instructions_found": instructions},
+    }
 
 
 class PageGateway:
@@ -102,7 +116,7 @@ def extract_link(migrated_db, gateway, link=LINK, user_id=40, config=V9):
 
 def test_a_link_is_read_and_its_claims_wait_for_the_user(migrated_db):
     gateway = PageGateway(
-        extraction=reply(claims=[claim("fish oil", "lowers triglycerides")])
+        extraction=reply(claims=[page_claim("fish oil", "lowers triglycerides")])
     )
     job, events, text, _, _ = extract_link(migrated_db, gateway)
     assert gateway.pages == [LINK]
@@ -168,13 +182,54 @@ def test_instructions_on_a_page_are_the_pages_not_the_users(migrated_db):
     assert checks == 0, "they don't count towards the account's limit"
 
 
-def test_page_safety_words_come_from_the_claims_not_the_whole_page(migrated_db):
-    page = {
-        **PAGE,
-        "text": PAGE["text"] + "\n\nRelated: vitamins for children and pregnancy.",
-    }
-    job, _, _, _, _ = extract_link(migrated_db, PageGateway(page=page))
-    assert job.sensitive_topics == [] and not job.needs_review
+def test_the_claim_the_user_picks_decides_the_safety_notices(migrated_db):
+    """A health page mentions pregnancy, children and medicines somewhere; a jet-lag claim from it
+    gets no notice, and a claim about children gets the children notice (docs/POLICY.md)."""
+    claims = [
+        page_claim("melatonin", "helps with jet lag", topics=[]),
+        page_claim(
+            "melatonin", "helps children with autism fall asleep", topics=["children"]
+        ),
+    ]
+    fields = ("supplement", "effect", "population", "dose", "duration")
+
+    async def pick(n):
+        gateway = PageGateway(extraction=reply(claims=claims))
+        pool = AsyncConnectionPool(migrated_db.conninfo("core"), open=False)
+        await pool.open()
+        try:
+            async with pool.connection() as conn:
+                made, _ = await jobs.create(
+                    conn,
+                    JobCreate(user_id=43, input_type="url", input_text=LINK),
+                    f"pick-{uuid.uuid4()}",
+                    "pipeline-v9",
+                    None,
+                )
+            rt = run.Runtime(pool, gateway, V9)
+            await run.extract(rt, made.id)
+            async with pool.connection() as conn:
+                read = await jobs.get(conn, made.id)
+                chosen = {k: claims[n][k] for k in fields}
+                # The user took PubMed's spelling: the effect still finds the claim.
+                chosen["supplement"] = "Melatonin "
+                await jobs.confirm(conn, made.id, Claim(**chosen))
+                confirmed = await jobs.get(conn, made.id)
+            topics = await run._confirmed_topics(rt, confirmed)
+            async with pool.connection() as conn:
+                after = await jobs.get(conn, made.id)
+            return read, topics, after, gateway.alerts
+        finally:
+            await pool.close()
+
+    read, topics, after, alerts = run_async(pick(0))
+    assert (read.sensitive_topics, read.needs_review) == ([], False), (
+        "nothing on reading"
+    )
+    assert topics == () and not after.needs_review and alerts == []
+    _, topics, after, alerts = run_async(pick(1))
+    assert topics == ("children",) and after.needs_review
+    assert [a[0] for a in alerts] == ["safety_review"]
 
 
 def test_no_claim_on_a_page(migrated_db):

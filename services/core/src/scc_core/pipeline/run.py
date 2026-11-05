@@ -26,6 +26,7 @@ from scc_core.models import (
     GuardedAssessment,
     Job,
     JobState,
+    PageExtraction,
     TriagedExtraction,
 )
 from scc_core.pipeline import embeddings, evidence, jats, query, rubric, triage
@@ -291,6 +292,9 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
     if data is None:
         return
     guarded = "guardrails" in rt.config
+    output = Extraction
+    if guarded:
+        output = PageExtraction if page else TriagedExtraction
     try:
         extraction = await _structured(
             rt,
@@ -298,7 +302,7 @@ async def extract(rt: Runtime, job_id: UUID) -> None:
             job_id,
             job.user_id,
             data,
-            TriagedExtraction if guarded else Extraction,
+            output,
             key="extract_page" if page else None,
         )
     except StageFailed as exc:
@@ -373,29 +377,20 @@ def cut_text(text: str, limit: int) -> str:
     return text[:cut] if cut > 0 else text[:limit]
 
 
-def _claims_text(extraction: TriagedExtraction) -> str:
-    return " ".join(
-        value
-        for claim in extraction.claims
-        for value in claim.model_dump().values()
-        if isinstance(value, str)
-    )
-
-
 async def _triaged(
-    rt: Runtime, job: Job, extraction: TriagedExtraction, page: bool = False
+    rt: Runtime,
+    job: Job,
+    extraction: TriagedExtraction | PageExtraction,
+    page: bool = False,
 ) -> None:
     """Refuse, clarify or wait for confirmation, as docs/POLICY.md says (P3.01-P3.03, D-050).
 
-    For a linked page (P3.12) the safety word lists see the claims found, not the whole page, and
-    instructions found on the page are recorded as the page's, not the user's: they don't count towards
-    the account's limit.
+    For a linked page (P3.12) no safety topic is flagged yet (the claim the user picks decides, in
+    `_confirmed_topics`), and instructions found on the page are recorded as the page's, not the
+    user's: they don't count towards the account's limit.
     """
     decision = triage.decide(
-        extraction,
-        _claims_text(extraction) if page else job.input_text,
-        rt.config["guardrails"],
-        page=page,
+        extraction, job.input_text, rt.config["guardrails"], page=page
     )
     if decision.instructions_found:
         await _injection(
@@ -613,11 +608,13 @@ async def sweep_stalled(rt: Runtime) -> int:
 
 
 async def _confirmed_topics(rt: Runtime, job: Job) -> tuple[str, ...]:
-    """The job's safety topics plus any the confirmed claim adds (an edit can name a population)."""
+    """The job's safety topics plus any the confirmed claim adds (an edit can name a population).
+    For a linked page, also the model's topics for the claim the user picked (P3.12)."""
     known = set(job.sensitive_topics)
-    found = triage.claim_topics(
-        job.confirmed_claim.model_dump(), rt.config["guardrails"]
-    )
+    confirmed = job.confirmed_claim.model_dump()
+    found = triage.claim_topics(confirmed, rt.config["guardrails"])
+    if job.input_type == "url":
+        found |= triage.page_topics(job.extracted_claims or [], confirmed)
     topics = triage.ordered_topics(known | found)
     if found - known:
         async with rt.pool.connection() as conn:
