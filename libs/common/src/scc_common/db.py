@@ -65,8 +65,23 @@ def db_check(conninfo: str):
     return check
 
 
+# Every module's migrate step starts at once on a deploy, and their grants update the same database and
+# schema rows, so Postgres can abort one with "tuple concurrently updated" (seen in dev on 2026-11-05).
+# One advisory lock, the same for every module, makes the bootstraps take turns; each takes a moment.
+BOOTSTRAP_LOCK = 0x5CC0B007
+
+
 def bootstrap(admin: psycopg.Connection, spec: ModuleDb, app_password: str) -> None:
-    """Creates or repairs the module's roles, schema and grants. `admin` must be a superuser in autocommit mode."""
+    """Creates or repairs the module's roles, schema and grants. `admin` must be a superuser in autocommit mode.
+    Bootstraps of different modules wait for each other (BOOTSTRAP_LOCK)."""
+    admin.execute("SELECT pg_advisory_lock(%s)", (BOOTSTRAP_LOCK,))
+    try:
+        _bootstrap(admin, spec, app_password)
+    finally:
+        admin.execute("SELECT pg_advisory_unlock(%s)", (BOOTSTRAP_LOCK,))
+
+
+def _bootstrap(admin: psycopg.Connection, spec: ModuleDb, app_password: str) -> None:
     owner = sql.Identifier(spec.owner_role)
     app = sql.Identifier(spec.app_role)
     schema = sql.Identifier(spec.schema)
