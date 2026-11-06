@@ -4,6 +4,10 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-06
+
+The first release for testers (Phase 3, Safe to share): guardrails, the budget guard and resilience, privacy and account deletion, feedback, article links, the design pass with the method page, and release readiness. Before deploying, follow RUNBOOK's go-live checklist: three files under `deploy/` changed since 0.1.2, `SCC_OPERATOR_NAME` is new, and UptimeRobot should watch `/health/deps`.
+
 ### Changed
 - Checks use pipeline v9 (D-055): v8 plus article links below; a check from pasted text sends exactly what it sent under v8.
 - Checks use pipeline v8 (D-054): v7 plus the retention periods below; prompts, search and scoring are unchanged.
