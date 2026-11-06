@@ -46,6 +46,19 @@ def test_next_path_stays_on_this_site():
         assert safe_next(bad) == "/checks/new"
 
 
+def test_next_path_refuses_characters_browsers_drop():
+    # P3.07: a browser removes tabs and line breaks from a URL, so these would read as "//evil.example".
+    for bad in (
+        "/\t/evil.example",
+        "/\n/evil.example",
+        "/\r/evil.example",
+        "/ /evil",
+        "/\x7f/x",
+    ):
+        assert safe_next(bad) == "/checks/new"
+    assert safe_next("/checks/new?from=link") == "/checks/new?from=link"
+
+
 def test_session_cookie_has_the_host_prefix_rules():
     from fastapi.responses import Response
 

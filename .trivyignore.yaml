@@ -1,9 +1,14 @@
 # Findings the release scan (P1.11) accepts for now. Each entry says why, and expires so it can't linger.
-vulnerabilities:
-  - id: CVE-2026-63209
+# No vulnerabilities since 2026-11-06: cloudflared 2026.10.7 and the Debian updates at build fixed them (D-056).
+vulnerabilities: []
+
+secrets:
+  - id: gcp-service-account
     paths:
-      - "usr/local/bin/cloudflared"
+      - "/app/.venv/lib/python3.14/site-packages/anthropic/**"
     statement: >
-      Denial of service in klauspost/compress inside cloudflared 2026.10.3, the newest release (D-040).
-      cloudflared only connects outbound to Cloudflare. Take the next cloudflared release that fixes it.
-    expired_at: 2026-11-05
+      Not a secret: the Anthropic SDK (1.15.0, gateway only) documents agent identities with the example
+      {"type": "service_account"} in docstrings, which matches the rule for the start of a Google key file.
+      Only the SDK's own files are excused, so a real key file anywhere else still fails the release (D-056).
+      Check again when the SDK is upgraded.
+    expired_at: 2027-02-06

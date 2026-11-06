@@ -242,7 +242,7 @@ async def save_feedback(request: Request, job_id: str) -> Response:
             "Your answers could not be saved. Please try again in a minute.", 503
         )
     return RedirectResponse(
-        f"/checks/{job_id}?feedback=saved#feedback", status_code=303
+        f"/checks/{job['id']}?feedback=saved#feedback", status_code=303
     )
 
 
@@ -325,7 +325,8 @@ async def confirm_check(request: Request, job_id: str) -> Response:
                 if known
                 else "The search could not be started. Please try again in a minute.",
             )
-    return RedirectResponse(f"/checks/{job_id}", status_code=303)
+    # The ID as core stored it, not as typed in the address (P3.07).
+    return RedirectResponse(f"/checks/{job['id']}", status_code=303)
 
 
 def _sse(event: str, html: str) -> str:

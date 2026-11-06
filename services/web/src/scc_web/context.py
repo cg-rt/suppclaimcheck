@@ -78,8 +78,16 @@ async def require_session(request: Request) -> store.Session:
 
 
 def safe_next(path: str | None) -> str:
-    """Only same-site paths, so the sign-in form can't be used to redirect elsewhere."""
-    if path and path.startswith("/") and not path.startswith("//") and "\\" not in path:
+    """Only same-site paths, so the sign-in form can't be used to redirect elsewhere. Spaces and control
+    characters are refused too: browsers drop tabs and line breaks from a URL, so "/\\t/evil.example"
+    would become "//evil.example" if anything passed it on unencoded (P3.07)."""
+    if (
+        path
+        and path.startswith("/")
+        and not path.startswith("//")
+        and "\\" not in path
+        and all(" " < ch < "\x7f" for ch in path)
+    ):
         return path
     return "/checks/new"
 

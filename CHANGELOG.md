@@ -51,8 +51,15 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - Admin on phones: tables keep states, models and IDs whole and scroll inside their card instead of breaking words down the column; the Reset, Disable and Delete actions are larger targets with short button labels (the email stays in the name screen readers hear); the overview's status tiles show as links.
 - `backup.sh` waits up to 10 minutes for the backup storage host to resolve before starting. A nightly backup missed while the host PC was off runs right at boot, and on 2026-10-26 it failed because DNS through the Hyper-V Default Switch was not answering yet. Host script only: copy it to the VM; no new images.
 - `restore.sh` prints the scratch-database drop command with `sudo`, which the VM needs.
+- core-worker hung after a database outage: alive, unhealthy and silent, so Docker never restarted it and no check ran until someone did (found by rehearsing RB-04, P3.13). It now reads its config before opening its connection pool and exits when the database isn't there, so Docker restarts it until the database is back.
 
 ### Security
+- Security review (P3.07): `docs/security/OWASP-TOP10.md` checks the OWASP Top 10:2025 and the LLM Top 10 item by item, with evidence, and lists 13 residual risks for the owner.
+- The release scan passes again (D-056). With the 2026-11-06 vulnerability database, every image failed it:
+  - **The Python images** now install Debian security updates at build, which fixes `apt` CVE-2026-109518.
+  - **edge** uses cloudflared 2026.10.7, which fixes CVE-2026-63209 and CVE-2026-116587; it was taken before it was two weeks old.
+  - **One scoped exception:** `.trivyignore.yaml` excuses Trivy's "Google key file" match only inside the Anthropic SDK's own folder. Those matches are docstring examples, not keys.
+- The sign-in page's way back refuses spaces and control characters, and the confirm and feedback redirects use the job ID core returned (the two CodeQL `py/url-redirection` alerts; neither was exploitable).
 - Logs no longer contain the NCBI API key or the Telegram bot token. The HTTP client logs every request's full URL, and the key is a query parameter, the token part of the path, so both were written to the gateway's container logs (in production since 0.1.1). Every log line is now masked before it is written. Rotating both after this release is recommended: a new key in the NCBI account and a new token from @BotFather, then restart the gateway.
 - Pillow 13.0.0 in the core image (41 advisories in 12.3.0, including GHSA-5x8w-8jj5-q52h and GHSA-v9pv-5gc8-w2m6), through fastembed 0.9.1, the first release that allows Pillow 13, taken before it is two weeks old (D-041). Core embeds text only and never opens an image; 0.1.2 has no Pillow at all, so this reaches production with the first release that has hybrid retrieval.
 
