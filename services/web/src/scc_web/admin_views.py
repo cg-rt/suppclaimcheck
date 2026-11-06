@@ -102,6 +102,31 @@ OUTCOME_INK = {
 }
 NOTE_MAX = 500
 
+# Feedback (P4.03): the questions as the result page asks them, and each answer's ink.
+QUESTIONS = {
+    "verdict_right": "Does the verdict look right?",
+    "understandable": "Easy to understand?",
+}
+ANSWERS = {
+    "verdict_right": {"yes": "Yes", "no": "No", "unsure": "Not sure"},
+    "understandable": {"yes": "Yes", "partly": "Partly", "no": "No"},
+}
+ANSWER_INK = {
+    "yes": "supported",
+    "no": "contradicted",
+    "unsure": "none",
+    "partly": "mixed",
+}
+# Time to result (P4.04).
+MEASURES = {
+    "submit_to_result": "Submit to result",
+    "confirm_to_result": "Confirm to result",
+}
+MEASURE_NOTES = {
+    "submit_to_result": "What the person waited, including reading and confirming the claim.",
+    "confirm_to_result": "The search, reading and scoring alone.",
+}
+
 
 def banner_text(lane: dict) -> str:
     """One lane's budget warning for the admin banner (P3.04)."""
@@ -115,6 +140,28 @@ def banner_text(lane: dict) -> str:
         )
         return f"The {lane['lane']} budget is used up this month ({spent} of {cap}): {stopped}."
     return f"The {lane['lane']} lane has spent {spent} of its {cap} cap this month ({share:.0%})."
+
+
+def answer(question: str, value: str | None) -> str:
+    return ANSWERS[question].get(value, "") if value else ""
+
+
+def durations(job: dict) -> dict:
+    """Seconds from submitting and from confirming to the end of the check (P4.04)."""
+    end = datetime.fromisoformat(job["finished_at"])
+    confirmed = job.get("confirmed_at")
+    return {
+        "submit_to_result": (
+            end - datetime.fromisoformat(job["created_at"])
+        ).total_seconds(),
+        "confirm_to_result": (end - datetime.fromisoformat(confirmed)).total_seconds()
+        if confirmed
+        else None,
+    }
+
+
+def share(part: int, whole: int) -> str:
+    return f"{part / whole:.0%}" if whole else "–"
 
 
 def topic(name: str) -> str:

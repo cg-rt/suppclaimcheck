@@ -154,3 +154,61 @@ async def sign_in_blocked(
         account_failures >= rules["max_failures_per_account"]
         or address_attempts >= rules["max_attempts_per_address"]
     )
+
+
+# Account deletion and retention (P3.06, D-054).
+
+
+async def request_deletion(
+    conn: AsyncConnection, user_id: int, requested_by: int, now: datetime
+) -> None:
+    """The first, local step of deleting an account: it is disabled and signed out everywhere at once,
+    and marked, so the purge can finish the deletion if a later step fails."""
+    await conn.execute(
+        "UPDATE auth.users SET deletion_requested_at = coalesce(deletion_requested_at, %s),"
+        " deletion_requested_by = coalesce(deletion_requested_by, %s),"
+        " disabled_at = coalesce(disabled_at, %s) WHERE id = %s",
+        (now, requested_by, now, user_id),
+    )
+    await delete_user_sessions(conn, user_id)
+
+
+async def finish_deletion(conn: AsyncConnection, user_id: int) -> bool:
+    """The last step: the account row (its sessions go with it) and its sign-in attempts.
+    Call only after core has deleted the account's checks. False if it was already gone."""
+    cur = await conn.execute(
+        "DELETE FROM auth.users WHERE id = %s RETURNING lower(email)", (user_id,)
+    )
+    row = await cur.fetchone()
+    if row is None:
+        return False
+    await conn.execute("DELETE FROM auth.login_attempts WHERE email_lower = %s", row)
+    return True
+
+
+async def pending_deletions(conn: AsyncConnection) -> list[tuple[int, int]]:
+    """(account, who asked) for every deletion that hasn't finished, oldest first."""
+    cur = await conn.execute(
+        "SELECT id, coalesce(deletion_requested_by, id) FROM auth.users"
+        " WHERE deletion_requested_at IS NOT NULL ORDER BY deletion_requested_at"
+    )
+    return [(row[0], row[1]) for row in await cur.fetchall()]
+
+
+async def purge(conn: AsyncConnection, now: datetime, config: dict) -> dict[str, int]:
+    """Old sign-in attempts and ended sessions (the retention periods in web's config)."""
+    counts = {}
+    retention = config.get("retention")
+    if retention:
+        cur = await conn.execute(
+            "DELETE FROM auth.login_attempts WHERE at < %s",
+            (now - timedelta(days=retention["login_attempts_days"]),),
+        )
+        counts["sign_in_attempts_deleted"] = cur.rowcount
+    idle_cutoff = now - timedelta(minutes=config["session"]["idle_minutes"])
+    cur = await conn.execute(
+        "DELETE FROM auth.sessions WHERE expires_at <= %s OR last_seen_at <= %s",
+        (now, idle_cutoff),
+    )
+    counts["sessions_deleted"] = cur.rowcount
+    return counts

@@ -3,9 +3,15 @@
 import asyncio
 
 import httpx
+import pytest
 
 from scc_gateway import config
-from scc_gateway.literature import OPEN_ACCESS_FILTER, Literature, RateLimiter
+from scc_gateway.literature import (
+    OPEN_ACCESS_FILTER,
+    Literature,
+    LiteratureUnavailable,
+    RateLimiter,
+)
 
 
 def record(pmid: str, pmcid: str | None, license: str | None) -> dict:
@@ -70,6 +76,34 @@ def test_search_adds_the_open_access_filter_and_identifies_the_tool():
     url = httpx.URL(seen[0])
     assert url.params["term"] == f'("creatine"[tiab]) AND {OPEN_ACCESS_FILTER}'
     assert url.params["tool"] == "suppclaimcheck" and "api_key" not in url.params
+
+
+def test_an_esearch_error_inside_a_200_is_retried_never_read_as_no_matches():
+    """2026-11-05: NCBI answered 200 with an ERROR while its search backend was down."""
+    down = {
+        "header": {"type": "esearch"},
+        "esearchresult": {"ERROR": "Search Backend failed"},
+    }
+    ok = {"esearchresult": {"count": "2", "idlist": ["11", "12"]}}
+    replies = [down, down, ok]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=replies.pop(0) if replies else down)
+
+    cfg = config.load()
+    cfg = {
+        **cfg,
+        "literature": {
+            **cfg["literature"],
+            "backoff_base_s": 0.0,
+            "backoff_max_s": 0.0,
+        },
+    }
+    lit = Literature(cfg, None, None, httpx.MockTransport(handler))
+    assert asyncio.run(lit.search('"creatine"[tiab]', 5))["pmids"] == ["11", "12"]
+    # Down on every attempt: unavailable (the check fails as literature_unavailable), not "Not found".
+    with pytest.raises(LiteratureUnavailable):
+        asyncio.run(lit.search('"creatine"[tiab]', 5))
 
 
 def espell(corrected: str) -> httpx.MockTransport:

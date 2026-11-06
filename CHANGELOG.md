@@ -5,6 +5,8 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 ## [Unreleased]
 
 ### Changed
+- Checks use pipeline v9 (D-055): v8 plus article links below; a check from pasted text sends exactly what it sent under v8.
+- Checks use pipeline v8 (D-054): v7 plus the retention periods below; prompts, search and scoring are unchanged.
 - Checks use pipeline v6 (D-052): the search also tries other spellings of the effect and population words ("anaemia" finds "anemia" too), and studies whose title says the substance was injected or infused are listed as found but not read, unless the claim is about injections. The result page names each reason an article wasn't read. In the evals, iron claims are right again and verdict accuracy reaches 81%.
 - "No claim found" is now a request for a clearer text instead of a failed check (pipeline v5).
 - Checks use pipeline v1 (D-044, docs/METHOD.md): up to five open-access articles per claim instead of one, chosen by type of study (systematic reviews and trials first), each assessed separately; rubric v1 weighs each article by its type of study and needs human evidence for a verdict. The result page explains the score article by article. Verdicts can differ from 0.1.x for the same claim.
@@ -12,6 +14,23 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - Checks use pipeline v4 (D-047): hybrid retrieval with matching words weighted 0.7 and meaning 0.3, chosen by comparing three retrieval settings on the eval set. A check takes longer (about 20 seconds in testing) when its articles have not been read before; repeat articles are as fast as before.
 
 ### Added
+- Design pass (P3.11):
+  - **How a check works:** a public page at `/method`, linked from every page's footer, the new-check page and the score workings. It explains, in plain words, how articles are found and weighted, how quotes are checked and how the verdict and score are worked out, with the weights table, the verdict rules and a worked example. Its numbers are the active pipeline config's, kept equal by a test.
+  - **The articles read, numbered:** the result page lists each article with its type of study, its weight and what it found (supports, contradicts, points both ways, or no finding). Each quote names its article ("Article 2: Moabedi et al., 2023") and links to it, instead of repeating the full author list, and the score workings name the article on each line.
+- Article links (P3.12, D-055):
+  - **New check from a link:** the new-check page offers "A link to a page" next to Text. SuppClaimCheck reads the page once, lists up to eight claims it makes about supplements, and the user picks one to check; the confirm and result pages name the page that was read.
+  - **The page reader** is in the gateway and checks every address first: only http and https on the usual ports, and never an address inside a private network, also after redirects. It obeys robots.txt and `noai`, reads at most 2 MB in 10 seconds, and only web pages. A public page at `/reader` says what it does and how a site can keep it away.
+  - **When a page can't be read,** the check stops before any model call with a message that says why and suggests pasting the text instead.
+  - **A switch in the pipeline config** (`[inputs] url`) turns links off without a release (RUNBOOK RB-17).
+  - **Config and migrations:** `pipeline-v9`, `gateway-v3`; core migration 0009.
+- Privacy (P3.06, D-054, docs/PRIVACY.md):
+  - **Privacy notice:** a public page at `/privacy`, linked from every page's footer. It says what is kept, why, for how long and who else sees it, and names the operator from `SCC_OPERATOR_NAME`, set on the server.
+  - **Delete my account:** on the Account page, after your password. It removes the account and every check at once; admins can do the same for an emailed request.
+  - **Retention:** checks are deleted 180 days after submission, sign-in attempts after 30 days, the account link on LLM cost records after 180 days, and stored model answers after 7 days, by purges in each module.
+  - **Config and migrations:** `web-v1`, `pipeline-v8`, `gateway-v2`; migrations web 0004, core 0008, gateway 0005.
+- Feedback and time to result (P4.03, P4.04):
+  - **Under every result:** three optional questions (does the verdict look right, was it easy to understand, was anything missing). The result also says how long the search took.
+  - **Admin's new Outcomes page:** the answers, what people said was missing, and the median and 90th-percentile time from submitting and from confirming to the result. Each job's trace shows its feedback and times.
 - Budget guard (P3.04, D-053): a Telegram warning once a month at 50% and 80% of a budget, and a banner in admin; new checks and confirmations stop with a plain message when less than one check's worth is left; each account may start 25 checks a UTC day; admin's Costs page shows spend per account. Gateway config `gateway-v1`; gateway migration 0004.
 - Resilience (P3.05, D-053): every LLM call carries an idempotency key, so a repeated job step never charges twice; a check whose claim matches one finished in the last 7 days reuses its result and says so; an article the model doesn't answer for, or that won't download, is left out with a note instead of failing the check; checks that lose their worker are ended after 20 minutes with an alert, so admin can retry them; core and the gateway answer unexpected errors with a code and the correlation ID, which web's error page quotes as a reference. `docs/ERRORS.md` lists every error code. Checks use pipeline v7 (v6 plus the reuse and stall settings).
 - Admin pages on the admin hostname, behind Cloudflare Access and the admin role (P3.08-P3.10, D-049): jobs by status with search; a per-job trace (timeline, input and claims, every LLM call with tokens, cost and latency, search and passages, verified and dropped quotes, result, prompts, correlation ID and the log command) with a retry for failed jobs; recent errors with runbook links; costs and usage from the LLM call records; eval results per pipeline version; module health and versions; config versions and diffs (read-only); and users (create, reset password, disable). core-api and the gateway gained read-only admin endpoints for them. Production needs the `admin.suppclaimcheck.com` hostname and its Access application in Cloudflare first.
@@ -23,10 +42,24 @@ One version for the whole app (D-034). Format: [Keep a Changelog](https://keepac
 - Eval set v1 (30 labelled claims, all approved by the owner) and the eval runner, `python -m scc_core.eval`, with a free replay of the recorded run in CI (D-043). Development tooling: nothing changes for users.
 
 ### Fixed
+- When PubMed's search was down but answered "200 OK" with an error inside, a check said "Not found" (and reuse would have repeated it for a week). It now retries and, if PubMed stays down, fails with "The literature databases are not answering".
+- The migrate steps of a deploy wait for each other, so two can't collide on the same database grants ("tuple concurrently updated").
+- Stylesheet links carry a hash of the file, so after a deploy no browser or Cloudflare cache pairs the new pages with old styles.
+- The result page says "took 1 second", not "1 seconds".
+- Pages still described one article per check: the new-check page now says a check reads up to five, and the result page says "The 5 articles that were read".
+- History scrolled sideways on phones when a link check was named by a long address; it wraps now. On the narrowest phones the name and New check share the header's first row again.
+- Admin on phones: tables keep states, models and IDs whole and scroll inside their card instead of breaking words down the column; the Reset, Disable and Delete actions are larger targets with short button labels (the email stays in the name screen readers hear); the overview's status tiles show as links.
 - `backup.sh` waits up to 10 minutes for the backup storage host to resolve before starting. A nightly backup missed while the host PC was off runs right at boot, and on 2026-10-26 it failed because DNS through the Hyper-V Default Switch was not answering yet. Host script only: copy it to the VM; no new images.
 - `restore.sh` prints the scratch-database drop command with `sudo`, which the VM needs.
+- core-worker hung after a database outage: alive, unhealthy and silent, so Docker never restarted it and no check ran until someone did (found by rehearsing RB-04, P3.13). It now reads its config before opening its connection pool and exits when the database isn't there, so Docker restarts it until the database is back.
 
 ### Security
+- Security review (P3.07): `docs/security/OWASP-TOP10.md` checks the OWASP Top 10:2025 and the LLM Top 10 item by item, with evidence, and lists 13 residual risks for the owner.
+- The release scan passes again (D-056). With the 2026-11-06 vulnerability database, every image failed it:
+  - **The Python images** now install Debian security updates at build, which fixes `apt` CVE-2026-109518.
+  - **edge** uses cloudflared 2026.10.7, which fixes CVE-2026-63209 and CVE-2026-116587; it was taken before it was two weeks old.
+  - **One scoped exception:** `.trivyignore.yaml` excuses Trivy's "Google key file" match only inside the Anthropic SDK's own folder. Those matches are docstring examples, not keys.
+- The sign-in page's way back refuses spaces and control characters, and the confirm and feedback redirects use the job ID core returned (the two CodeQL `py/url-redirection` alerts; neither was exploitable).
 - Logs no longer contain the NCBI API key or the Telegram bot token. The HTTP client logs every request's full URL, and the key is a query parameter, the token part of the path, so both were written to the gateway's container logs (in production since 0.1.1). Every log line is now masked before it is written. Rotating both after this release is recommended: a new key in the NCBI account and a new token from @BotFather, then restart the gateway.
 - Pillow 13.0.0 in the core image (41 advisories in 12.3.0, including GHSA-5x8w-8jj5-q52h and GHSA-v9pv-5gc8-w2m6), through fastembed 0.9.1, the first release that allows Pillow 13, taken before it is two weeks old (D-041). Core embeds text only and never opens an image; 0.1.2 has no Pillow at all, so this reaches production with the first release that has hybrid retrieval.
 

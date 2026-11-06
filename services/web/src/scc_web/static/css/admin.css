@@ -2,7 +2,6 @@
    Admin is a desk tool first, so the column is 1200px and data sits in tables; phones still work. */
 
 :root {
-  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
   --admin-width: 1200px;
 }
 
@@ -54,18 +53,17 @@
 .data .n { text-align: right; white-space: nowrap; }
 .data td:first-child, .data th:first-child { padding-left: 0; }
 .data td:last-child, .data th:last-child { padding-right: 0; }
-.data__text { min-width: 16rem; max-width: 40rem; overflow-wrap: anywhere; }
+/* Text columns wrap between words, and inside a word only when one is wider than the column, so a
+   narrow table never breaks words down the column (P3.11; titles read "Comm on questi ons" before). */
+.data__text { min-width: 16rem; max-width: 40rem; overflow-wrap: break-word; }
 /* A short free-text column beside a .data__text one: wraps first, so the table still fits. */
-.data__note { min-width: 10rem; max-width: 24rem; overflow-wrap: anywhere; }
-.data code { font-size: 0.8125rem; }
+.data__note { min-width: 10rem; max-width: 24rem; overflow-wrap: break-word; }
+/* States, models, IDs and codes stay whole in a table; a table too wide for its card scrolls inside it. */
+.data code { font-size: 0.8125rem; white-space: nowrap; }
 /* Eight characters of a job ID read as one word; never break them down the column. */
 .short-id { white-space: nowrap; }
 
-/* Filter tabs and search */
-.tabs ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); border-bottom: 1px solid var(--line); }
-.tabs a { display: inline-block; padding: var(--space-2) 0; color: var(--ink); font-weight: 600; text-decoration: none; }
-.tabs a:hover { color: var(--action); }
-.tabs a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--ink); }
+/* Filter tabs (.tabs is in app.css: the new-check page uses it too) and search */
 .tabs__n { color: var(--ink-2); font-weight: 400; }
 .search { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
 .search input, .search select {
@@ -83,24 +81,18 @@
 /* Overview */
 .facts--wide > div { grid-template-columns: 12rem 1fr; }
 .tiles { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
+/* Each tile opens the jobs in that status, so its label is orange like any link (the Pressable Orange Rule). */
 .tiles a {
   display: flex; flex-direction: column; gap: var(--space-1); height: 100%;
   background: var(--card-quiet); border-radius: var(--radius-sm); padding: var(--space-3);
-  color: var(--ink-2); font-size: var(--text-sm); text-decoration: none;
+  color: var(--action); font-size: var(--text-sm); font-weight: 600; text-decoration: none;
   transition: background-color 160ms var(--ease);
 }
-.tiles a:hover { background: var(--action-tint); color: var(--ink); }
+.tiles a:hover { background: var(--action-tint); color: var(--action-hover); }
 .tiles__n { font-size: var(--text-lg); font-weight: 800; color: var(--ink); }
 
 /* Code, settings and diffs: monospace because they are code. */
-.code {
-  margin: 0; font: 0.8125rem/1.55 var(--mono); color: var(--ink);
-  background: var(--card-quiet); border: 1px solid var(--line); border-radius: var(--radius-sm);
-  padding: var(--space-3) var(--space-4); overflow: auto; max-height: 36rem; tab-size: 2;
-}
-.code code { font-size: inherit; overflow-wrap: normal; }
-.code--wrap { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; }
-.code--wrap code { overflow-wrap: anywhere; }
+/* .code is in app.css: the page reader's page shows code too. */
 .diff code { display: inline-block; min-width: 100%; }
 .diff span { display: block; padding-inline: var(--space-2); margin-inline: calc(-1 * var(--space-2)); }
 .diff__add { background: var(--supported-tint); color: var(--supported); }
@@ -133,17 +125,23 @@
 .mark-key--quoted { background: var(--supported-tint); }
 .mark-key--dropped { background: var(--contradicted-tint); }
 
+/* Outcomes (P4.03, P4.04): one short answer table per question, side by side where there is room. */
+.answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 28rem)); gap: var(--space-4) var(--space-7); }
+.answers > div { display: grid; gap: var(--space-2); align-content: start; min-width: 0; }
+.answers .subhead { margin-top: 0; }
+.data--answers tbody th { font-weight: 400; }
+
 /* Users */
 .actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-4); }
-.confirm > summary { font-weight: 700; }
+/* Reset, Disable, Delete: each summary is a comfortable target, and a button naming a long email
+   wraps inside the cell instead of pushing past it (P3.11). */
+.confirm > summary { font-weight: 700; padding-block: var(--space-2); }
+.actions > a { padding-block: var(--space-2); }
 .confirm[open] { flex-basis: 100%; }
 .confirm form { display: grid; gap: var(--space-2); justify-items: start; }
+.confirm .button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
 .confirm[open] > summary { margin-bottom: var(--space-2); }
 .form--inline { grid-template-columns: minmax(0, 24rem) auto auto; align-items: end; gap: var(--space-4) var(--space-5); }
-.choice { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); min-height: 48px; align-items: center; }
-.choice legend { font-weight: 700; padding: 0; margin-bottom: var(--space-1); float: left; width: 100%; }
-.choice label { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 400; cursor: pointer; }
-.choice input { width: 1.125rem; height: 1.125rem; accent-color: var(--action); margin: 0; }
 
 @media (max-width: 900px) {
   .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -178,6 +176,10 @@
     color: var(--ink-2); font-weight: 700; font-size: var(--text-sm);
   }
   .data--stack .n { text-align: left; }
+  .data--stack code { white-space: normal; overflow-wrap: anywhere; }
+  /* Row actions take the block's whole width, their label above them, so their buttons fit on one line. */
+  .data.data--stack td.data__actions { padding-left: 0; }
+  .data--stack td.data__actions::before { position: static; display: block; width: auto; margin-bottom: var(--space-1); }
   .data.data--stack td[colspan] { padding-left: 0; }
   .data--stack td[colspan]::before { content: none; }
 }

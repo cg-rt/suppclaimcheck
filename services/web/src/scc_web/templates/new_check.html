@@ -1,11 +1,36 @@
 {% extends "base.html" %}
 {% from "macros.html" import steps, error_box %}
 {% set nav = "new" %}
+{% set link_mode = links and mode == "link" %}
 {% block title %}New check{% endblock %}
 {% block main %}
 <section class="card">
   <h1 class="title">What claim do you want to check?</h1>
   {{ steps("enter") }}
+  {% if links %}
+  <nav class="tabs" aria-label="What you have">
+    <ul>
+      <li><a href="/checks/new"{% if not link_mode %} aria-current="page"{% endif %}>Text</a></li>
+      <li><a href="/checks/new?from=link"{% if link_mode %} aria-current="page"{% endif %}>A link to a page</a></li>
+    </ul>
+  </nav>
+  {% endif %}
+  {% if link_mode %}
+  <p class="lede">Give the address of an article, blog post or product page. SuppClaimCheck reads the page once and lists the claims it makes about supplements, so you can pick one.</p>
+  {{ error_box(error) }}
+  <form class="form" method="post" action="/checks">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+    <input type="hidden" name="input_type" value="url">
+    <div class="field">
+      <label for="input_url">The page's address</label>
+      <p class="hint" id="input_url_hint">Copy it from your browser's address bar. It starts with https://</p>
+      <input id="input_url" name="input_url" type="url" inputmode="url" autocomplete="url" spellcheck="false" autocapitalize="off" maxlength="2048" required aria-describedby="input_url_hint" value="{{ url or '' }}">
+    </div>
+    <button class="button" type="submit">Read the page</button>
+  </form>
+  <p class="small">Only the page itself is read, as anyone without an account would see it. PDFs, pages behind a login and pages whose site asks automated readers to stay away can't be read: paste their text instead. <a href="/reader">How the page reader works</a>.</p>
+  {% else %}
   <p class="lede">Paste a sentence from an ad, an article or a video description, or type the claim in your own words. One claim at a time works best.</p>
   {{ error_box(error) }}
   <form class="form" method="post" action="/checks">
@@ -18,11 +43,12 @@
     </div>
     <button class="button" type="submit">Find the claim</button>
   </form>
+  {% endif %}
   <p class="small">Next, you'll see the claim as it was understood and can correct it. Nothing is searched until you confirm.</p>
 </section>
 <section class="card card--quiet" aria-labelledby="does-title">
   <h2 class="card__title" id="does-title">What this check does, and doesn't</h2>
-  <p>It searches PubMed for open-access articles, reads one whose licence allows it, and shows the sentences that support or contradict the claim, each checked word for word against the article.</p>
-  <p>It doesn't give medical advice or tell you whether to take anything. It can't read articles that aren't open access.</p>
+  <p>It searches PubMed for open-access articles, reads up to <span class="num">{{ method.read }}</span> of the strongest studies whose licence allows it, and shows the sentences that support or contradict the claim, each checked word for word against its article.</p>
+  <p>It doesn't give medical advice or tell you whether to take anything. It can't read articles that aren't open access. <a href="/method">How a check works</a></p>
 </section>
 {% endblock %}

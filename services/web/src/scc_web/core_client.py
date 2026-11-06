@@ -38,14 +38,27 @@ class CoreClient:
         return response.json()
 
     async def create_job(
-        self, user_id: int, input_text: str, idempotency_key: str
+        self,
+        user_id: int,
+        input_text: str,
+        idempotency_key: str,
+        input_type: str = "text",
     ) -> dict:
+        """`input_type` "url": `input_text` is a web page's address (P3.12)."""
         return await self._call(
             "POST",
             "/jobs",
-            json={"user_id": user_id, "input_text": input_text},
+            json={
+                "user_id": user_id,
+                "input_type": input_type,
+                "input_text": input_text,
+            },
             headers={"Idempotency-Key": idempotency_key},
         )
+
+    async def input_types(self) -> dict:
+        """What a new check may start from under core's active config: {"text": true, "url": bool}."""
+        return await self._call("GET", "/inputs")
 
     async def get_job(self, job_id: str) -> dict:
         return await self._call("GET", f"/jobs/{job_id}")
@@ -59,4 +72,14 @@ class CoreClient:
     async def list_jobs(self, user_id: int, limit: int = 50) -> list[dict]:
         return await self._call(
             "GET", "/jobs", params={"user_id": user_id, "limit": limit}
+        )
+
+    async def save_feedback(self, job_id: str, user_id: int, answers: dict) -> dict:
+        return await self._call(
+            "PUT", f"/jobs/{job_id}/feedback", json={"user_id": user_id, **answers}
+        )
+
+    async def erase_user(self, user_id: int, requested_by: int) -> dict:
+        return await self._call(
+            "POST", f"/users/{user_id}/erase", json={"requested_by": requested_by}
         )

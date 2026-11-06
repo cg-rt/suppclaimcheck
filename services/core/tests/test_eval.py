@@ -45,13 +45,13 @@ def _answer(verdict="Supported", score=75, **kw) -> Observation:
     )
 
 
-def test_eval_set_has_23_tuning_and_8_held_out_cases_one_per_category():
+def test_eval_set_has_26_tuning_and_9_held_out_cases_one_per_category():
     tuning = cases.load(EVALS, "tuning")
     held_out = cases.load(EVALS, "held_out")
     assert (tuning.version, len(tuning.cases), len(held_out.cases)) == (
-        "evalset-v3",
-        23,
-        8,
+        "evalset-v4",
+        26,
+        9,
     )
     # Stratified: every category has tuning cases and exactly one held-out case.
     assert sorted(c.category for c in held_out.cases) == sorted(
@@ -245,6 +245,39 @@ def test_record_then_replay_round_trip(tmp_path):
         _run(changed_prompt())
 
 
+def test_adding_cases_keeps_the_rest_of_the_recording(tmp_path):
+    """--add-to-recording (M5): new cases join the recording; what was recorded before still replays."""
+
+    def gateway(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"echo": json.loads(request.content)})
+
+    async def post(transport, body):
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://gateway"
+        ) as client:
+            return (await client.post("/pages/fetch", json=body)).json()
+
+    first = EvalTransport("live", tmp_path, inner=httpx.MockTransport(gateway))
+    _run(post(first, {"url": "https://a.example/"}))
+    first.save()
+    added = EvalTransport("live", tmp_path, inner=httpx.MockTransport(gateway))
+    _run(post(added, {"url": "https://b.example/"}))
+    added.save(add=True)
+    replay = EvalTransport("replay", tmp_path)
+    assert _run(post(replay, {"url": "https://a.example/"})) == {
+        "echo": {"url": "https://a.example/"}
+    }
+    assert _run(post(replay, {"url": "https://b.example/"})) == {
+        "echo": {"url": "https://b.example/"}
+    }
+    # A plain save still replaces the recording.
+    again = EvalTransport("live", tmp_path, inner=httpx.MockTransport(gateway))
+    _run(post(again, {"url": "https://b.example/"}))
+    again.save()
+    with pytest.raises(StaleRecording):
+        _run(post(EvalTransport("replay", tmp_path), {"url": "https://a.example/"}))
+
+
 def test_evals_md_row_lands_at_the_end_of_the_results_table(tmp_path):
     doc = tmp_path / "EVALS.md"
     doc.write_text(
@@ -353,3 +386,22 @@ def test_a_long_override_is_shortened_in_the_evals_row_note():
     note = override_note('prompts.assess="""\nline one\nline two\n"""')
     assert "\n" not in note
     assert note.startswith("prompts.assess=<") and "in the run file" in note
+
+
+def test_a_live_run_hit_by_an_outage_is_not_saved():
+    from scc_core.eval.__main__ import outage_cases
+    from scc_core.eval.metrics import CaseResult
+
+    def result(case_id, code):
+        return CaseResult(
+            id=case_id, category="c", expected_behaviour="answer", passed=False,
+            checks={}, reasons=[], observed={"error_code": code},
+        )  # fmt: skip
+
+    results = [
+        result("a", None),
+        result("b", "literature_unavailable"),
+        result("c", "no_claim"),
+    ]
+    assert outage_cases(results) == ["b"]
+    assert outage_cases([result("a", None)]) == []

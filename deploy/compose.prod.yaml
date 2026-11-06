@@ -95,6 +95,9 @@ services:
       # reads the gateway's call records through the gateway's read-only admin endpoints.
       SCC_ADMIN_HOST: admin.suppclaimcheck.com
       SCC_GATEWAY_URL: http://gateway:8000
+      # The controller the privacy page names (P3.06, D-054). Set on the VM in /opt/suppclaimcheck/.env
+      # (SCC_OPERATOR_NAME=...), never in this repo; without it the page says "the person who invited you".
+      SCC_OPERATOR_NAME: ${SCC_OPERATOR_NAME:-}
     secrets: [db_web_password]
     depends_on:
       web-migrate: {condition: service_completed_successfully}

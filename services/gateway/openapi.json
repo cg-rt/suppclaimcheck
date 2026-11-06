@@ -264,6 +264,19 @@
         "title": "DayUsage",
         "type": "object"
       },
+      "EraseReply": {
+        "properties": {
+          "llm_calls": {
+            "title": "Llm Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "llm_calls"
+        ],
+        "title": "EraseReply",
+        "type": "object"
+      },
       "EvalResult": {
         "properties": {
           "attached_at": {
@@ -607,6 +620,7 @@
               "job_failed",
               "safety_review",
               "injection_throttled",
+              "account_deleted",
               "test"
             ],
             "title": "Event",
@@ -624,6 +638,73 @@
           "text"
         ],
         "title": "NotifyRequest",
+        "type": "object"
+      },
+      "PageReply": {
+        "properties": {
+          "final_url": {
+            "title": "Final Url",
+            "type": "string"
+          },
+          "site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Name"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "final_url",
+          "title",
+          "site_name",
+          "text",
+          "truncated"
+        ],
+        "title": "PageReply",
+        "type": "object"
+      },
+      "PageRequest": {
+        "properties": {
+          "url": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "PageRequest",
         "type": "object"
       },
       "QuotaStatus": {
@@ -1676,6 +1757,93 @@
         "summary": "Notify",
         "tags": [
           "alerts"
+        ]
+      }
+    },
+    "/pages/fetch": {
+      "post": {
+        "description": "Reads one web page a user linked to, with every address checked first (P3.12, D-055).",
+        "operationId": "pages_fetch_pages_fetch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageReply"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Not read: url_invalid, url_blocked (a private or reserved address, or another port), robots_disallowed, ai_disallowed, not_html, too_large, no_text, page_not_found (404, 410) or site_refused (401, 403, 451)"
+          },
+          "502": {
+            "description": "page_unavailable: the site failed or answered with an error"
+          },
+          "503": {
+            "description": "pages_not_configured: the active config has no [pages]"
+          },
+          "504": {
+            "description": "page_timeout: no page within the time limit"
+          }
+        },
+        "summary": "Pages Fetch",
+        "tags": [
+          "pages"
+        ]
+      }
+    },
+    "/users/{user_id}/erase": {
+      "post": {
+        "description": "Removes a deleted account's link from its LLM calls and drops their stored answers (P3.06).\nCore calls this when an account is deleted. Safe to call again.",
+        "operationId": "erase_user_users__user_id__erase_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EraseReply"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Erase User",
+        "tags": [
+          "privacy"
         ]
       }
     },

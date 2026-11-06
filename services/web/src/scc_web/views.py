@@ -17,6 +17,12 @@ STAGES = {
     "refused": "Not checked",
     "needs_clarification": "Needs a clearer claim",
 }
+# A check started from a link (P3.12): the first stages read the page, not the user's text.
+LINK_STAGES = {
+    **STAGES,
+    "submitted": "Received your link",
+    "extracting": "Reading the page for claims",
+}
 BEFORE_CONFIRM = ["submitted", "extracting", "awaiting_confirmation"]
 AFTER_CONFIRM = ["searching", "retrieving", "assessing", "verifying", "scoring", "done"]
 # States where the progress stream stops and the page reloads to show what comes next.
@@ -39,7 +45,13 @@ VERDICT_CLASS = {
 }
 
 
-def progress(state: str, events: list[dict]) -> list[dict]:
+def stage_names(job: dict) -> dict[str, str]:
+    return LINK_STAGES if job.get("input_type") == "url" else STAGES
+
+
+def progress(
+    state: str, events: list[dict], names: dict[str, str] = STAGES
+) -> list[dict]:
     """One row per stage of the current phase: done, current or waiting, with the time it started."""
     stages = BEFORE_CONFIRM if state in BEFORE_CONFIRM else AFTER_CONFIRM
     started = {}
@@ -61,7 +73,7 @@ def progress(state: str, events: list[dict]) -> list[dict]:
         rows.append(
             {
                 "state": name,
-                "label": STAGES[name],
+                "label": names[name],
                 "status": status,
                 "at": _clock(at) if at else None,
             }
@@ -158,17 +170,27 @@ def score_steps(result: dict, full_strength: int | None = None) -> list[str]:
     ]
 
 
+def _article_numbers(result: dict) -> dict[str, int]:
+    """Each article read gets the number it has in the result page's list, in the result's order."""
+    return {a["pmcid"]: n for n, a in enumerate(result.get("articles") or [], 1)}
+
+
 def _score_steps_v1(result: dict) -> list[str]:
     counted = [a for a in result["breakdown"] if a["counted"]]
     if not counted:
         return [
             "No verified passage supports or contradicts the claim, so the score stays at 50."
         ]
-    steps = [
-        f"{TIER_NAMES.get(a['tier'], a['tier'])}, weight {a['weight']:.2f}: "
-        f"{a['supporting']} for, {a['contradicting']} against, stance {a['stance']:+.2f}"
-        for a in counted
-    ]
+    numbers = _article_numbers(result)
+    steps = []
+    for a in counted:
+        kind = TIER_NAMES.get(a["tier"], a["tier"])
+        if a.get("pmcid") in numbers:  # names the article as the page's list numbers it
+            kind = f"Article {numbers[a['pmcid']]}, {kind[0].lower()}{kind[1:]}"
+        steps.append(
+            f"{kind}, weight {a['weight']:.2f}: "
+            f"{a['supporting']} for, {a['contradicting']} against, stance {a['stance']:+.2f}"
+        )
     total = sum(a["weight"] for a in counted)
     w_for, w_against = result["weight_for"], result["weight_against"]
     d, s, full = result["direction"], result["strength"], result["full_strength_weight"]
@@ -186,19 +208,82 @@ def citation(article: dict) -> str:
     return ". ".join(str(p).rstrip(".") for p in parts if p)
 
 
+def short_ref(article: dict) -> str:
+    """The article as a reference list cites it in running text: "Mah and Pitre, 2021",
+    "Moabedi et al., 2023". PubMed lists authors as "Surname Initials, ..."."""
+    names = [
+        a.strip().split(" ")[0]
+        for a in (article.get("authors") or "").rstrip(".").split(",")
+        if a.strip()
+    ]
+    if len(names) > 2:
+        who = f"{names[0]} et al."
+    else:
+        who = " and ".join(names)
+    return ", ".join(str(p) for p in (who, article.get("year")) if p)
+
+
+def finding(entry: dict | None) -> dict | None:
+    """What one article said about the claim, from its rubric-v1 breakdown entry: a coloured word
+    and the passages behind it. None for results without a breakdown (rubric-v0)."""
+    if entry is None:
+        return None
+    s, c = entry["supporting"], entry["contradicting"]
+
+    def passages(k: int) -> str:
+        return f"{k} passage" + ("" if k == 1 else "s")
+
+    if not entry["counted"] or s + c == 0:
+        return {
+            "word": "No finding",
+            "ink": "none",
+            "detail": "no passage was about the claim",
+        }
+    if c == 0:
+        return {"word": "Supports the claim", "ink": "supported", "detail": passages(s)}
+    if s == 0:
+        return {
+            "word": "Contradicts the claim",
+            "ink": "contradicted",
+            "detail": passages(c),
+        }
+    return {
+        "word": "Points both ways",
+        "ink": "mixed",
+        "detail": f"{s} for, {c} against",
+    }
+
+
 def licence_label(licence: str | None) -> str:
     return (licence or "unknown licence").upper().replace("CC0", "CC0 1.0")
+
+
+def search_seconds(job: dict) -> int | None:
+    """From confirming the claim to the result (P4.04), in whole seconds. None for a reused result,
+    which took no search, or when the times are missing (checks from before migration 0008)."""
+    if job["result"].get("reused_from") or not (
+        job.get("confirmed_at") and job.get("finished_at")
+    ):
+        return None
+    took = datetime.fromisoformat(job["finished_at"]) - datetime.fromisoformat(
+        job["confirmed_at"]
+    )
+    return max(1, round(took.total_seconds()))
 
 
 def result_view(job: dict) -> dict:
     result = job["result"]
     articles = {a["pmcid"]: a for a in result["articles"]}
+    numbers = _article_numbers(result)
+    breakdown = {b.get("pmcid"): b for b in result.get("breakdown") or []}
     quotes = []
     for quote in result["quotes"]:
         article = articles.get(quote["pmcid"], {})
         quotes.append(
             {
                 **quote,
+                "n": numbers.get(quote["pmcid"]),
+                "ref": short_ref(article),
                 "citation": citation(article),
                 "title": article.get("title"),
                 "licence": licence_label(article.get("license")),
@@ -207,6 +292,7 @@ def result_view(job: dict) -> dict:
     skipped = result["searched"].get("skipped", {})
     return {
         "skip_reasons": SKIP_REASONS,
+        "seconds": search_seconds(job),
         "verdict": result["verdict"],
         "verdict_class": VERDICT_CLASS.get(result["verdict"], "none"),
         "explanation": explain(result),
@@ -216,7 +302,14 @@ def result_view(job: dict) -> dict:
         "supporting": [q for q in quotes if q["label"] == "supports"],
         "contradicting": [q for q in quotes if q["label"] == "contradicts"],
         "articles": [
-            {**a, "citation": citation(a), "licence": licence_label(a.get("license"))}
+            {
+                **a,
+                "n": numbers[a["pmcid"]],
+                "citation": citation(a),
+                "licence": licence_label(a.get("license")),
+                "kind": TIER_NAMES.get(a["tier"]) if a.get("tier") else None,
+                "finding": finding(breakdown.get(a["pmcid"])) if breakdown else None,
+            }
             for a in result["articles"]
         ],
         "skipped": skipped,

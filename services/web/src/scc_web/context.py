@@ -1,8 +1,10 @@
 """Shared state for web's routes: dependencies, the signed-in user, and template rendering."""
 
+import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import cache
 from pathlib import Path
 from urllib.parse import quote
 
@@ -17,6 +19,18 @@ from scc_web.core_client import CoreClient
 from scc_web.security import SESSION_COOKIE
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+STATIC = Path(__file__).parent / "static"
+
+
+@cache
+def asset(path: str) -> str:
+    """A static file's URL with a hash of its content. A deploy that changes the CSS changes the URL, so
+    no browser or Cloudflare cache serves the old file with the new pages."""
+    digest = hashlib.sha256((STATIC / path).read_bytes()).hexdigest()[:12]
+    return f"/static/{path}?v={digest}"
+
+
+templates.env.globals["asset"] = asset
 
 
 @dataclass
@@ -29,6 +43,8 @@ class Deps:
     # Admin (P3.08-P3.10): its hostname and the client for core's and the gateway's admin endpoints.
     admin: AdminClient | None = None
     admin_host: str | None = None
+    # The person or organisation named as the controller on the privacy page (P3.06).
+    operator: str | None = None
 
 
 class SignInRequired(Exception):
@@ -62,8 +78,16 @@ async def require_session(request: Request) -> store.Session:
 
 
 def safe_next(path: str | None) -> str:
-    """Only same-site paths, so the sign-in form can't be used to redirect elsewhere."""
-    if path and path.startswith("/") and not path.startswith("//") and "\\" not in path:
+    """Only same-site paths, so the sign-in form can't be used to redirect elsewhere. Spaces and control
+    characters are refused too: browsers drop tabs and line breaks from a URL, so "/\\t/evil.example"
+    would become "//evil.example" if anything passed it on unencoded (P3.07)."""
+    if (
+        path
+        and path.startswith("/")
+        and not path.startswith("//")
+        and "\\" not in path
+        and all(" " < ch < "\x7f" for ch in path)
+    ):
         return path
     return "/checks/new"
 

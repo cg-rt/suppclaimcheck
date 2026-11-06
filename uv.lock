@@ -8,7 +8,6 @@ exclude-newer-span = "P14D"
 
 [options.exclude-newer-package]
 fastembed = "2026-10-25T00:00:00Z"
-virtualenv = "2026-10-23T00:00:00Z"
 
 [manifest]
 members = [
@@ -1482,6 +1481,7 @@ version = "0.1.2"
 source = { editable = "services/gateway" }
 dependencies = [
     { name = "anthropic" },
+    { name = "httpcore" },
     { name = "psycopg-pool" },
     { name = "scc-common" },
 ]
@@ -1489,6 +1489,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = "==1.15.0" },
+    { name = "httpcore", specifier = "==1.0.9" },
     { name = "psycopg-pool", specifier = "==3.3.3" },
     { name = "scc-common", editable = "libs/common" },
 ]

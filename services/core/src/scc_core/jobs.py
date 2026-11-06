@@ -11,11 +11,21 @@ from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from scc_core.models import Claim, Job, JobCreate, JobEvent, JobState, JobSummary
+from scc_core.models import (
+    Claim,
+    Feedback,
+    FeedbackIn,
+    Job,
+    JobCreate,
+    JobEvent,
+    JobState,
+    JobSummary,
+)
 
 _COLUMNS = (
-    "id, user_id, state, input_type, input_text, extracted_claims, confirmed_claim, result, error, "
-    "config_version, sensitive_topics, needs_review, created_at, updated_at"
+    "id, user_id, state, input_type, input_text, source, extracted_claims, confirmed_claim, result, "
+    "error, config_version, sensitive_topics, needs_review, created_at, updated_at, confirmed_at, "
+    "finished_at"
 )
 
 
@@ -85,7 +95,50 @@ async def get(conn: AsyncConnection, job_id: UUID) -> Job | None:
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(f"SELECT {_COLUMNS} FROM core.jobs WHERE id = %s", (job_id,))
         row = await cur.fetchone()
-    return Job(**row) if row else None
+        if row is None:
+            return None
+        await cur.execute(
+            "SELECT verdict_right, understandable, missing, updated_at FROM core.feedback WHERE job_id = %s",
+            (job_id,),
+        )
+        feedback = await cur.fetchone()
+    return Job(**row, feedback=Feedback(**feedback) if feedback else None)
+
+
+class NotYours(Exception):
+    """The job belongs to another account (or doesn't exist): both look the same to the caller."""
+
+
+async def save_feedback(
+    conn: AsyncConnection, job_id: UUID, body: FeedbackIn
+) -> Feedback:
+    """Stores or replaces the account's rating of its own finished check (P4.03)."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            "SELECT user_id, state FROM core.jobs WHERE id = %s", (job_id,)
+        )
+        job = await cur.fetchone()
+        if job is None or job["user_id"] != body.user_id:
+            raise NotYours(job_id)
+        if job["state"] != JobState.done:
+            raise WrongState(job["state"])
+        await cur.execute(
+            """
+            INSERT INTO core.feedback (job_id, user_id, verdict_right, understandable, missing)
+            VALUES (%(job)s, %(user)s, %(verdict)s, %(understandable)s, %(missing)s)
+            ON CONFLICT (job_id) DO UPDATE SET verdict_right = EXCLUDED.verdict_right,
+                understandable = EXCLUDED.understandable, missing = EXCLUDED.missing, updated_at = now()
+            RETURNING verdict_right, understandable, missing, updated_at
+            """,
+            {
+                "job": job_id,
+                "user": body.user_id,
+                "verdict": body.verdict_right,
+                "understandable": body.understandable,
+                "missing": body.missing,
+            },
+        )
+        return Feedback(**await cur.fetchone())
 
 
 async def set_state(
@@ -146,6 +199,16 @@ async def confirm(conn: AsyncConnection, job_id: UUID, claim: Claim) -> Job:
     return Job(**row)
 
 
+async def set_source(
+    conn: AsyncConnection, job_id: UUID, source: dict, text: str
+) -> None:
+    """Stores what was read from a link (P3.12): the page's details and the text the model read."""
+    await conn.execute(
+        "UPDATE core.jobs SET source = %s, source_text = %s, updated_at = now() WHERE id = %s",
+        (Jsonb(source), text, job_id),
+    )
+
+
 async def correlation_id(conn: AsyncConnection, job_id: UUID) -> str | None:
     cur = await conn.execute(
         "SELECT correlation_id FROM core.jobs WHERE id = %s", (job_id,)
@@ -160,7 +223,8 @@ async def list_for_user(
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
             """
-            SELECT id, state, input_text, confirmed_claim, created_at,
+            SELECT id, state, input_type, input_text, source->>'title' AS source_title,
+                   confirmed_claim, created_at,
                    result->>'verdict' AS verdict, (result->>'score')::int AS score
             FROM core.jobs WHERE user_id = %s ORDER BY created_at DESC LIMIT %s
             """,

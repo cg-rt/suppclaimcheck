@@ -11,7 +11,7 @@ from scc_common import config_store
 from scc_common.config_store import Store
 
 FOLDER = Path(__file__).parent
-ACTIVE = "pipeline-v7"
+ACTIVE = "pipeline-v9"
 # The database copy of these files, the active pointer and the audit (P2.09, D-048).
 STORE = Store(
     schema="core",

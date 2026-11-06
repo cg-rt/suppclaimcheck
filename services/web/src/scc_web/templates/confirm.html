@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% from "macros.html" import steps, error_box %}
+{% set page = job.input_type == "url" %}
 {% block title %}Confirm the claim{% endblock %}
 {% block main %}
 <section class="card">
   <h1 class="title">Is this the claim to check?</h1>
   {{ steps("confirm") }}
-  <p class="lede">This is what was found in your text. Correct anything that's wrong, then start the search. Nothing has been searched yet.</p>
+  <p class="lede">{% if page %}These are the claims found on the page. Pick one, correct anything that's wrong, then start the search.{% else %}This is what was found in your text. Correct anything that's wrong, then start the search.{% endif %} Nothing has been searched yet.</p>
   {{ error_box(error) }}
 </section>
 {% for claim in claims %}
@@ -14,7 +15,7 @@
   <form class="form" method="post" action="/checks/{{ job.id }}/confirm">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <h2 class="card__title" id="claim-{{ n }}-title">{% if claims|length > 1 %}Claim <span class="num">{{ n }}</span> of <span class="num">{{ claims|length }}</span>{% else %}The claim{% endif %}</h2>
-    {% if claim.quote %}<p class="from-text">From your text: <q>{{ claim.quote }}</q></p>{% endif %}
+    {% if claim.quote %}<p class="from-text">{% if page %}From the page{% else %}From your text{% endif %}: <q>{{ claim.quote }}</q></p>{% endif %}
     <div class="field">
       <label for="supplement-{{ n }}">Supplement or ingredient</label>
       <input id="supplement-{{ n }}" name="supplement" required maxlength="200" value="{{ claim.supplement or '' }}"{% if claim.spelling_suggestion or claim.spelling_applied_from %} aria-describedby="spelling-{{ n }}"{% endif %}>
@@ -51,11 +52,16 @@
 </section>
 {% else %}
 <section class="card">
-  <p>No claim was found in your text. <a href="/checks/new">Start a new check</a>.</p>
+  <p>No claim was found {% if page %}on the page{% else %}in your text{% endif %}. <a href="/checks/new">Start a new check</a>.</p>
 </section>
 {% endfor %}
 <section class="card card--quiet" aria-labelledby="text-title">
+  {% if page %}
+  <h2 class="card__title" id="text-title">The page</h2>
+  {% include "partials/source.html" %}
+  {% else %}
   <h2 class="card__title" id="text-title">Your text</h2>
   <p class="your-text">{{ job.input_text }}</p>
+  {% endif %}
 </section>
 {% endblock %}

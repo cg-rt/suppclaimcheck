@@ -7,6 +7,18 @@
             "title": "Config Version",
             "type": "string"
           },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
           "confirmed_claim": {
             "anyOf": [
               {
@@ -61,6 +73,18 @@
             ],
             "title": "Extracted Claims"
           },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -108,6 +132,29 @@
             },
             "title": "Sensitive Topics",
             "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "source_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Text"
           },
           "state": {
             "title": "State",
@@ -299,6 +346,24 @@
           "updated_at"
         ],
         "title": "AdminJobRow",
+        "type": "object"
+      },
+      "AnswerCount": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "answer",
+          "n"
+        ],
+        "title": "AnswerCount",
         "type": "object"
       },
       "ArticlePassages": {
@@ -591,6 +656,38 @@
         "title": "DroppedQuote",
         "type": "object"
       },
+      "EraseReply": {
+        "properties": {
+          "checks": {
+            "title": "Checks",
+            "type": "integer"
+          },
+          "llm_calls": {
+            "title": "Llm Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "checks",
+          "llm_calls"
+        ],
+        "title": "EraseReply",
+        "type": "object"
+      },
+      "EraseRequest": {
+        "properties": {
+          "requested_by": {
+            "minimum": 1.0,
+            "title": "Requested By",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "requested_by"
+        ],
+        "title": "EraseRequest",
+        "type": "object"
+      },
       "ErrorItem": {
         "properties": {
           "at": {
@@ -714,6 +811,212 @@
           "attached_by"
         ],
         "title": "EvalResult",
+        "type": "object"
+      },
+      "Feedback": {
+        "properties": {
+          "missing": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing"
+          },
+          "understandable": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "partly",
+                  "no"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Understandable"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "verdict_right": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict Right"
+          }
+        },
+        "required": [
+          "updated_at"
+        ],
+        "title": "Feedback",
+        "type": "object"
+      },
+      "FeedbackComment": {
+        "properties": {
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "missing": {
+            "title": "Missing",
+            "type": "string"
+          },
+          "understandable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Understandable"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "verdict_right": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict Right"
+          }
+        },
+        "required": [
+          "job_id",
+          "user_id",
+          "verdict",
+          "verdict_right",
+          "understandable",
+          "missing",
+          "updated_at"
+        ],
+        "title": "FeedbackComment",
+        "type": "object"
+      },
+      "FeedbackIn": {
+        "properties": {
+          "missing": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing"
+          },
+          "understandable": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "partly",
+                  "no"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Understandable"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "verdict_right": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict Right"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "FeedbackIn",
+        "type": "object"
+      },
+      "FeedbackQuestion": {
+        "properties": {
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/AnswerCount"
+            },
+            "title": "Answers",
+            "type": "array"
+          },
+          "question": {
+            "enum": [
+              "verdict_right",
+              "understandable"
+            ],
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "answers"
+        ],
+        "title": "FeedbackQuestion",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -888,11 +1191,42 @@
         "title": "InjectionReport",
         "type": "object"
       },
+      "InputTypes": {
+        "description": "What a new check can start from under the active config (P3.12, P3.13). Text is always on.",
+        "properties": {
+          "text": {
+            "default": true,
+            "title": "Text",
+            "type": "boolean"
+          },
+          "url": {
+            "title": "Url",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "InputTypes",
+        "type": "object"
+      },
       "Job": {
         "properties": {
           "config_version": {
             "title": "Config Version",
             "type": "string"
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
           },
           "confirmed_claim": {
             "anyOf": [
@@ -935,6 +1269,28 @@
             ],
             "title": "Extracted Claims"
           },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Feedback"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -972,6 +1328,18 @@
             },
             "title": "Sensitive Topics",
             "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           },
           "state": {
             "$ref": "#/components/schemas/JobState"
@@ -1012,8 +1380,11 @@
             "type": "string"
           },
           "input_type": {
-            "const": "text",
             "default": "text",
+            "enum": [
+              "text",
+              "url"
+            ],
             "title": "Input Type",
             "type": "string"
           },
@@ -1104,6 +1475,11 @@
             "title": "Input Text",
             "type": "string"
           },
+          "input_type": {
+            "default": "text",
+            "title": "Input Type",
+            "type": "string"
+          },
           "score": {
             "anyOf": [
               {
@@ -1114,6 +1490,17 @@
               }
             ],
             "title": "Score"
+          },
+          "source_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Title"
           },
           "state": {
             "$ref": "#/components/schemas/JobState"
@@ -1170,6 +1557,16 @@
             ],
             "title": "Failure Code"
           },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Feedback"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "injection_events": {
             "default": [],
             "items": {
@@ -1219,6 +1616,59 @@
           "dropped_quotes"
         ],
         "title": "JobTrace",
+        "type": "object"
+      },
+      "Outcomes": {
+        "description": "P4.03 and P4.04 over the last `days`: how people rated their results, and how long checks took.",
+        "properties": {
+          "comments": {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackComment"
+            },
+            "title": "Comments",
+            "type": "array"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackQuestion"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "rated": {
+            "title": "Rated",
+            "type": "integer"
+          },
+          "results": {
+            "title": "Results",
+            "type": "integer"
+          },
+          "reused": {
+            "title": "Reused",
+            "type": "integer"
+          },
+          "timings": {
+            "items": {
+              "$ref": "#/components/schemas/Timing"
+            },
+            "title": "Timings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "days",
+          "results",
+          "rated",
+          "questions",
+          "comments",
+          "timings",
+          "reused"
+        ],
+        "title": "Outcomes",
         "type": "object"
       },
       "Passage": {
@@ -1566,6 +2016,52 @@
           "review"
         ],
         "title": "ReviewRow",
+        "type": "object"
+      },
+      "Timing": {
+        "properties": {
+          "checks": {
+            "title": "Checks",
+            "type": "integer"
+          },
+          "measure": {
+            "enum": [
+              "submit_to_result",
+              "confirm_to_result"
+            ],
+            "title": "Measure",
+            "type": "string"
+          },
+          "median_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Seconds"
+          },
+          "p90_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P90 Seconds"
+          }
+        },
+        "required": [
+          "measure",
+          "checks",
+          "median_seconds",
+          "p90_seconds"
+        ],
+        "title": "Timing",
         "type": "object"
       },
       "TraceEvent": {
@@ -2231,6 +2727,52 @@
         ]
       }
     },
+    "/admin/outcomes": {
+      "get": {
+        "description": "Feedback answers and comments, and time to result (median and 90th percentile) for checks\nthat finished with a result in the last `days`.",
+        "operationId": "outcomes_admin_outcomes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 366,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcomes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Outcomes",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/queue": {
       "get": {
         "description": "Live core-worker processes (Procrastinate heartbeats) and queue tasks by status.",
@@ -2372,6 +2914,28 @@
         ]
       }
     },
+    "/inputs": {
+      "get": {
+        "description": "The input types the new-check page may offer: the active config's [inputs] switches.",
+        "operationId": "input_types_inputs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputTypes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Input Types",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
     "/jobs": {
       "get": {
         "description": "A user's jobs, newest first.",
@@ -2475,7 +3039,7 @@
             "description": "This month's budget for checks is used up"
           },
           "409": {
-            "description": "Key reused with a different body"
+            "description": "Key reused with a different body, or the input type is switched off"
           },
           "422": {
             "content": {
@@ -2660,6 +3224,122 @@
         "summary": "Get Job Events",
         "tags": [
           "jobs"
+        ]
+      }
+    },
+    "/jobs/{job_id}/feedback": {
+      "put": {
+        "description": "Stores the account's rating of its own result, replacing an earlier one (P4.03).",
+        "operationId": "save_feedback_jobs__job_id__feedback_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Feedback"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such job for this account"
+          },
+          "409": {
+            "description": "The check has no result to rate"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Feedback",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/users/{user_id}/erase": {
+      "post": {
+        "description": "Deletes every check of a deleted account and asks the gateway to unlink its LLM calls (P3.06).\nWeb calls this before it deletes the account itself. Safe to call again.",
+        "operationId": "erase_user_users__user_id__erase_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EraseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EraseReply"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "The gateway could not be reached; call again"
+          }
+        },
+        "summary": "Erase User",
+        "tags": [
+          "privacy"
         ]
       }
     },

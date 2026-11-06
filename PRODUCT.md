@@ -29,8 +29,8 @@ Every quote shown has been checked word for word by code against the article it 
 ## Capabilities and Constraints
 
 - Server-rendered pages (FastAPI, Jinja2, htmx with server-sent events). Little JavaScript; pages must work without it except live progress.
-- Input types now: text and pasted ad text. Later, behind flags: article URL, ad screenshot, pasted YouTube transcript.
-- Undecided: the method page wording (P3.11), the privacy page (P3.06).
+- Input types now: text and pasted ad text, and a link to an article or product page (P3.12, behind the pipeline's `[inputs] url` switch; the public `/reader` page says what the reader does). Later, behind flags: ad screenshot, pasted YouTube transcript.
+- Reading pages, all public and in the same cards: the method (`/method`, P3.11, its numbers kept equal to the active pipeline config by a test), the privacy notice (`/privacy`, P3.06, its periods restated from config) and the page reader (`/reader`, P3.12).
 
 ## Brand Commitments
 

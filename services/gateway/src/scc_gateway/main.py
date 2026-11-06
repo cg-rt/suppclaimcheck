@@ -1,4 +1,5 @@
-"""The gateway: the only module that calls outside services (LLM, literature, alerts; D-011, D-033).
+"""The gateway: the only module that calls outside services (LLM, literature, alerts, pages users link
+to; D-011, D-033, D-055).
 
 Internal only. Holds every API key, so the budget cap can't be bypassed (P1.06, P1.07).
 """
@@ -13,10 +14,10 @@ from fastapi import APIRouter, FastAPI, Header, HTTPException, Query, Request
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
-from scc_common import config_admin
+from scc_common import config_admin, periodic
 from scc_common.app import Check, create_app
 from scc_common.db import conninfo_from_env, db_check, read_secret
-from scc_gateway import admin_api, budget, config
+from scc_gateway import admin_api, budget, config, privacy
 from scc_gateway.alerts import AlertFailed, Alerts, AlertsNotConfigured
 from scc_gateway.literature import Literature, LiteratureUnavailable
 from scc_gateway.llm import (
@@ -28,6 +29,7 @@ from scc_gateway.llm import (
     Provider,
     structured_call,
 )
+from scc_gateway.pages import PageReader, PageRefused
 from scc_gateway.retry import Transient
 
 log = logging.getLogger("scc.gateway")
@@ -40,6 +42,8 @@ class Deps:
     literature: Literature
     config: dict
     alerts: Alerts | None = field(default=None)
+    # Reads pages users link to (P3.12); None when the config has no [pages].
+    pages: PageReader | None = field(default=None)
 
 
 class StructuredRequest(BaseModel):
@@ -100,6 +104,8 @@ class NotifyRequest(BaseModel):
         "job_failed",
         "safety_review",
         "injection_throttled",
+        # P3.06: the out-of-band record of deletions, for re-applying them after a restore (RB-12).
+        "account_deleted",
         "test",
     ]
     # A code, never user text: it goes to a phone outside this system.
@@ -109,6 +115,10 @@ class NotifyRequest(BaseModel):
 
 class NotifyReply(BaseModel):
     outcome: Literal["sent", "quiet", "deduplicated"]
+
+
+class EraseReply(BaseModel):
+    llm_calls: int
 
 
 class SearchRequest(BaseModel):
@@ -123,6 +133,38 @@ class SpellRequest(BaseModel):
 class SpellReply(BaseModel):
     term: str
     suggestion: str | None
+
+
+class PageRequest(BaseModel):
+    url: str = Field(min_length=1, max_length=2048)
+
+
+class PageReply(BaseModel):
+    # The address as checked and normalised, and the one the page came from after redirects.
+    url: str
+    final_url: str
+    title: str | None
+    site_name: str | None
+    # Readable paragraphs separated by blank lines; untrusted data like any submitted text.
+    text: str
+    # The page held more text than the config's max_text_chars; it was cut at a paragraph.
+    truncated: bool
+
+
+# HTTP status for each reason a page wasn't read (P3.12). The caller shows its own message per code.
+PAGE_STATUS = {
+    "url_invalid": 422,
+    "url_blocked": 422,
+    "robots_disallowed": 422,
+    "ai_disallowed": 422,
+    "not_html": 422,
+    "too_large": 422,
+    "no_text": 422,
+    "page_not_found": 422,
+    "site_refused": 422,
+    "page_unavailable": 502,
+    "page_timeout": 504,
+}
 
 
 class FetchRequest(BaseModel):
@@ -354,6 +396,24 @@ async def notify(body: NotifyRequest, request: Request) -> NotifyReply:
     return NotifyReply(outcome=outcome)
 
 
+@router.post("/users/{user_id}/erase", tags=["privacy"])
+async def erase_user(user_id: int, request: Request) -> EraseReply:
+    """Removes a deleted account's link from its LLM calls and drops their stored answers (P3.06).
+    Core calls this when an account is deleted. Safe to call again."""
+    async with _deps(request).pool.connection() as conn:
+        calls = await privacy.erase_user(conn, user_id)
+    log.info("account erased", extra={"user_id": user_id, "llm_calls": calls})
+    return EraseReply(llm_calls=calls)
+
+
+async def purge(deps: Deps) -> dict[str, int]:
+    """The retention purge (P3.06, D-054): stored answers, old account links, late calls of deleted accounts."""
+    async with deps.pool.connection() as conn:
+        counts = await privacy.purge(conn, deps.config)
+    log.info("purge finished", extra=counts)
+    return counts
+
+
 @router.post("/literature/search", tags=["literature"])
 async def literature_search(body: SearchRequest, request: Request) -> dict:
     """PubMed search with the open-access filter; PMIDs in relevance order."""
@@ -390,6 +450,61 @@ async def literature_fetch(body: FetchRequest, request: Request) -> dict:
         "full_texts": result.full_texts,
         "counts": result.counts,
     }
+
+
+@router.post(
+    "/pages/fetch",
+    tags=["pages"],
+    responses={
+        422: {
+            "description": "Not read: url_invalid, url_blocked (a private or reserved address, or "
+            "another port), robots_disallowed, ai_disallowed, not_html, too_large, no_text, "
+            "page_not_found (404, 410) or site_refused (401, 403, 451)"
+        },
+        502: {
+            "description": "page_unavailable: the site failed or answered with an error"
+        },
+        503: {"description": "pages_not_configured: the active config has no [pages]"},
+        504: {"description": "page_timeout: no page within the time limit"},
+    },
+)
+async def pages_fetch(body: PageRequest, request: Request) -> PageReply:
+    """Reads one web page a user linked to, with every address checked first (P3.12, D-055)."""
+    reader = _deps(request).pages
+    if reader is None:
+        raise HTTPException(
+            503,
+            {
+                "code": "pages_not_configured",
+                "message": "The active config has no [pages].",
+            },
+        )
+    try:
+        page = await reader.read(body.url)
+    except PageRefused as exc:
+        # The host only: a path or query can hold someone's token or name.
+        log.info("page not read", extra={"code": exc.code, "host": exc.host})
+        raise HTTPException(
+            PAGE_STATUS.get(exc.code, 422), {"code": exc.code, "message": exc.message}
+        ) from None
+    log.info(
+        "page read",
+        extra={
+            "host": page.host,
+            "bytes": page.bytes,
+            "chars": len(page.text),
+            "redirects": page.redirects,
+            "truncated": page.truncated,
+        },
+    )
+    return PageReply(
+        url=page.url,
+        final_url=page.final_url,
+        title=page.title,
+        site_name=page.site_name,
+        text=page.text,
+        truncated=page.truncated,
+    )
 
 
 def _optional_secret(variable: str) -> str | None:
@@ -429,17 +544,27 @@ def build_app(
                 _optional_secret("SCC_TELEGRAM_BOT_TOKEN_FILE"),
                 _optional_secret("SCC_TELEGRAM_CHAT_ID_FILE"),
             ),
+            PageReader(cfg) if "pages" in cfg else None,
         )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        if deps is not None:
-            await deps.pool.open()
-        try:
+        if deps is None:
             yield
+            return
+        await deps.pool.open()
+        minutes = deps.config.get("retention", {}).get("purge_every_minutes", 60)
+
+        async def work() -> None:
+            await purge(deps)
+
+        try:
+            async with periodic.every(deps.pool, "gateway-purge", work, minutes * 60):
+                yield
         finally:
-            if deps is not None:
-                await deps.pool.close()
+            if deps.pages is not None:
+                await deps.pages.close()
+            await deps.pool.close()
 
     app = create_app("gateway", "SuppClaimCheck gateway", checks, lifespan=lifespan)
     app.state.deps = deps

@@ -1,0 +1,41 @@
+# Web config v1 (P3.06, D-054). Versioned config, never constants in code (AGENTS.md section 8).
+# Changes from v0: [retention] at the end.
+version = "web-v1"
+
+[session]
+# Server-side sessions (D-016): an idle timeout and an absolute one; a new ID at every sign-in.
+idle_minutes = 60
+absolute_hours = 12
+
+[login]
+# Lockout: this many failed sign-ins for one account inside the window locks it for the window.
+max_failures_per_account = 5
+# Rate limit: sign-in attempts from one address inside the window, successful or not.
+max_attempts_per_address = 20
+window_minutes = 15
+
+[password]
+min_length = 12
+max_length = 128
+
+[progress]
+# How often the progress stream asks core for the job's state, and when it gives up.
+poll_seconds = 1.0
+max_minutes = 10
+
+[retention]
+# Privacy (P3.06, docs/PRIVACY.md). Sign-in attempts (email and network address) are kept this many
+# days: long enough to look into an attack, far longer than the lockout window needs.
+login_attempts_days = 30
+# How often web's purge runs: old sign-in attempts, ended sessions, unfinished account deletions.
+purge_every_minutes = 60
+
+[privacy]
+# What the privacy page says (P3.06). Web can't read the other modules' config, so these restate it;
+# tests/test_privacy.py fails when they differ from the versions those modules ship as active.
+check_days = 180          # core: pipeline [retention] check_days
+llm_link_days = 180       # gateway: [retention] user_link_days
+llm_answer_days = 7       # gateway: [idempotency] output_retention_days
+backup_months = 6         # deploy/host backups: 7 daily, 4 weekly, 6 monthly snapshots (D-024)
+provider_days = 30        # Anthropic deletes API inputs and outputs within 30 days (its commercial terms)
+updated = "2026-11-05"    # the page's "last changed" date

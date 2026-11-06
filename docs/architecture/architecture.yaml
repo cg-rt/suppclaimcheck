@@ -5,7 +5,7 @@
 # Update at every phase gate and whenever a module, port, dependency or version changes.
 
 schema_version: 1
-updated: 2026-11-03
+updated: 2026-11-05
 
 system:
   name: SuppClaimCheck
@@ -36,7 +36,7 @@ modules:
     status: live             # planned | built | live
     version: 0.1.2
     phase_built: 1
-    technology: cloudflared 2026.10.3 (official image, pinned by digest)
+    technology: cloudflared 2026.10.7 (official image, pinned by digest)
     purpose: The only way in from the internet. Holds an outbound tunnel to Cloudflare and forwards both hostnames to web.
     why_it_exists: >
       No open router ports. Cloudflare terminates TLS and applies Access to the admin hostname.
@@ -57,9 +57,10 @@ modules:
     phase_built: 1
     technology: Python 3.14, FastAPI, Jinja2, htmx, server-sent events
     purpose: >
-      Public pages (sign in, submit, confirm, progress, result, history, method, privacy), the admin pages on their own hostname
-      (jobs and per-job traces with retry, errors, costs, evals, config versions, users, health; D-049), and login (accounts, sessions,
-      CSRF, lockout) as a separate package with its own schema and database role. Admin reads core and gateway data through their read-only admin endpoints.
+      Public pages (sign in, submit, confirm, progress, result with a feedback form, history, method, privacy), the admin pages on their own hostname
+      (jobs and per-job traces with retry, safety reviews, injection events, outcomes, errors, costs, evals, config versions, users, health; D-049), and login (accounts, sessions,
+      CSRF, lockout, account deletion) as a separate package with its own schema and database role. Admin reads core and gateway data through their read-only admin endpoints.
+      An hourly purge deletes old sign-in attempts and ended sessions and finishes any account deletion a module missed (D-054).
     why_it_exists: >
       The only module users talk to. Login lives here with its own least-privilege role, so core, which handles hostile text,
       can never read password hashes. Admin code answers only on the admin hostname, behind Cloudflare Access and the admin role.
@@ -80,7 +81,8 @@ modules:
     technology: Python 3.14, FastAPI, Procrastinate, fastembed, pgvector
     purpose: >
       core-api: jobs and confirmation (REST with OpenAPI); each job is stamped with the config version active when it is created, and starts only if the gateway's budget status allows it (cap and daily quota). Read-only admin endpoints (jobs, traces, errors, queue, reviews, injection events, config), the retry of a failed job and the record of a safety review.
-      core-worker: the pipeline, run on the job's config version: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring; reuse of an identical recent result, partial failures with a note, and a five-minute sweep that ends checks that lost their worker.
+      Feedback on a result, the erasure of a deleted account's checks, and the outcomes summary (feedback, time to result; D-054).
+      core-worker: the pipeline, run on the job's config version: extraction, triage, search orchestration, passages, hybrid retrieval, assessment, quote verification, scoring; reuse of an identical recent result, partial failures with a note, a five-minute sweep that ends checks that lost their worker, and a nightly purge of checks past their retention.
       In the image, not served: the config CLI (versions, activation, rollback; D-048) and the eval runner (run from the dev PC, D-043).
     why_it_exists: >
       Owns the product's logic and the deterministic parts (quote verification, scoring) that make it trustworthy.
@@ -99,12 +101,13 @@ modules:
     status: live
     version: 0.1.2
     phase_built: 1
-    technology: Python 3.14, FastAPI, provider SDKs, httpx
+    technology: Python 3.14, FastAPI, provider SDKs, httpx, httpcore (the page reader's guarded connections)
     purpose: >
       The single door to the outside world: the LLM provider (Anthropic Claude for v1, D-033, behind a swappable interface; prompts, token and cost accounting, budget guard),
-      PubMed E-utilities, Europe PMC and the PMC Cloud Service, article URL fetching with SSRF protection, and Telegram alerts.
+      PubMed E-utilities, Europe PMC and the PMC Cloud Service, the page reader for article links (D-055: every connection to a public address only, redirects included; robots.txt and noai obeyed; 10 s, 2 MB, HTML only), and Telegram alerts.
       The budget guard: monthly caps per lane, warnings at 50% and 80%, the per-account daily quota, and idempotent LLM calls (the same key never charges twice).
       Read-only admin endpoints over its LLM call records (calls per job, costs and usage, per account) and its config versions.
+      Privacy: unlinks a deleted account from its call records, and an hourly purge clears stored answers and old account links (D-054).
     why_it_exists: >
       Holds every API key, so the budget cap cannot be bypassed and egress is one auditable place.
       Merges the AI gateway and the sources connector (D-011).
@@ -134,8 +137,8 @@ modules:
 
 # Steps for the viewer's "follow one claim" mode.
 claim_path:
-  - {step: 1, name: Submit, modules: [edge, web, core], what: "The user submits a claim; core-api creates a job with an idempotency key."}
-  - {step: 2, name: Extract, modules: [core, gateway], what: "The worker asks the LLM, via the gateway, for a structured claim."}
+  - {step: 1, name: Submit, modules: [edge, web, core], what: "The user submits a claim, or a link to a page; core-api creates a job with an idempotency key."}
+  - {step: 2, name: Extract, modules: [core, gateway], what: "For a link, the gateway reads the page first (D-055). The worker asks the LLM, via the gateway, for structured claims."}
   - {step: 3, name: Triage, modules: [core, gateway], what: "The extraction call also labels the request; code applies docs/POLICY.md: refuse, ask for a clearer claim, or continue, with a safety notice and a review flag where needed. Nothing is searched before this."}
   - {step: 4, name: Confirm, modules: [web, core], what: "The user confirms or edits the claim, and may accept PubMed's spelling of the supplement name. Nothing has been searched or spent yet beyond extraction."}
   - {step: 5, name: Search, modules: [core, gateway], what: "The gateway queries PubMed via E-utilities with an open-access filter, under the supplement's other names too; up to five articles, strongest study type first."}

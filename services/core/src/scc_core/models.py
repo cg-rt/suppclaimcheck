@@ -4,12 +4,13 @@ The LLM output models forbid extra fields; their JSON schema is sent to the gate
 structured-output mode, and the reply is validated against the same model (AGENTS.md section 8).
 """
 
+import re
 from datetime import datetime
 from enum import StrEnum
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class JobState(StrEnum):
@@ -38,10 +39,56 @@ class Claim(BaseModel):
     duration: str | None = Field(default=None, max_length=200)
 
 
+# The longest web address a check accepts (P3.12); the gateway checks the rest when it reads the page.
+MAX_URL = 2048
+_URL = re.compile(r"^https?://[^\s/?#@]+(?:[/?#]\S*)?$", re.IGNORECASE)
+
+
 class JobCreate(BaseModel):
     user_id: int
-    input_type: Literal["text"] = "text"
+    # "url": input_text is a web page's address, and the worker has the gateway read the page (P3.12).
+    input_type: Literal["text", "url"] = "text"
     input_text: str = Field(min_length=1, max_length=20_000)
+
+    @model_validator(mode="after")
+    def _one_address(self):
+        if self.input_type == "url" and (
+            len(self.input_text) > MAX_URL or not _URL.match(self.input_text)
+        ):
+            raise ValueError("a link must be one http or https address")
+        return self
+
+
+class FeedbackAnswers(BaseModel):
+    """A person's rating of their own result (P4.03). Every answer is optional, but not all at once."""
+
+    verdict_right: Literal["yes", "no", "unsure"] | None = None
+    understandable: Literal["yes", "partly", "no"] | None = None
+    missing: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("missing")
+    @classmethod
+    def _blank_is_none(cls, value: str | None) -> str | None:
+        return value.strip() or None if value is not None else None
+
+    @model_validator(mode="after")
+    def _something(self):
+        if (
+            self.verdict_right is None
+            and self.understandable is None
+            and self.missing is None
+        ):
+            raise ValueError("answer at least one question")
+        return self
+
+
+class FeedbackIn(FeedbackAnswers):
+    # The account sending it: core checks it is the check's own account (web checks too).
+    user_id: int
+
+
+class Feedback(FeedbackAnswers):
+    updated_at: datetime
 
 
 class Job(BaseModel):
@@ -50,6 +97,8 @@ class Job(BaseModel):
     state: JobState
     input_type: str
     input_text: str
+    # For a link (P3.12): the address after redirects, title, site name and how much text was read.
+    source: dict | None = None
     extracted_claims: list[dict] | None
     confirmed_claim: Claim | None
     result: dict | None
@@ -60,6 +109,10 @@ class Job(BaseModel):
     needs_review: bool = False
     created_at: datetime
     updated_at: datetime
+    # P4.04: set by the database on every state change (migration 0008).
+    confirmed_at: datetime | None = None
+    finished_at: datetime | None = None
+    feedback: Feedback | None = None
 
 
 class JobSummary(BaseModel):
@@ -67,7 +120,10 @@ class JobSummary(BaseModel):
 
     id: UUID
     state: JobState
+    input_type: str = "text"
     input_text: str
+    # A link's page title, once it has been read (P3.12).
+    source_title: str | None = None
     confirmed_claim: Claim | None
     verdict: str | None
     score: int | None
@@ -125,6 +181,22 @@ class Triage(_Strict):
 class TriagedExtraction(_Strict):
     claims: list[TriagedClaim]
     triage: Triage
+
+
+# A linked page (P3.12, pipeline-v9): a page mentions many topics, so the model labels each claim's
+# own, and the user's pick decides which notices apply (docs/POLICY.md).
+class PageClaim(TriagedClaim):
+    sensitive_topics: list[SensitiveTopic]
+
+
+class PageTriage(_Strict):
+    request: RequestKind
+    instructions_found: bool
+
+
+class PageExtraction(_Strict):
+    claims: list[PageClaim]
+    triage: PageTriage
 
 
 class PassageAssessment(_Strict):

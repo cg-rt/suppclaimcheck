@@ -18,6 +18,12 @@
       <dd>{% if reviews_open %}<span class="state state--mixed num">{{ reviews_open }}</span>{% else %}<span class="num">0</span>{% endif %} · <a href="/admin/reviews">Reviews</a></dd>
     </div>
     <div>
+      <dt>Feedback, last 30 days</dt>
+      {% set right = (outcomes.questions|selectattr("question", "equalto", "verdict_right")|first).answers %}
+      {% set answered = right|sum(attribute="n") %}
+      <dd><span class="num">{{ outcomes.rated }}</span> of <span class="num">{{ views.plural(outcomes.results, "result") }}</span> rated{% if answered %} · verdict looks right in <span class="num">{{ views.share(right[0].n, answered) }}</span>{% endif %} · <a href="/admin/outcomes">Outcomes</a></dd>
+    </div>
+    <div>
       <dt>Accounts throttled now</dt>
       <dd>{% if throttled %}<span class="state state--contradicted num">{{ throttled }}</span>{% else %}<span class="num">0</span>{% endif %} · <a href="/admin/injections">Injections</a></dd>
     </div>

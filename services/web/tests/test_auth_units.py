@@ -7,6 +7,7 @@ from scc_web.auth import passwords
 from scc_web.context import Deps, safe_next
 from scc_web.core_client import CoreClient
 from scc_web.main import build_app
+from scc_web.pages import METHOD
 from scc_web.security import SESSION_COOKIE, set_session_cookie, tokens_match
 from tests.web_samples import RESULT, job
 
@@ -43,6 +44,19 @@ def test_next_path_stays_on_this_site():
     assert safe_next("/history") == "/history"
     for bad in ("https://evil.example", "//evil.example", "/\\evil.example", None, ""):
         assert safe_next(bad) == "/checks/new"
+
+
+def test_next_path_refuses_characters_browsers_drop():
+    # P3.07: a browser removes tabs and line breaks from a URL, so these would read as "//evil.example".
+    for bad in (
+        "/\t/evil.example",
+        "/\n/evil.example",
+        "/\r/evil.example",
+        "/ /evil",
+        "/\x7f/x",
+    ):
+        assert safe_next(bad) == "/checks/new"
+    assert safe_next("/checks/new?from=link") == "/checks/new?from=link"
 
 
 def test_session_cookie_has_the_host_prefix_rules():
@@ -204,3 +218,71 @@ def test_rubric_v1_results_are_explained_by_article():
     )
     assert steps[-2] == "Score: 50 + 50 × +0.71 × 1.00 = 86"
     assert steps[-1] == "Verdict: The weighted evidence supports the claim."
+
+
+def test_short_references_name_the_first_authors_and_the_year():
+    assert views.short_ref({"authors": "Mah J, Pitre T.", "year": "2021"}) == (
+        "Mah and Pitre, 2021"
+    )
+    assert views.short_ref(
+        {"authors": "Moabedi M, Aliakbari M, Milajerdi A.", "year": "2023"}
+    ) == ("Moabedi et al., 2023")
+    assert views.short_ref({"authors": "Example A.", "year": "2019"}) == "Example, 2019"
+    assert views.short_ref({"year": "2019"}) == "2019"
+
+
+def test_each_article_read_is_numbered_with_its_study_type_and_finding():
+    """P3.11: with several articles, the result says which one each quote comes from, what type of
+    study each is, and what each found. Real rubric-v1 results from the dev stack (the preview's)."""
+    import json
+    from pathlib import Path
+
+    samples = json.loads(
+        (
+            Path(__file__).parents[3]
+            / "tests"
+            / "fixtures"
+            / "preview"
+            / "results.json"
+        ).read_text("utf-8")
+    )
+    magnesium, beetroot = (
+        views.result_view({**s, "confirmed_at": None, "finished_at": None})
+        for s in samples
+    )
+
+    assert [a["n"] for a in magnesium["articles"]] == [1, 2, 3, 4, 5]
+    first, third = magnesium["articles"][0], magnesium["articles"][2]
+    assert first["kind"] == "Systematic review or meta-analysis"
+    assert first["finding"] == {
+        "word": "Supports the claim",
+        "ink": "supported",
+        "detail": "2 passages",
+    }
+    assert third["finding"]["word"] == "No finding"
+    assert [(q["n"], q["ref"]) for q in magnesium["supporting"]] == [
+        (1, "Mah and Pitre, 2021"),
+        (1, "Mah and Pitre, 2021"),
+        (2, "Moabedi et al., 2023"),
+    ]
+    assert magnesium["steps"][0] == (
+        "Article 1, systematic review or meta-analysis, weight 1.00: 2 for, 0 against, stance +1.00"
+    )
+    both = beetroot["articles"][1]
+    assert both["kind"] == "Study type unknown"
+    assert both["finding"] == {
+        "word": "Points both ways",
+        "ink": "mixed",
+        "detail": "3 for, 1 against",
+    }
+    assert beetroot["articles"][0]["finding"]["word"] == "Contradicts the claim"
+
+
+def test_the_method_page_is_public_and_states_the_method_version():
+    page = TestClient(_app(), base_url="https://web").get("/method")
+    assert page.status_code == 200
+    assert "Sign out" not in page.text
+    assert METHOD["pipeline"] in page.text and METHOD["rubric"] in page.text
+    assert "Systematic review or meta-analysis" in page.text
+    for word in ("proven", "cures"):
+        assert word not in page.text.lower()

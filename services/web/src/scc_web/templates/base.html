@@ -6,7 +6,7 @@
 <title>{% block title %}{% endblock %} · SuppClaimCheck</title>
 <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
 <link rel="preload" href="/static/fonts/nunito-sans-5.3.0-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
 {% block head %}{% endblock %}
 </head>
 <body>
@@ -36,6 +36,10 @@
 </main>
 <footer class="foot">
   <p>SuppClaimCheck reads open-access research and shows what it says. It is not medical advice.</p>
+  <ul class="foot__links">
+    <li><a href="/method"{% if nav == "method" %} aria-current="page"{% endif %}>How a check works</a></li>
+    <li><a href="/privacy"{% if nav == "privacy" %} aria-current="page"{% endif %}>Privacy</a></li>
+  </ul>
 </footer>
 {% block scripts %}{% endblock %}
 </body>

@@ -1,5 +1,6 @@
-"""core-api admin endpoints (P3.08, P3.09, P3.03): jobs by state, per-job traces, recent errors, the
-queue, a manual retry for failed jobs, the safety review queue and injection events.
+"""core-api admin endpoints (P3.08, P3.09, P3.03, P4.03, P4.04): jobs by state, per-job traces, recent
+errors, the queue, a manual retry for failed jobs, the safety review queue, injection events, and the
+outcomes summary (feedback and time to result).
 
 Internal only, for web's admin pages: web may read only its own `auth` schema (D-011), so core data
 reaches admin through here. Everything is read-only except the retry and marking a job reviewed.
@@ -22,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from scc_common import config_store, correlation
 from scc_core import config, tasks
+from scc_core.models import Feedback
 
 log = logging.getLogger("scc.admin")
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -98,6 +100,9 @@ class AdminJob(BaseModel):
     state: str
     input_type: str
     input_text: str
+    # A link's page (P3.12): its details, and the text the model read.
+    source: dict | None = None
+    source_text: str | None = None
     extracted_claims: list[dict] | None
     confirmed_claim: dict | None
     result: dict | None
@@ -110,6 +115,9 @@ class AdminJob(BaseModel):
     sensitive_topics: list[str] = []
     needs_review: bool = False
     review: Review | None = None
+    # P4.04: when the claim was confirmed and when the check finished (migration 0008).
+    confirmed_at: datetime | None = None
+    finished_at: datetime | None = None
 
 
 class ReviewRow(AdminJobRow):
@@ -173,6 +181,7 @@ class JobTrace(BaseModel):
     passages: list[ArticlePassages]
     dropped_quotes: list[DroppedQuote]
     injection_events: list[InjectionEvent] = []
+    feedback: Feedback | None = None
 
 
 class InjectionAccount(BaseModel):
@@ -242,7 +251,7 @@ _JOB_COLUMNS = (
     "j.id, j.user_id, j.state, j.input_type, j.input_text, j.extracted_claims, j.confirmed_claim,"
     " j.result, j.error, j.config_version, j.correlation_id, j.created_at, j.updated_at,"
     " j.sensitive_topics, j.needs_review, j.reviewed_at, j.reviewed_by, j.review_outcome,"
-    " j.review_note"
+    " j.review_note, j.confirmed_at, j.finished_at, j.source, j.source_text"
 )
 _REVIEW_FIELDS = ("reviewed_at", "reviewed_by", "review_outcome", "review_note")
 
@@ -392,6 +401,11 @@ async def job_trace(job_id: UUID, request: Request) -> JobTrace:
             " FROM core.injection_events WHERE job_id = %s ORDER BY id",
             (job_id,),
         )
+        feedback = await _all(
+            conn,
+            "SELECT verdict_right, understandable, missing, updated_at FROM core.feedback WHERE job_id = %s",
+            (job_id,),
+        )
     row = _with_review(rows[0])
     now, status, failure_code = (
         row.pop("now"),
@@ -421,6 +435,7 @@ async def job_trace(job_id: UUID, request: Request) -> JobTrace:
         passages=[ArticlePassages(**p) for p in passages],
         dropped_quotes=[DroppedQuote(**d) for d in dropped],
         injection_events=[InjectionEvent(**e) for e in injections],
+        feedback=Feedback(**feedback[0]) if feedback else None,
     )
 
 
@@ -725,4 +740,133 @@ async def queue_status(request: Request) -> QueueStatus:
     return QueueStatus(
         workers=[QueueWorker(**w) for w in workers],
         tasks={r["status"]: r["n"] for r in counted},
+    )
+
+
+class AnswerCount(BaseModel):
+    answer: str
+    n: int
+
+
+class FeedbackQuestion(BaseModel):
+    question: Literal["verdict_right", "understandable"]
+    answers: list[AnswerCount]
+
+
+class FeedbackComment(BaseModel):
+    job_id: UUID
+    user_id: int
+    verdict: str | None
+    verdict_right: str | None
+    understandable: str | None
+    missing: str
+    updated_at: datetime
+
+
+class Timing(BaseModel):
+    measure: Literal["submit_to_result", "confirm_to_result"]
+    checks: int
+    median_seconds: float | None
+    p90_seconds: float | None
+
+
+class Outcomes(BaseModel):
+    """P4.03 and P4.04 over the last `days`: how people rated their results, and how long checks took."""
+
+    days: int
+    results: int  # checks that finished with a result in the window
+    rated: int  # of those, how many have feedback
+    questions: list[FeedbackQuestion]
+    comments: list[FeedbackComment]
+    timings: list[Timing]
+    # Reused results (P3.05) take no time, so they are counted but left out of the timings.
+    reused: int
+
+
+_ANSWERS = {
+    "verdict_right": ("yes", "no", "unsure"),
+    "understandable": ("yes", "partly", "no"),
+}
+
+
+@router.get("/outcomes")
+async def outcomes(
+    request: Request, days: Annotated[int, Query(ge=1, le=366)] = 30
+) -> Outcomes:
+    """Feedback answers and comments, and time to result (median and 90th percentile) for checks
+    that finished with a result in the last `days`."""
+    window = {"days": days}
+    async with pool_of(request).connection() as conn:
+        counts = await _all(
+            conn,
+            """
+            SELECT count(*) AS results,
+                   count(f.job_id) AS rated,
+                   count(*) FILTER (WHERE j.result ? 'reused_from') AS reused
+            FROM core.jobs j LEFT JOIN core.feedback f ON f.job_id = j.id
+            WHERE j.state = 'done' AND j.finished_at > now() - make_interval(days => %(days)s)
+            """,
+            window,
+        )
+        answers = await _all(
+            conn,
+            """
+            SELECT 'verdict_right' AS question, f.verdict_right AS answer, count(*) AS n
+            FROM core.feedback f JOIN core.jobs j ON j.id = f.job_id
+            WHERE j.finished_at > now() - make_interval(days => %(days)s) AND f.verdict_right IS NOT NULL GROUP BY 2
+            UNION ALL
+            SELECT 'understandable', f.understandable, count(*)
+            FROM core.feedback f JOIN core.jobs j ON j.id = f.job_id
+            WHERE j.finished_at > now() - make_interval(days => %(days)s) AND f.understandable IS NOT NULL GROUP BY 2
+            """,
+            window,
+        )
+        comments = await _all(
+            conn,
+            """
+            SELECT f.job_id, f.user_id, j.result->>'verdict' AS verdict, f.verdict_right,
+                   f.understandable, f.missing, f.updated_at
+            FROM core.feedback f JOIN core.jobs j ON j.id = f.job_id
+            WHERE j.finished_at > now() - make_interval(days => %(days)s) AND f.missing IS NOT NULL
+            ORDER BY f.updated_at DESC LIMIT 50
+            """,
+            window,
+        )
+        timings = await _all(
+            conn,
+            """
+            WITH t AS (
+                SELECT extract(epoch FROM j.finished_at - j.created_at) AS submit_to_result,
+                       extract(epoch FROM j.finished_at - j.confirmed_at) AS confirm_to_result
+                FROM core.jobs j
+                WHERE j.state = 'done' AND j.finished_at > now() - make_interval(days => %(days)s) AND NOT j.result ? 'reused_from'
+            )
+            SELECT 'submit_to_result' AS measure, count(submit_to_result) AS checks,
+                   percentile_cont(0.5) WITHIN GROUP (ORDER BY submit_to_result) AS median_seconds,
+                   percentile_cont(0.9) WITHIN GROUP (ORDER BY submit_to_result) AS p90_seconds
+            FROM t
+            UNION ALL
+            SELECT 'confirm_to_result', count(confirm_to_result),
+                   percentile_cont(0.5) WITHIN GROUP (ORDER BY confirm_to_result),
+                   percentile_cont(0.9) WITHIN GROUP (ORDER BY confirm_to_result)
+            FROM t
+            """,
+            window,
+        )
+    found = {(a["question"], a["answer"]): a["n"] for a in answers}
+    return Outcomes(
+        days=days,
+        **counts[0],
+        questions=[
+            FeedbackQuestion(
+                question=question,
+                answers=[
+                    AnswerCount(answer=a, n=found.get((question, a), 0))
+                    for a in choices
+                ],
+            )
+            for question, choices in _ANSWERS.items()
+        ],
+        comments=[FeedbackComment(**c) for c in comments],
+        timings=[Timing(**t) for t in timings],
     )

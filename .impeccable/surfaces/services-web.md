@@ -13,7 +13,7 @@ related_targets: []
 **Scene:** daytime, a laptop at a desk or a phone in hand after seeing an ad; ordinary room light. Light theme.
 **Constraints:** WCAG 2.2 AA; 390 px, 320 px, desktop; strict CSP, self-hosted fonts and scripts; pages work without JavaScript except live progress; never "proven"/"cures"; not-medical-advice notice on every result.
 **Memorable moment:** one calm column where each card answers one question, and the article's own sentences, set in their own serif, carry the evidence.
-**Unresolved:** method and privacy pages (P3.06, P3.11); admin layout (P3.08); dark theme.
+**Unresolved:** dark theme. (Method, privacy and reader pages: written, P3.06, P3.11, P3.12. Admin: built, P3.08-P3.10.)
 
 ## Direction contract
 

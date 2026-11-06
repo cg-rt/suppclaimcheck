@@ -1,0 +1,18 @@
+id = "link-03"
+category = "article_link"
+input_type = "url"
+input = "https://en.wikipedia.org/wiki/Teapot"
+
+[expected]
+# A page about something else: no supplement claim, so the user is asked for one (clarify_no_claim_page),
+# not refused. The user asked for the page's claims; an off-topic page is not an off-topic request.
+behaviour = "clarify"
+
+[label]
+rationale = """
+Wikipedia's Teapot article: about tea vessels, with no claim about a dietary supplement. Tea itself is
+mentioned only as a drink, never with a health effect.
+"""
+pmids = []
+status = "draft"
+drafted_on = 2026-11-05

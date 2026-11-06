@@ -94,6 +94,23 @@
         "summary": "Account"
       }
     },
+    "/account/delete": {
+      "post": {
+        "description": "Deletes the signed-in account and all its checks (P3.06), after the password and a tick.",
+        "operationId": "delete_account_account_delete_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Delete Account"
+      }
+    },
     "/account/password": {
       "post": {
         "operationId": "change_password_account_password_post",
@@ -566,6 +583,45 @@
         "summary": "Job Review"
       }
     },
+    "/admin/outcomes": {
+      "get": {
+        "description": "Feedback and time to result (P4.03, P4.04) over the last 7, 30 or 90 days.",
+        "operationId": "outcomes_admin_outcomes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Outcomes"
+      }
+    },
     "/admin/reviews": {
       "get": {
         "operationId": "reviews_admin_reviews_get",
@@ -658,6 +714,44 @@
           }
         },
         "summary": "Create User"
+      }
+    },
+    "/admin/users/{user_id}/delete": {
+      "post": {
+        "description": "Deletes an account and all its checks, for a person who asked by email (P3.06).",
+        "operationId": "delete_user_admin_users__user_id__delete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete User"
       }
     },
     "/admin/users/{user_id}/disable": {
@@ -753,6 +847,24 @@
     "/checks/new": {
       "get": {
         "operationId": "new_check_checks_new_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -761,6 +873,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "New Check"
@@ -793,6 +915,22 @@
                 }
               ],
               "title": "Spelling"
+            }
+          },
+          {
+            "in": "query",
+            "name": "feedback",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Feedback"
             }
           }
         ],
@@ -894,6 +1032,44 @@
         "summary": "Check Events"
       }
     },
+    "/checks/{job_id}/feedback": {
+      "post": {
+        "description": "Stores the person's answers about their own result (P4.03), then shows the result again.",
+        "operationId": "save_feedback_checks__job_id__feedback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Feedback"
+      }
+    },
     "/health": {
       "get": {
         "operationId": "health_health_get",
@@ -955,6 +1131,56 @@
           }
         },
         "summary": "History"
+      }
+    },
+    "/method": {
+      "get": {
+        "description": "How a check reaches a verdict (P3.11, docs/METHOD.md): public, so it can be read before an\ninvitation. The numbers are METHOD's, which a test keeps equal to core's active config.",
+        "operationId": "method_method_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Method"
+      }
+    },
+    "/privacy": {
+      "get": {
+        "operationId": "privacy_privacy_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Privacy"
+      }
+    },
+    "/reader": {
+      "get": {
+        "description": "What the page reader does and how a site can say no (P3.12): the page its user agent names.",
+        "operationId": "reader_reader_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reader"
       }
     },
     "/sign-in": {

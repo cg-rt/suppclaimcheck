@@ -20,14 +20,23 @@ from fastapi import (
 )
 from procrastinate import App
 from psycopg_pool import AsyncConnectionPool
+from pydantic import BaseModel, Field
 
 from scc_common import config_admin, config_store, correlation
 from scc_common.app import Check, create_app, http_check
 from scc_common.db import conninfo_from_env, db_check
-from scc_core import admin_api, config, jobs, tasks
+from scc_core import admin_api, config, jobs, privacy, tasks
 from scc_core.gateway_client import GatewayClient, GatewayError
-from scc_core.models import Claim, Job, JobCreate, JobEvent, JobSummary
-from scc_core.pipeline.triage import THROTTLED
+from scc_core.models import (
+    Claim,
+    Feedback,
+    FeedbackIn,
+    Job,
+    JobCreate,
+    JobEvent,
+    JobSummary,
+)
+from scc_core.pipeline.triage import INPUT_DISABLED, THROTTLED
 
 log = logging.getLogger("scc.jobs")
 IdempotencyKey = Annotated[
@@ -53,6 +62,8 @@ class Deps:
 
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+inputs = APIRouter(tags=["jobs"])
+users = APIRouter(prefix="/users", tags=["privacy"])
 
 
 def _deps(request: Request) -> Deps:
@@ -66,7 +77,9 @@ def _deps(request: Request) -> Deps:
         200: {
             "description": "Same key and body as an earlier request: the existing job"
         },
-        409: {"description": "Key reused with a different body"},
+        409: {
+            "description": "Key reused with a different body, or the input type is switched off"
+        },
         402: {"description": "This month's budget for checks is used up"},
         429: {
             "description": "The account's checks for today are used up, or too many recent checks "
@@ -87,6 +100,8 @@ async def create_job(
         version = deps.config_version or await config_store.active_version_async(
             conn, config.STORE
         )
+        if body.input_type != "text":
+            await _refuse_if_switched_off(conn, body.input_type, version)
         await _refuse_if_throttled(conn, body.user_id, idempotency_key, version)
         if not await jobs.exists(conn, body.user_id, idempotency_key):
             await _refuse_if_over_budget(deps, body.user_id)
@@ -110,6 +125,36 @@ async def create_job(
     )
     log.info("job created", extra={"job_id": str(job.id)})
     return job
+
+
+class InputTypes(BaseModel):
+    """What a new check can start from under the active config (P3.12, P3.13). Text is always on."""
+
+    text: bool = True
+    url: bool
+
+
+async def _switches(conn, version: str) -> dict:
+    return (await config_store.load_version_async(conn, config.STORE, version)).get(
+        "inputs", {}
+    )
+
+
+@inputs.get("/inputs")
+async def input_types(request: Request) -> InputTypes:
+    """The input types the new-check page may offer: the active config's [inputs] switches."""
+    deps = _deps(request)
+    async with deps.pool.connection() as conn:
+        version = deps.config_version or await config_store.active_version_async(
+            conn, config.STORE
+        )
+        switches = await _switches(conn, version)
+    return InputTypes(url=bool(switches.get("url")))
+
+
+async def _refuse_if_switched_off(conn, input_type: str, version: str) -> None:
+    if not (await _switches(conn, version)).get(input_type):
+        raise HTTPException(409, {"code": "input_disabled", "message": INPUT_DISABLED})
 
 
 async def _refuse_if_throttled(conn, user_id: int, key: str, version: str) -> None:
@@ -219,6 +264,89 @@ async def confirm_job(job_id: UUID, claim: Claim, request: Request) -> Job:
     return job
 
 
+@router.put(
+    "/{job_id}/feedback",
+    responses={
+        404: {"description": "No such job for this account"},
+        409: {"description": "The check has no result to rate"},
+    },
+)
+async def save_feedback(job_id: UUID, body: FeedbackIn, request: Request) -> Feedback:
+    """Stores the account's rating of its own result, replacing an earlier one (P4.03)."""
+    async with _deps(request).pool.connection() as conn:
+        try:
+            feedback = await jobs.save_feedback(conn, job_id, body)
+        except jobs.NotYours:
+            raise HTTPException(
+                404, {"code": "not_found", "message": "No such job."}
+            ) from None
+        except jobs.WrongState as exc:
+            raise HTTPException(
+                409,
+                {
+                    "code": "wrong_state",
+                    "message": f"The job is {exc.state}: only a result can be rated.",
+                },
+            ) from None
+    log.info("feedback saved", extra={"job_id": str(job_id)})
+    return feedback
+
+
+class EraseRequest(BaseModel):
+    # Who asked: the account itself, or an admin acting on an emailed request.
+    requested_by: int = Field(ge=1)
+
+
+class EraseReply(BaseModel):
+    checks: int
+    llm_calls: int
+
+
+@users.post(
+    "/{user_id}/erase",
+    responses={503: {"description": "The gateway could not be reached; call again"}},
+)
+async def erase_user(user_id: int, body: EraseRequest, request: Request) -> EraseReply:
+    """Deletes every check of a deleted account and asks the gateway to unlink its LLM calls (P3.06).
+    Web calls this before it deletes the account itself. Safe to call again."""
+    deps = _deps(request)
+    async with deps.pool.connection() as conn:
+        checks = await privacy.erase_user(conn, user_id)
+    try:
+        calls = (await deps.gateway.erase_user(user_id))["llm_calls"]
+    except (GatewayError, httpx.HTTPError) as exc:
+        log.warning(
+            "erase not finished: gateway",
+            extra={"user_id": user_id, "error": type(exc).__name__},
+        )
+        raise HTTPException(
+            503,
+            {
+                "code": "gateway_unavailable",
+                "message": "The gateway could not be reached. Try again.",
+            },
+        ) from None
+    who = (
+        "the account itself"
+        if body.requested_by == user_id
+        else f"admin user {body.requested_by}"
+    )
+    try:
+        # The out-of-band record of deletions: after a restore they are applied again (RB-12).
+        await deps.gateway.notify(
+            "account_deleted",
+            f"Account {user_id} was deleted, as asked by {who}: {checks} checks removed.",
+            str(user_id),
+        )
+    except (GatewayError, httpx.HTTPError) as exc:
+        log.warning(
+            "deletion alert not sent",
+            extra={"user_id": user_id, "error": type(exc).__name__},
+        )
+    log.info("account erased", extra={"user_id": user_id, "checks": checks})
+    return EraseReply(checks=checks, llm_calls=calls)
+
+
 def build_app(
     checks: dict[str, Check] | None = None, deps: Deps | None = None
 ) -> FastAPI:
@@ -251,6 +379,8 @@ def build_app(
     app = create_app("core-api", "SuppClaimCheck core API", checks, lifespan=lifespan)
     app.state.deps = deps
     app.include_router(router)
+    app.include_router(users)
+    app.include_router(inputs)
     # Read-only admin views for web's admin pages (P3.08-P3.10), and the one retry action.
     app.include_router(admin_api.router)
     app.include_router(config_admin.router(config.STORE, admin_api.pool_of))

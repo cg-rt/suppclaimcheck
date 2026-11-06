@@ -4,7 +4,9 @@ What to do when something breaks. Linked from the admin dashboard (P3.10); admin
 Every entry has: **Symptoms → Checks → Commands → Fix → Verify.** After any incident, add an entry to the owner's private log (what happened, cause, fix, downtime, what to change).
 Every error code, what it means for the user and which entry handles it: [ERRORS.md](ERRORS.md).
 
-> **All entries are drafts written before the system exists.** Each one is marked verified only after it has been exercised (P1.15, P3.13). Do not trust an unverified command blindly.
+> **Each entry's status says where it was exercised:** on the VM, rehearsed in dev, or only in tests (P1.15, P3.13, last reviewed 2026-11-06). Treat a step marked draft with care: run its check commands before its fix commands.
+
+**Two health endpoints.** `/health` says a process is up; Docker's health checks use it, so a container stays "healthy" while the database is down. `/health/deps` also checks the database and the next module in the chain (web → core-api → gateway) and answers 503 with `"status":"failed"` when anything below it is down. `https://suppclaimcheck.com/health/deps` answers from anywhere and shows only ok or failed per dependency.
 
 Production commands run on the VM, in `/opt/suppclaimcheck`, unless stated otherwise. Connect from Windows with `ssh scc-prod`.
 Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
@@ -12,7 +14,7 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 ---
 
 ## RB-01 Tunnel down
-**Status:** draft, verify in P1.15
+**Status:** the symptom was seen on 2026-10-25, before the first deploy: with no connector running, the site answered Cloudflare error 1033 (HTTP 530). The fix steps are a draft, never needed so far; dev has no tunnel to rehearse on.
 - **Symptoms:** the site doesn't load from outside; UptimeRobot alerts; Cloudflare shows error 1033 or 530; the Cloudflare dashboard shows the tunnel as inactive or degraded.
 - **Checks:** Is the VM up (RB-02)? Is the `edge` container running? Does the VM have internet?
 - **Commands:**
@@ -44,39 +46,53 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** all services healthy; a test claim completes. Log the downtime from UptimeRobot.
 
 ## RB-03 Container stuck in a restart loop
-**Status:** draft, verify in P1.15
-- **Symptoms:** `docker compose ps` shows `Restarting`; health checks failing; alerts.
+**Status:** rehearsed in dev on 2026-11-06: core-api was started with a database user that doesn't exist. It is a slow loop: each start waits about 30 seconds for the database, then logs `Application startup failed. Exiting.` and Docker starts it again (2 restarts in 75 seconds). Meanwhile web's `/health/deps` answered 503. Starting it again with the right settings brought it back healthy in 15 seconds. Not yet seen on the VM.
+- **Symptoms:** `docker compose ps` shows the service as `Up 20 seconds (health: starting)` again and again, rarely as `Restarting`, because each attempt runs for a while; the restart count keeps growing. `/health/deps` answers 503; checks fail or never start.
 - **Commands:**
   ```bash
   docker compose ps
   docker inspect -f '{{.RestartCount}}' $(docker compose ps -q <service>)
   docker compose logs --tail 100 <service>
   ```
-- **Fix:** the usual causes are a bad config or secret, a failed migration, or the database being unreachable. If it started after a deploy, roll back (RB-13). If it's a secret, fix the secret file and `docker compose up -d <service>`.
+- **Fix:** the usual causes are a bad config or secret, a failed migration, or the database being unreachable. `password authentication failed` in the logs means the service's database password secret doesn't match its role. If it started after a deploy, roll back (RB-13). If it's a secret, fix the secret file and `docker compose up -d <service>`.
+- **Up but stuck:** Docker restarts a container that exits, never one that is only unhealthy. Up to 0.1.2, core-worker could hang after a database outage: up, `(unhealthy)`, logging nothing, running no checks (found in the RB-04 rehearsal; fixed in the next release, which exits instead). If `docker compose ps` shows any service `(unhealthy)` for more than a minute, look at its logs, then `docker compose restart <service>`.
 - **Checks that lost their worker:** when core-worker restarts mid-check, the check stops moving. Every five minutes the worker's sweep ends any check stuck in a working state for more than `stall_minutes` (20, pipeline config) as failed with `stalled`, and a Telegram alert goes out. Once the worker is healthy, open each one in admin and press Retry: steps whose LLM calls already succeeded are not charged again (idempotency keys, D-053).
 - **Verify:** the service is healthy and stays up for 10 minutes.
 
 ## RB-04 Database down
-**Status:** draft, verify in C3.2
-- **Symptoms:** web shows the maintenance or error page; core-api and gateway health checks fail; job processing stops. The admin log view is empty, because logs only reach `docker compose logs` while the database is down.
+**Status:** rehearsed in dev on 2026-11-06 by stopping postgres for 90 seconds; the owner's drill on the VM is C3.2. What happened:
+- The sign-in page still loaded, but signing in showed "Something went wrong" with a reference.
+- `/health` stayed 200 on every module, so Docker kept web, core-api and gateway "healthy".
+- `/health/deps` answered 503 with `"database":"failed"` on all three.
+- core-worker stopped and was restarted by Docker.
+- Five seconds after postgres started again, web, core-api and the gateway answered normally, with no restart.
+- core-worker did not recover: it hung, unhealthy, until restarted by hand. That bug is fixed in the release after 0.1.2.
+- **Symptoms:** signing in or any signed-in page shows "Something went wrong" with a reference; admin doesn't load; no check moves. UptimeRobot only notices if it watches `/health/deps` (the go-live checklist sets that); on `/health` the site looks up.
 - **Commands:**
   ```bash
-  docker compose ps postgres
+  docker compose ps
   docker compose logs --tail 200 postgres
   df -h /
   ```
+  ```bash
+  curl -s https://suppclaimcheck.com/health/deps
+  ```
 - **Fix:** if the disk is full, go to RB-06 first. Otherwise `docker compose up -d postgres` and wait for it to be healthy. If the data directory is corrupted, restore from backup (RB-12).
-- **Verify:** all services healthy; jobs that were in progress either resume or show as failed, with a manual retry available in admin.
+- **After it is back:** `docker compose ps` must show every service healthy within a minute. On 0.1.2, core-worker stays `(unhealthy)`: `docker compose restart core-worker`.
+- **Verify:** `/health/deps` answers `"status":"ok"`; you can sign in; a test claim completes. A check that was running either finishes or ends as failed (`stalled` after 20 minutes) with a retry in admin.
 
 ## RB-05 Database full
-**Status:** draft, verify in P3.13
+**Status:** the commands were run against the dev database on 2026-11-06 (28 MB in all; the largest table is `gateway.articles`, the full-text cache, at 13 MB). The database lives on the VM's disk, so "full" means the disk is full: the alert is RB-06's. Not yet seen on the VM.
 - **Symptoms:** write errors in the logs ("could not extend file", "no space left on device"); the disk alert fires.
 - **Commands:**
   ```bash
-  docker compose exec postgres psql -U postgres -d scc -c "select pg_size_pretty(pg_database_size('scc'));"
-  docker compose exec postgres psql -U postgres -d scc -c "select relname, pg_size_pretty(pg_total_relation_size(relid)) from pg_catalog.pg_statio_user_tables order by pg_total_relation_size(relid) desc limit 10;"
+  sudo docker compose exec postgres psql -U postgres -d scc -c "select pg_size_pretty(pg_database_size('scc'));"
   ```
-- **Fix:** run the retention purge (logs older than 30 days, expired screenshots, old cached articles). If the data really is large, grow the disk (RB-06).
+  ```bash
+  sudo docker compose exec postgres psql -U postgres -d scc -c "select schemaname || '.' || relname as table, pg_size_pretty(pg_total_relation_size(relid)) as size from pg_catalog.pg_statio_user_tables order by pg_total_relation_size(relid) desc limit 10;"
+  ```
+- **What shrinks by itself:** the purges delete checks after 180 days, sign-in attempts after 30, stored model answers after 7 (RB-16 shows how to see that they ran). The article, passage and embedding caches (`gateway.articles`, `core.passages`, `core.embeddings`) are never purged: they grow with every new article read. Clearing them is not scripted; a check fetches a missing article again, at no LLM cost.
+- **Fix:** if the purges stopped (RB-16), find out why. Otherwise free space on the disk (RB-06), or grow it.
 - **Verify:** free space is above 20%; writes succeed.
 
 ## RB-06 Disk full
@@ -104,7 +120,15 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Verify:** a test claim completes; each failed job retried shows a result.
 
 ## RB-08 LLM provider errors or rate limits
-**Status:** draft, verify in C3.1
+**Status:** the codes are covered by `services/gateway/tests/test_llm_provider.py` (a 4xx is `provider_rejected`, never retried) and the retry policy by `test_budget_retry.py`; not rehearsed in dev, where the gateway may send real alerts. The owner's drill is C3.1, below.
+- **Drill (C3.1, on the VM):**
+  1. Note the time.
+  2. Put a wrong value in the key's secret file: `sudo nano secrets/anthropic_api_key`, change one character, and keep the original in the password manager.
+  3. `sudo docker compose restart gateway`.
+  4. Start a check on the site. It fails at "Reading your text" with `provider_rejected`, a Telegram alert arrives, and admin's Errors lists it.
+  5. Put the right key back and `sudo docker compose restart gateway`.
+  6. Retry the check from its admin page; it finishes.
+  7. Write the incident record: times, what you saw, what to change.
 - **Symptoms:** jobs fail at `extracting` or `assessing`; gateway errors with 401, 429 or 5xx; cost stops increasing.
 - **Commands:**
   ```bash
@@ -173,7 +197,8 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
   ```bash
   sudo ./restore.sh latest --replace
   ```
-- **Verify:** row counts look as expected; the smoke test passed; record it in the private log.
+- **After a real restore, apply deletions again (P3.06):** a snapshot brings back any account deleted after it was taken. In Telegram, find every `account_deleted` alert sent since the snapshot's time. Each one names an account number. Delete each of those accounts again from admin's Users page, Delete; their checks go with them. Note the account numbers in the private log; never their email addresses.
+- **Verify:** row counts look as expected; the smoke test passed; deletions applied again; record it in the private log.
 
 ## RB-13 Deploy and roll back
 **Status:** rehearsed in dev on 2026-10-24 with production's compose file and scripts (`tools/rehearse_deploy.py`): first deploy, upgrade, a deliberately failing deploy, rollback after the failure, rollback after a good deploy, and a deploy with the pre-deploy backup. The first VM deploy is C1.3.
@@ -241,25 +266,89 @@ Service names: `edge`, `web`, `core-api`, `core-worker`, `gateway`, `postgres`.
 - **Never:** edit the config tables by hand. Versions, evals and the audit are append-only (database triggers refuse changes); only the pointer moves.
 - **Verify:** `list` shows the `*` on the version you meant; `history` shows your line first; for core, the next check's job has that `config_version`.
 
+## RB-16 Someone asks about their data
+**Status:** draft; the deletion and the purges are tested in `tests/integration/test_privacy.py` (P3.06, D-054), not yet exercised on the VM.
+- **When:** an email to `contact@suppclaimcheck.com` asks for a copy of a person's data, a correction or a deletion. Answer within one month. What is kept, and for how long: [PRIVACY.md](PRIVACY.md).
+- **Deletion:** admin's Users page, Delete on their row, type their email, confirm. The account, its checks and its sign-in records go at once; its LLM cost rows stay, unlinked. If the page says the deletion didn't finish, the hourly purge finishes it: check the row shows "being deleted" for no more than an hour. A person can also delete their own account under Account.
+- **A copy:** their checks are on admin's Jobs page (search by email); open each trace for the text, claim and result. Send them as text. Their account row holds only the email, the role and dates.
+- **Correction:** only the email address can be wrong. Create a new account with the right one, then delete the old one when they agree; checks don't move between accounts.
+- **Checks that the purges run:** each module logs `purge finished` with counts (core at 03:30 UTC, web and the gateway hourly):
+  ```bash
+  sudo docker compose logs --since 25h core-worker web gateway | grep "purge"
+  ```
+  A core line `purge skipped: the active config has no [retention]` means the active pipeline version predates v8: see RB-15.
+- **Verify:** the person's email no longer appears on Users; the reply is sent; the private log has the date and what was done (no personal details).
+
+
+## RB-17 Link checks fail, or a site asks the reader to stay away
+**Status:** draft; the reader, its address checks and the switch are tested in `services/gateway/tests/test_pages.py` and `tests/integration/test_article_links.py` (P3.12, D-055), and real pages were read through the dev stack; not yet exercised on the VM.
+- **Symptoms:** a `url_blocked` alert (someone gave an address inside a private network, or one that redirects there); many link checks failing with `page_unavailable` or `page_timeout`; a `pages_not_configured` alert; or an email from a site owner about the page reader.
+- **Checks:** which codes, how often, for which sites. The gateway logs the host, never the path:
+  ```bash
+  sudo docker compose logs --since 24h gateway | grep "page not read"
+  ```
+  Admin's Jobs page, filtered to failed: each trace shows the link and the code.
+  - **`url_blocked` from one account, again and again:** someone may be probing. Nothing was fetched: the address is checked before any connection. Look at the account's other checks, and disable it on Users if it goes on.
+  - **`page_unavailable` or `page_timeout` for every site:** the gateway can't reach the internet. Check its egress (RB-07 has the same check for the literature):
+  ```bash
+  sudo docker compose exec gateway python -c "import urllib.request; print(urllib.request.urlopen('https://www.nccih.nih.gov/robots.txt', timeout=10).status)"
+  ```
+  - **`pages_not_configured`:** the active gateway config has no `[pages]` (a rollback to gateway-v2 or older). Activate gateway-v3 or later (RB-15), then restart the gateway.
+- **Switch link checks off, without a release:** export the active pipeline version, set `url = false` under `[inputs]`, name the copy (for example `pipeline-v9-no-links`), then create and activate it as in RB-15 with `--accept-warnings "links off: why"`. The new-check page stops offering links at once; checks already running finish. Activate the previous version to switch them back on.
+- **A site owner asks the reader to stay away:** reply that `User-agent: SuppClaimCheck` with `Disallow: /` in their robots.txt does it within an hour (the `/reader` page says so). To stop at once, add their domain to `blocked_hosts` under `[pages]` in a gateway CLI version (RB-15: `gateway python -m scc_gateway.config`), activate it and restart the gateway; it covers every name under the domain. Note it in the private log.
+- **Verify:** a link check to a page that should read does; for a blocked site, a link check ends with the "asks automated readers not to read this page" message.
+
 ---
 
 ## Release go-live checklist
-To be completed in P3.13. Copy it into the private log for each release and tick it there.
-- [ ] CI green on the release commit; all tests pass
-- [ ] Evals run on the release config; thresholds met (EVALS.md)
-- [ ] Security checks: scans clean or triaged; no new secrets findings
-- [ ] Backup taken today, and a restore verified within the last 30 days
-- [ ] Runbook updated for anything new
-- [ ] Rollback tested for the modules being released
-- [ ] Feature flags set as intended for this rollout stage
-- [ ] Owner's go-ahead recorded
+Completed in P3.13 (2026-11-06). For each release, copy it into the private log and tick it there. The owner runs everything on the VM.
+
+**Before the tag**
+- [ ] The release PR is merged: it sets `VERSION` and turns `[Unreleased]` in `CHANGELOG.md` into the version's heading ([deploy/README.md](../deploy/README.md), Releases). CI is green on the merge commit.
+- [ ] Evals: a replay of the recording passes in CI; any prompt, config or retrieval change since the last release has a live run in [EVALS.md](EVALS.md) that meets the thresholds.
+- [ ] Security: no open Dependabot or secret-scanning alert, and every open CodeQL alert is fixed or dismissed with its reason ([security/OWASP-TOP10.md](security/OWASP-TOP10.md)). No entry in `.trivyignore.yaml` expires within the week.
+- [ ] Runbook updated for anything new; [ERRORS.md](ERRORS.md) lists every new error code (a test checks it).
+
+**The release**
+- [ ] Tag the merge commit `vX.Y.Z` and push the tag. The Release workflow is green: all five images built, scanned and pushed with their attestations.
+
+**On the VM, before the deploy**
+- [ ] Copy every file under `deploy/` that changed since the running version. `git diff --stat v<running> v<new> -- deploy/` lists them. From 0.1.2 that is `compose.prod.yaml`, `backup.sh` and `restore.sh` (the same `scp` as first-time setup, then `sudo mv` into `/opt/suppclaimcheck/`).
+- [ ] New settings in `/opt/suppclaimcheck/.env`: from 0.1.2, `SCC_OPERATOR_NAME=...`, so the privacy page names the controller (P3.06).
+- [ ] Cloudflare: the `admin.suppclaimcheck.com` route and its Access application are in place, allowing only the owner (C1.2).
+- [ ] Backup taken today (`journalctl -u scc-backup.service --since today`), and a restore verified within the last 30 days (RB-12).
+- [ ] Feature flags as intended for this rollout stage (table below).
+- [ ] The owner's go-ahead, recorded in the private log.
+
+**The deploy**
+- [ ] `sudo ./deploy.sh X.Y.Z` prints `smoke test passed` (RB-13). If it fails, `sudo ./rollback.sh`.
+
+**After the deploy**
+- [ ] `https://suppclaimcheck.com/version` names the new version; `https://suppclaimcheck.com/health/deps` answers `"status":"ok"`.
+- [ ] `sudo docker compose ps`: every service healthy.
+- [ ] UptimeRobot watches `https://suppclaimcheck.com/health/deps` for the keyword `"status":"ok"` (once; from 0.1.2 it watched `/health`, which stays up with the database down: RB-04).
+- [ ] Admin opens through Cloudflare Access; Overview loads.
+- [ ] Rotate anything the release notes ask for (the first release after 0.1.2: the NCBI API key and the Telegram bot token; [OWASP-TOP10.md](security/OWASP-TOP10.md), R-01).
+
+## Feature flags per input type
+Each input type has a switch in the pipeline config (versioned, P2.09), so it can be turned off without a release (RB-15, RB-17).
+
+| Input | Switch | State in pipeline-v9 | Stage 1 (owner) | Stage 2 (testers) |
+|---|---|---|---|---|
+| Pasted text or ad text | none: always on | on | on | on |
+| A link to a page (P3.12) | `[inputs] url` | on | on | on, unless the owner turns it off (RB-17) |
+| Ad screenshot (P4.01) | added with the feature | not built | | |
+| Pasted YouTube transcript (P4.02) | added with the feature | not built | | |
 
 ## Weekly ops checklist
-To be completed in P3.13. About 15 minutes, every Monday.
+Completed in P3.13 (2026-11-06). About 15 minutes, every Monday.
 - [ ] UptimeRobot: any downtime last week? Log it if so
+- [ ] `sudo docker compose ps`: every service `(healthy)`; anything unhealthy goes to RB-03
 - [ ] healthchecks.io: all backups and disk checks green
 - [ ] Disk usage below 70% (`df -h /`)
 - [ ] Costs this month vs budget; any unusual user
 - [ ] Admin: Reviews has nothing waiting; Injections shows no account held; failed jobs looked at
-- [ ] Dependabot and security alerts triaged
+- [ ] Admin: Outcomes read (new feedback and what people said was missing); no account on Users "being deleted" for more than an hour
+- [ ] Dependabot, CodeQL and secret-scanning alerts triaged; `.trivyignore.yaml` and the dated `exclude-newer-package` entries in `pyproject.toml` checked for dates that have passed
 - [ ] Ubuntu updates applied; reboot the VM if required (`/var/run/reboot-required`)
+- [ ] Monthly, the first Monday: a restore drill (RB-12)

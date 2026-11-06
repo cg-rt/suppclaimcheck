@@ -1,0 +1,101 @@
+{% extends "admin/layout.html" %}
+{% from "admin/macros.html" import short_id, scroll %}
+{% block title %}Outcomes{% endblock %}
+{% block main %}
+{% set o = outcomes %}
+<section class="card" aria-labelledby="outcomes-title">
+  <h1 class="title" id="outcomes-title">Outcomes</h1>
+  <p class="meta">How people rated their results, and how long checks took. Counts cover checks that finished with a result in the last <span class="num">{{ o.days }}</span> days. Evals don't appear here: they run outside the app.</p>
+  <nav class="tabs" aria-label="Period">
+    <ul>
+      {% for days in windows %}
+      <li><a href="/admin/outcomes?days={{ days }}"{% if days == o.days %} aria-current="page"{% endif %}>Last {{ days }} days</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  <dl class="facts facts--wide">
+    <div><dt>Results</dt><dd><span class="num">{{ o.results }}</span>{% if o.reused %} · <span class="num">{{ o.reused }}</span> reused from an earlier check{% endif %}</dd></div>
+    <div><dt>Rated</dt><dd><span class="num">{{ o.rated }}</span> · <span class="num">{{ views.share(o.rated, o.results) }}</span> of results</dd></div>
+  </dl>
+</section>
+
+<section class="card" aria-labelledby="feedback-title">
+  <h2 class="card__title" id="feedback-title">Feedback</h2>
+  {% if o.rated %}
+  <div class="answers">
+  {% for q in o.questions %}
+  {% set answered = q.answers|sum(attribute="n") %}
+  <div>
+  <h3 class="subhead" id="q-{{ q.question }}">{{ views.QUESTIONS[q.question] }} <span class="meta">(<span class="num">{{ answered }}</span> answered)</span></h3>
+  {% call scroll("q-" ~ q.question) %}
+  <table class="data data--answers">
+    <thead><tr><th scope="col">Answer</th><th scope="col" class="n">Checks</th><th scope="col" class="n">Share</th></tr></thead>
+    <tbody>
+      {% for a in q.answers %}
+      <tr>
+        <th scope="row"><span class="state state--{{ views.ANSWER_INK[a.answer] }}">{{ views.answer(q.question, a.answer) }}</span></th>
+        <td class="n num">{{ a.n }}</td>
+        <td class="n num">{{ views.share(a.n, answered) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  </div>
+  {% endfor %}
+  </div>
+  {% else %}
+  <p>No one has rated a result in this period.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="missing-title">
+  <h2 class="card__title" id="missing-title">What people said was missing</h2>
+  <p class="meta">Their own words, newest first. Read them as user text: they never reach the language model.</p>
+  {% if o.comments %}
+  {% call scroll("missing-title") %}
+  <table class="data data--stack">
+    <thead>
+      <tr><th scope="col">When</th><th scope="col">Job</th><th scope="col">User</th><th scope="col">Verdict</th><th scope="col">Looks right</th><th scope="col">Understandable</th><th scope="col">Missing</th></tr>
+    </thead>
+    <tbody>
+      {% for c in o.comments %}
+      <tr>
+        <td data-label="When"><time class="num" datetime="{{ c.updated_at }}">{{ views.when(c.updated_at) }}</time></td>
+        <td data-label="Job"><a href="/admin/jobs/{{ c.job_id }}">{{ short_id(c.job_id) }}</a></td>
+        <td data-label="User">{{ emails.get(c.user_id, "user " ~ c.user_id) }}</td>
+        <td data-label="Verdict">{{ c.verdict or "–" }}</td>
+        <td data-label="Looks right">{% if c.verdict_right %}<span class="state state--{{ views.ANSWER_INK[c.verdict_right] }}">{{ views.answer("verdict_right", c.verdict_right) }}</span>{% else %}<span class="meta">–</span>{% endif %}</td>
+        <td data-label="Understandable">{% if c.understandable %}<span class="state state--{{ views.ANSWER_INK[c.understandable] }}">{{ views.answer("understandable", c.understandable) }}</span>{% else %}<span class="meta">–</span>{% endif %}</td>
+        <td data-label="Missing" class="data__text">{{ c.missing }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  {% else %}
+  <p>No one has written what was missing in this period.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="timing-title">
+  <h2 class="card__title" id="timing-title">Time to result</h2>
+  <p class="meta">Median and 90th percentile, from the times the database records on every check.{% if o.reused %} The <span class="num">{{ o.reused }}</span> reused results are left out: they take no time.{% endif %}</p>
+  {% call scroll("timing-title") %}
+  <table class="data data--stack">
+    <thead><tr><th scope="col">Measure</th><th scope="col" class="n">Checks</th><th scope="col" class="n">Median</th><th scope="col" class="n">90th percentile</th><th scope="col">What it covers</th></tr></thead>
+    <tbody>
+      {% for t in o.timings %}
+      <tr>
+        <th scope="row" data-label="Measure">{{ views.MEASURES[t.measure] }}</th>
+        <td data-label="Checks" class="n num">{{ t.checks }}</td>
+        <td data-label="Median" class="n num">{{ views.seconds(t.median_seconds) or "–" }}</td>
+        <td data-label="90th percentile" class="n num">{{ views.seconds(t.p90_seconds) or "–" }}</td>
+        <td data-label="What it covers" class="data__note">{{ views.MEASURE_NOTES[t.measure] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+</section>
+{% endblock %}

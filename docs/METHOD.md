@@ -1,9 +1,14 @@
 # How SuppClaimCheck reaches a verdict
 
-The text for the method page (P3.11). It describes pipeline v7 (pipeline v1 with query v2, hybrid retrieval and result reuse) with rubric v1 (P2.04, P2.05, P2.07; D-044, D-045, D-047, D-052, D-053). What happens before the search (refusals, questions back, safety notices) is in `docs/POLICY.md`. The language model reads; code decides.
+The product's `/method` page (P3.11) says the same in plain words; its numbers are tested against the active pipeline config (`tests/test_method_page.py`), so change both together. This file describes pipeline v9 (pipeline v1 with query v2, hybrid retrieval and result reuse; v8 added retention periods, D-054, and v9 article links, D-055) with rubric v1 (P2.04, P2.05, P2.07; D-044, D-045, D-047, D-052, D-053). What happens before the search (refusals, questions back, safety notices) is in `docs/POLICY.md`. The language model reads; code decides.
 
 ## In one paragraph
 We search PubMed for open-access studies about the claim, pick the strongest kinds of study first, and read up to five of them. A language model labels passages as supporting the claim, contradicting it, or not relevant, and copies a sentence as proof. Code checks every copied sentence word for word against the article and throws away any that don't match. Code then weighs each article by its type of study and works out the verdict and a 0–100 score. The model never decides the verdict or the score.
+
+## 0. Where the claim comes from
+- You paste a text, or give a link to a page (an article, a blog post, a product page).
+- For a link, SuppClaimCheck's page reader fetches that one page, if the site's robots.txt allows it, and keeps its readable text: menus, scripts and hidden parts are left out. The model looks for claims in the first 30,000 characters and lists up to eight, the most prominent first. How the reader behaves, and how a site keeps it away, is on the `/reader` page.
+- Either way you confirm one claim, and can correct it, before anything is searched.
 
 ## 1. Finding articles
 - The claim you confirm becomes a PubMed search, built by code from the supplement, the effect and the population.
@@ -61,4 +66,5 @@ The **verdict** is the first rule that applies:
 - Only open-access articles are read, and at most five per claim. Strong evidence behind a paywall is missed.
 - Labelling passages is the model's judgement and can be wrong; the eval set measures how often (docs/EVALS.md). Quotes are always verified; labels are not.
 - Study type comes from metadata, which can be missing or coarse. A "human study, design not stated" may be anything from a trial to a survey.
+- A linked page is read as it is at that moment, from the top: a claim near the end of a long page can be missed (paste it instead). Pages that need a login, need JavaScript, or are PDFs can't be read.
 - The verdict describes what the articles read say about the claim as confirmed. It is not medical advice, and it says nothing about dose or safety for you.
