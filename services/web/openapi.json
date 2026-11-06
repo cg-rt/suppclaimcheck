@@ -1133,6 +1133,23 @@
         "summary": "History"
       }
     },
+    "/method": {
+      "get": {
+        "description": "How a check reaches a verdict (P3.11, docs/METHOD.md): public, so it can be read before an\ninvitation. The numbers are METHOD's, which a test keeps equal to core's active config.",
+        "operationId": "method_method_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Method"
+      }
+    },
     "/privacy": {
       "get": {
         "operationId": "privacy_privacy_get",

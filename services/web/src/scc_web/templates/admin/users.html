@@ -30,7 +30,7 @@
         <td data-label="Created"><time class="num" datetime="{{ a.created_at.isoformat() }}">{{ views.when(a.created_at)[:10] }}</time></td>
         <td data-label="Last sign-in">{% if a.last_sign_in %}<time class="num" datetime="{{ a.last_sign_in.isoformat() }}">{{ views.when(a.last_sign_in) }}</time>{% else %}<span class="meta">never</span>{% endif %}</td>
         <td data-label="Sessions" class="n num">{{ a.sessions }}</td>
-        <td data-label="Actions">
+        <td data-label="Actions" class="data__actions">
           {% if a.id != me %}
           <div class="actions">
             <a href="/admin/jobs?q={{ a.email|urlencode }}">Jobs</a>
@@ -40,7 +40,7 @@
               <form method="post" action="/admin/users/{{ a.id }}/reset">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <p class="hint">A new password is made and shown once; their sessions end.</p>
-                <button class="button button--small" type="submit">Reset {{ a.email }}</button>
+                <button class="button button--small" type="submit">Reset the password<span class="visually-hidden"> of {{ a.email }}</span></button>
               </form>
             </details>
             <details class="confirm">
@@ -48,7 +48,7 @@
               <form method="post" action="/admin/users/{{ a.id }}/disable">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <p class="hint">They can't sign in again, and their sessions end now. Re-enabling is by hand (database).</p>
-                <button class="button button--small" type="submit">Disable {{ a.email }}</button>
+                <button class="button button--small" type="submit">Disable the account<span class="visually-hidden"> {{ a.email }}</span></button>
               </form>
             </details>
             {% endif %}
@@ -62,7 +62,7 @@
                   <label for="confirm-{{ a.id }}">Type their email to confirm</label>
                   <input id="confirm-{{ a.id }}" name="confirm_email" type="email" autocomplete="off" required>
                 </div>
-                <button class="button button--small" type="submit">Delete {{ a.email }}</button>
+                <button class="button button--small" type="submit">Delete the account<span class="visually-hidden"> {{ a.email }}</span></button>
               </form>
             </details>
             {% endif %}

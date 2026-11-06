@@ -1,6 +1,6 @@
 # How SuppClaimCheck reaches a verdict
 
-The text for the method page (P3.11). It describes pipeline v9 (pipeline v1 with query v2, hybrid retrieval and result reuse; v8 added retention periods, D-054, and v9 article links, D-055) with rubric v1 (P2.04, P2.05, P2.07; D-044, D-045, D-047, D-052, D-053). What happens before the search (refusals, questions back, safety notices) is in `docs/POLICY.md`. The language model reads; code decides.
+The product's `/method` page (P3.11) says the same in plain words; its numbers are tested against the active pipeline config (`tests/test_method_page.py`), so change both together. This file describes pipeline v9 (pipeline v1 with query v2, hybrid retrieval and result reuse; v8 added retention periods, D-054, and v9 article links, D-055) with rubric v1 (P2.04, P2.05, P2.07; D-044, D-045, D-047, D-052, D-053). What happens before the search (refusals, questions back, safety notices) is in `docs/POLICY.md`. The language model reads; code decides.
 
 ## In one paragraph
 We search PubMed for open-access studies about the claim, pick the strongest kinds of study first, and read up to five of them. A language model labels passages as supporting the claim, contradicting it, or not relevant, and copies a sentence as proof. Code checks every copied sentence word for word against the article and throws away any that don't match. Code then weighs each article by its type of study and works out the verdict and a 0–100 score. The model never decides the verdict or the score.

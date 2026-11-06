@@ -75,6 +75,13 @@ def test_account_page(page):
     check(page, "/account", "Change password")
 
 
+def test_reading_pages(page):
+    # P3.11: the method, privacy and page-reader pages, at every width.
+    check(page, "/method", "How a check works")
+    check(page, "/privacy", "What is kept, and for how long")
+    check(page, "/reader", "How to keep it away from your site")
+
+
 def test_sign_out_ends_the_session(page):
     page.set_viewport_size({"width": 1440, "height": 900})
     page.goto(f"{URL}/history")

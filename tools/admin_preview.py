@@ -6,7 +6,8 @@ live calls, nothing spent), adds sample jobs in every status, and serves web wit
 gateway in one process at http://admin.localhost:18095/admin. Sign in as admin@example.com with the
 preview-only password below. The public pages answer at http://localhost:18095 (the tester account,
 with its own preview-only password, owns the canned check, with feedback and times for P4.03 and
-P4.04, and three link checks for P3.12: one waiting for a pick, one finished, one the site kept out). The database is dropped on a clean stop, and a hard stop's leftover at the next start.
+P4.04, three link checks for P3.12: one waiting for a pick, one finished, one the site kept out, and
+two rubric-v1 results with several articles for P3.11). The database is dropped on a clean stop, and a hard stop's leftover at the next start.
 
 Run from the repo root (`.claude/launch.json` has it as `admin-preview`):
     uv run python tools/admin_preview.py
@@ -126,6 +127,26 @@ async def seed_links(conn, user: int) -> None:
                 Jsonb(claim) if claim else None,
                 Jsonb(outcome) if outcome else None,
                 error, 3 - n,
+            ),
+        )  # fmt: skip
+
+
+async def seed_results(conn, user: int) -> None:
+    """P3.11: two finished rubric-v1 checks from the dev stack, so the result page shows several
+    articles of different study types, a finding in each direction, and articles with no finding.
+    The real results as core stored them, minus the passages the admin trace shows."""
+    samples = json.loads(
+        (ROOT / "tests" / "fixtures" / "preview" / "results.json").read_text("utf-8")
+    )
+    for n, s in enumerate(samples):
+        await conn.execute(
+            "INSERT INTO core.jobs (user_id, idempotency_key, request_hash, state, input_type,"
+            " input_text, confirmed_claim, result, config_version, created_at)"
+            " VALUES (%s, %s, 'preview', 'done', 'text', %s, %s, %s, %s,"
+            " now() - make_interval(mins => %s))",
+            (
+                user, f"preview-v1-{n}", s["input_text"], Jsonb(s["confirmed_claim"]),
+                Jsonb(s["result"]), s["config_version"], 1 + n,
             ),
         )  # fmt: skip
 
@@ -284,6 +305,7 @@ async def main(admin_dsn: str) -> None:
             ids = await seed(conn, user=tester, other=admin_id, clear=False)
             await seed_safety(conn, user=tester, other=gone, reviewer=admin_id)
             await seed_links(conn, tester)
+            await seed_results(conn, tester)
             # P4.04: the seeded rows are written directly, so they get times the trigger would give.
             await conn.execute(
                 "UPDATE core.jobs SET confirmed_at = created_at + interval '25 seconds',"

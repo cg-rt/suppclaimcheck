@@ -1,0 +1,522 @@
+[
+ {
+  "config_version": "pipeline-v5",
+  "input_text": "Magnesium supplements improve sleep quality in older adults.",
+  "confirmed_claim": {
+   "dose": null,
+   "effect": "improves sleep quality",
+   "duration": null,
+   "population": "older adults",
+   "supplement": "magnesium"
+  },
+  "result": {
+   "rule": "The weighted evidence supports the claim.",
+   "score": 100,
+   "quotes": [
+    {
+     "label": "supports",
+     "pmcid": "PMC8053283",
+     "quote": "There is minimal evidence of positive effect, of low to very low certainty, to suggest that magnesium supplementation improves insomnia symptoms as measured through sleep parameters.",
+     "reason": "The passage reports minimal, low-certainty evidence that magnesium improves insomnia symptoms, with sleep-onset latency reduced versus placebo.",
+     "section": "Results: Effect of intervention: Sleep parameters",
+     "passage_id": "PMC8053283-20"
+    },
+    {
+     "label": "supports",
+     "pmcid": "PMC8053283",
+     "quote": "Pooled analysis showed that post-intervention sleep onset latency time was 17.36 min less after magnesium supplementation compared to placebo (95% CI − 27.27 to − 7.44, p = 0.0006).",
+     "reason": "The pooled analysis reports a statistically significant reduction in sleep onset latency with magnesium versus placebo, favouring the claimed sleep improvement.",
+     "section": "Abstract: Results",
+     "passage_id": "PMC8053283-2"
+    },
+    {
+     "label": "supports",
+     "pmcid": "PMC10783196",
+     "quote": "Finally, earlier studies have shown that magnesium intake has a role in normalizing sleep organization, and its deficiency is linked to some sleep disturbances (25).",
+     "reason": "The passage states that magnesium intake plays a role in normalizing sleep organization, which favours a sleep benefit, though it is background from earlier studies rather than a trial finding.",
+     "section": "Discussion",
+     "passage_id": "PMC10783196-24"
+    }
+   ],
+   "verdict": "Supported",
+   "articles": [
+    {
+     "doi": "10.1186/s12906-021-03297-z",
+     "pmid": "33865376",
+     "tier": "systematic_review",
+     "year": "2021",
+     "pmcid": "PMC8053283",
+     "title": "Oral magnesium supplementation for insomnia in older adults: a Systematic Review & Meta-Analysis.",
+     "weight": 1.0,
+     "authors": "Mah J, Pitre T.",
+     "in_epmc": true,
+     "journal": "BMC complementary medicine and therapies",
+     "license": "cc by",
+     "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8053283/",
+     "pub_types": [
+      "Meta-Analysis",
+      "research-article",
+      "Systematic Review",
+      "Journal Article"
+     ],
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/33865376/",
+     "open_access": true
+    },
+    {
+     "doi": "10.3389/fpsyt.2023.1333261",
+     "pmid": "38213402",
+     "tier": "systematic_review",
+     "year": "2023",
+     "pmcid": "PMC10783196",
+     "title": "Magnesium supplementation beneficially affects depression in adults with depressive disorder: a systematic review and meta-analysis of randomized clinical trials.",
+     "weight": 1.0,
+     "authors": "Moabedi M, Aliakbari M, Erfanian S, Milajerdi A.",
+     "in_epmc": true,
+     "journal": "Frontiers in psychiatry",
+     "license": "cc by",
+     "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10783196/",
+     "pub_types": [
+      "Systematic Review",
+      "systematic-review",
+      "Journal Article"
+     ],
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/38213402/",
+     "open_access": true
+    },
+    {
+     "doi": "10.3390/nu13051515",
+     "pmid": "33946351",
+     "tier": "systematic_review",
+     "year": "2021",
+     "pmcid": "PMC8145171",
+     "title": "Meta-Analysis and Systematic Review of Micro- and Macro-Nutrient Intakes and Trajectories of Macro-Nutrient Supply in the Eastern Mediterranean Region.",
+     "weight": 1.0,
+     "authors": "Doggui R, Al-Jawaldeh H, El Ati J, Barham R, Nasreddine L, Alqaoud N, Aguenaou H, El Ammari L, Jabbour J, Al-Jawaldeh A.",
+     "in_epmc": true,
+     "journal": "Nutrients",
+     "license": "cc by",
+     "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8145171/",
+     "pub_types": [
+      "Meta-Analysis",
+      "Systematic Review",
+      "review-article",
+      "Journal Article"
+     ],
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/33946351/",
+     "open_access": true
+    },
+    {
+     "doi": "10.1186/s10194-026-02350-x",
+     "pmid": "41998499",
+     "tier": "systematic_review",
+     "year": "2026",
+     "pmcid": "PMC13126917",
+     "title": "Sex-specific management of migraine a systematic review and consensus statement from the European Headache Federation (EHF).",
+     "weight": 1.0,
+     "authors": "Braca S, Casillo F, Moreira S, Ekizoglu E, Bjork MH, Szewczyk AK, Van Dycke A, Uluduz D, Coppola G, Deligianni C, Lampl C, Tronvik E, Amin FM, Versijpt J, Ryliškienė K, Rio MSD, Holland PR, Terwindt G, Reuter U, MaassenVanDenBrink A, Gil-Gouveia R.",
+     "in_epmc": true,
+     "journal": "The journal of headache and pain",
+     "license": "cc by-nc-nd",
+     "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13126917/",
+     "pub_types": [
+      "Systematic Review",
+      "review-article",
+      "Consensus Statement",
+      "Journal Article"
+     ],
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41998499/",
+     "open_access": true
+    },
+    {
+     "doi": "10.1002/smi.3051",
+     "pmid": "33864354",
+     "tier": "rct",
+     "year": "2021",
+     "pmcid": "PMC9292249",
+     "title": "Effect of magnesium and vitamin B6 supplementation on mental health and quality of life in stressed healthy adults: Post-hoc analysis of a randomised controlled trial.",
+     "weight": 0.8,
+     "authors": "Noah L, Dye L, Bois De Fer B, Mazur A, Pickering G, Pouteau E.",
+     "in_epmc": true,
+     "journal": "Stress and health : journal of the International Society for the Investigation of Stress",
+     "license": "cc by-nc-nd",
+     "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9292249/",
+     "pub_types": [
+      "research-article",
+      "Randomized Controlled Trial",
+      "Journal Article"
+     ],
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/33864354/",
+     "open_access": true
+    }
+   ],
+   "searched": {
+    "query": "\"magnesium\"[tiab] AND (sleep[tiab] OR quality[tiab]) AND (older[tiab] OR adults[tiab])",
+    "matches": 216,
+    "ranking": "tier",
+    "skipped": {
+     "no_full_text": 0,
+     "not_in_europe_pmc": 0,
+     "licence_not_allowed": 0
+    },
+    "database": "PubMed (open-access filter)",
+    "retrieval": "hybrid",
+    "considered": 20,
+    "query_version": "query-v1"
+   },
+   "strength": 1.0,
+   "breakdown": [
+    {
+     "tier": "systematic_review",
+     "pmcid": "PMC8053283",
+     "stance": 1.0,
+     "weight": 1.0,
+     "counted": true,
+     "supporting": 2,
+     "contradicting": 0
+    },
+    {
+     "tier": "systematic_review",
+     "pmcid": "PMC10783196",
+     "stance": 1.0,
+     "weight": 1.0,
+     "counted": true,
+     "supporting": 1,
+     "contradicting": 0
+    },
+    {
+     "tier": "systematic_review",
+     "pmcid": "PMC8145171",
+     "stance": 0.0,
+     "weight": 1.0,
+     "counted": false,
+     "supporting": 0,
+     "contradicting": 0
+    },
+    {
+     "tier": "systematic_review",
+     "pmcid": "PMC13126917",
+     "stance": 0.0,
+     "weight": 1.0,
+     "counted": false,
+     "supporting": 0,
+     "contradicting": 0
+    },
+    {
+     "tier": "rct",
+     "pmcid": "PMC9292249",
+     "stance": 0.0,
+     "weight": 0.8,
+     "counted": false,
+     "supporting": 0,
+     "contradicting": 0
+    }
+   ],
+   "direction": 1.0,
+   "supporting": 3,
+   "weight_for": 2.0,
+   "limitations": [
+    "Only open-access articles whose licence allows text mining are read.",
+    "This version reads up to 5 article(s) per claim, choosing the strongest study types first.",
+    "This is not medical advice."
+   ],
+   "human_weight": 2.0,
+   "contradicting": 0,
+   "config_version": "pipeline-v5",
+   "quotes_dropped": 0,
+   "rubric_version": "rubric-v1",
+   "weight_against": 0.0,
+   "articles_assessed": 5,
+   "found_not_assessed": [
+    {
+     "pmid": "41081513",
+     "pmcid": "PMC12517116",
+     "title": "British Dietetic Association Guidelines for the Dietary Management of Chronic Constipation in Adults.",
+     "year": "2025",
+     "tier": "narrative_review",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41081513/"
+    },
+    {
+     "pmid": "39252819",
+     "pmcid": "PMC11381753",
+     "title": "Magnesium-L-threonate improves sleep quality and daytime functioning in adults with self-reported sleep problems: A randomized controlled trial.",
+     "year": "2024",
+     "tier": "human_other",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/39252819/"
+    },
+    {
+     "pmid": "40918053",
+     "pmcid": "PMC12412596",
+     "title": "Magnesium Bisglycinate Supplementation in Healthy Adults Reporting Poor Sleep: A Randomized, Placebo-Controlled Trial.",
+     "year": "2025",
+     "tier": "human_trial",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/40918053/"
+    },
+    {
+     "pmid": "23853635",
+     "pmcid": "PMC3703169",
+     "title": "The effect of magnesium supplementation on primary insomnia in elderly: A double-blind placebo-controlled clinical trial.",
+     "year": "2012",
+     "tier": "human_other",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/23853635/"
+    },
+    {
+     "pmid": "38892706",
+     "pmcid": "PMC11174536",
+     "title": "Nutrition, Vitamin D, and Calcium in Elderly Patients before and after a Hip Fracture and Their Impact on the Musculoskeletal System: A Narrative Review.",
+     "year": "2024",
+     "tier": "narrative_review",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/38892706/"
+    },
+    {
+     "pmid": "41601871",
+     "pmcid": "PMC12832366",
+     "title": "The effects of magnesium L-threonate (Magtein®) on cognitive performance and sleep quality in adults: a randomised, double-blind, placebo-controlled trial.",
+     "year": "2025",
+     "tier": "human_trial",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41601871/"
+    },
+    {
+     "pmid": "41081381",
+     "pmcid": "PMC12623288",
+     "title": "British Dietetic Association Guidelines for the Dietary Management of Chronic Constipation in Adults.",
+     "year": "2025",
+     "tier": "narrative_review",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41081381/"
+    },
+    {
+     "pmid": "35565828",
+     "pmcid": "PMC9102162",
+     "title": "Effect of a Combination of Magnesium, B Vitamins, Rhodiola, and Green Tea (L-Theanine) on Chronically Stressed Healthy Individuals-A Randomized, Placebo-Controlled Study.",
+     "year": "2022",
+     "tier": "rct",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/35565828/"
+    },
+    {
+     "pmid": "26519439",
+     "pmcid": "PMC4927823",
+     "title": "Efficacy and Safety of MMFS-01, a Synapse Density Enhancer, for Treating Cognitive Impairment in Older Adults: A Randomized, Double-Blind, Placebo-Controlled Trial.",
+     "year": "2016",
+     "tier": "rct",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/26519439/"
+    },
+    {
+     "pmid": "41272667",
+     "pmcid": "PMC12639720",
+     "title": "The association between magnesium intake and circadian syndrome among US adults attending NHANES 2005-2016.",
+     "year": "2025",
+     "tier": "observational",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41272667/"
+    },
+    {
+     "pmid": "35386318",
+     "pmcid": "PMC8965722",
+     "title": "Slow degrading Mg-based materials induce tumor cell dormancy on an osteosarcoma-fibroblast coculture model.",
+     "year": "2022",
+     "tier": "unclassified",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/35386318/"
+    },
+    {
+     "pmid": "38125660",
+     "pmcid": "PMC10728708",
+     "title": "Obesity and malnutrition in children and adults: A clinical review.",
+     "year": "2023",
+     "tier": "narrative_review",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/38125660/"
+    },
+    {
+     "pmid": "31847176",
+     "pmcid": "PMC6950482",
+     "title": "Diet Quality and Micronutrient Intake among Long-Term Weight Loss Maintainers.",
+     "year": "2019",
+     "tier": "observational",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/31847176/"
+    },
+    {
+     "pmid": "33099509",
+     "pmcid": "PMC7590352",
+     "title": "Dietary intake of adults with and without diabetes: results from NHANES 2013-2016.",
+     "year": "2020",
+     "tier": "observational",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/33099509/"
+    },
+    {
+     "pmid": "31141935",
+     "pmcid": "PMC6627498",
+     "title": "Consumption of Yogurt in Canada and Its Contribution to Nutrient Intake and Diet Quality Among Canadians.",
+     "year": "2019",
+     "tier": "observational",
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/31141935/"
+    }
+   ],
+   "full_strength_weight": 2.0
+  }
+ },
+ {
+  "config_version": "pipeline-v1",
+  "input_text": "Beetroot juice improves endurance performance in cyclists.",
+  "confirmed_claim": {
+   "dose": null,
+   "effect": "improves endurance performance",
+   "duration": null,
+   "population": "cyclists",
+   "supplement": "Beetroot juice"
+  },
+  "result": {
+   "rule": "The weighted evidence contradicts the claim.",
+   "score": 32,
+   "quotes": [
+    {
+     "label": "contradicts",
+     "pmcid": "PMC13164879",
+     "quote": "No significant effect of condition was observed for EP (p = 0.401, ηp2 = 0.056), WEP (p = 0.580, ηp2 = 0.048), peak power (p = 0.642, ηp2 = 0.046), mean power (p = 0.212, ηp2 = 0.108), or total work (p = 0.217, ηp2 = 0.107).",
+     "reason": "The abstract reports no significant effect of beetroot juice (combined with caffeine condition) on end power, work above end power, peak or mean power in a 3 min all-out cycling test, which contradicts a performance benefit.",
+     "section": "Abstract",
+     "passage_id": "PMC13164879-0"
+    },
+    {
+     "label": "contradicts",
+     "pmcid": "PMC13164879",
+     "quote": "Collectively, these findings suggest that performance outcomes are not consistently improved across different supplementation conditions, although results remain dependent on the exercise model and population studied.",
+     "reason": "The discussion summarises other studies, noting mixed and non-consistent performance outcomes from combined nitrate and caffeine, with no significant benefit in some, which argues against a consistent benefit.",
+     "section": "4. Discussion",
+     "passage_id": "PMC13164879-21"
+    },
+    {
+     "label": "contradicts",
+     "pmcid": "PMC13164879",
+     "quote": "Accordingly, the absence of an observed effect in the present study should be interpreted within the context of this potential mismatch between the physiological targets of nitrate supplementation and the characteristics of the exercise model.",
+     "reason": "The discussion explains that the absence of nitrate effect in the 3MT may reflect a mismatch with the test, reporting no positive finding for beetroot juice on this claim.",
+     "section": "4. Discussion",
+     "passage_id": "PMC13164879-23"
+    },
+    {
+     "label": "supports",
+     "pmcid": "PMC4045310",
+     "quote": "TTE in BR+C was 46% higher than in PLA (P = 0.096) and 18% and 27% nonsignificant TTE improvements were observed on BR+C compared with BR and PLA+C alone, respectively.",
+     "reason": "The abstract reports that beetroot juice plus caffeine improved time to exhaustion versus placebo, but the improvement was non-significant (P = 0.096) and the comparison was with caffeine, not a clear beetroot-alone endurance benefit in cyclists; it partly supports the claim.",
+     "section": "Abstract",
+     "passage_id": "PMC4045310-0"
+    },
+    {
+     "label": "supports",
+     "pmcid": "PMC4045310",
+     "quote": "Several independent research groups have demonstrated in double-blind, placebo-controlled studies that acute as well as chronic intake of beetroot juice containing about 8 mmoles of nitrate (NO3 −) can improve endurance and high-intensity intermittent performance [16–20].",
+     "reason": "The introduction states that double-blind placebo-controlled studies show beetroot juice improves endurance performance, supporting the claim, though it is a literature summary rather than this study's finding.",
+     "section": "1. Introduction",
+     "passage_id": "PMC4045310-3"
+    },
+    {
+     "label": "supports",
+     "pmcid": "PMC4045310",
+     "quote": "acute consumption of beetroot juice resulted in improved 4 km and 16 km time trial performance in club-level competitive cyclists [19].",
+     "reason": "The discussion reports that acute beetroot juice improved time trial performance in club-level cyclists, directly supporting the claim.",
+     "section": "4. Discussion",
+     "passage_id": "PMC4045310-21"
+    },
+    {
+     "label": "contradicts",
+     "pmcid": "PMC4045310",
+     "quote": "Further, Cermak et al. [31] found that consumption of a single dose of concentrated beetroot juice did not affect 1 h time-trial cycling exercise performance.",
+     "reason": "The passage reports that a single dose of concentrated beetroot juice did not affect 1 h cycling time-trial performance, which contradicts the claim that beetroot juice improves endurance in cyclists.",
+     "section": "4. Discussion",
+     "passage_id": "PMC4045310-23"
+    }
+   ],
+   "verdict": "Contradicted",
+   "articles": [
+    {
+     "doi": "10.3390/nu18091463",
+     "pmid": "42124064",
+     "tier": "rct",
+     "year": "2026",
+     "pmcid": "PMC13164879",
+     "title": "Effects of Dietary Nitrate and Caffeine on End Power and Work Above End Power During a 3 min All-Out Test in Trained Male Cyclists.",
+     "weight": 0.8,
+     "authors": "Hagele AM, Sunderland KL, Mumford PW, Kerksick CM.",
+     "in_epmc": true,
+     "journal": "Nutrients",
+     "license": "cc by",
+     "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13164879/",
+     "pub_types": [
+      "research-article",
+      "Randomized Controlled Trial",
+      "Journal Article"
+     ],
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/42124064/",
+     "open_access": true
+    },
+    {
+     "doi": "10.5402/2013/396581",
+     "pmid": "24967257",
+     "tier": "unclassified",
+     "year": "2013",
+     "pmcid": "PMC4045310",
+     "title": "Likely additive ergogenic effects of combined preexercise dietary nitrate and caffeine ingestion in trained cyclists.",
+     "weight": 0.2,
+     "authors": "Handzlik MK, Gleeson M.",
+     "in_epmc": true,
+     "journal": "ISRN nutrition",
+     "license": "cc by",
+     "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4045310/",
+     "pub_types": [
+      "research-article",
+      "Journal Article"
+     ],
+     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/24967257/",
+     "open_access": true
+    }
+   ],
+   "searched": {
+    "query": "\"beetroot juice\"[tiab] AND (endurance[tiab] OR performance[tiab]) AND (cyclists[tiab])",
+    "matches": 2,
+    "ranking": "tier",
+    "skipped": {
+     "no_full_text": 0,
+     "not_in_europe_pmc": 0,
+     "licence_not_allowed": 0
+    },
+    "database": "PubMed (open-access filter)",
+    "considered": 2,
+    "query_version": "query-v0"
+   },
+   "strength": 0.5,
+   "breakdown": [
+    {
+     "tier": "rct",
+     "pmcid": "PMC13164879",
+     "stance": -1.0,
+     "weight": 0.8,
+     "counted": true,
+     "supporting": 0,
+     "contradicting": 3
+    },
+    {
+     "tier": "unclassified",
+     "pmcid": "PMC4045310",
+     "stance": 0.5,
+     "weight": 0.2,
+     "counted": true,
+     "supporting": 3,
+     "contradicting": 1
+    }
+   ],
+   "direction": -0.7,
+   "supporting": 3,
+   "weight_for": 0.1,
+   "limitations": [
+    "Only open-access articles whose licence allows text mining are read.",
+    "This version reads up to 5 article(s) per claim, choosing the strongest study types first.",
+    "This is not medical advice."
+   ],
+   "human_weight": 0.8,
+   "contradicting": 4,
+   "config_version": "pipeline-v1",
+   "quotes_dropped": 0,
+   "rubric_version": "rubric-v1",
+   "weight_against": 0.8,
+   "articles_assessed": 2,
+   "found_not_assessed": [],
+   "full_strength_weight": 2.0
+  }
+ }
+]

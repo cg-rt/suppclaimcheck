@@ -47,7 +47,7 @@
   <details class="workings">
     <summary>How the score was worked out</summary>
     <ol class="workings__steps">{% for step in view.steps %}<li class="num">{{ step }}</li>{% endfor %}</ol>
-    <p class="small">Code computes the verdict and score from {{ r.rubric_version }}; the language model never does. {% if r.rubric_version == "rubric-v1" %}Each article counts once, weighted by its type of study.{% else %}This version gives full strength from six verified passages.{% endif %}</p>
+    <p class="small">Code computes the verdict and score from {{ r.rubric_version }}; the language model never does. {% if r.rubric_version == "rubric-v1" %}Each article counts once, weighted by its type of study.{% else %}This version gives full strength from six verified passages.{% endif %} <a href="/method">How a check works</a></p>
   </details>
 </section>
 
@@ -58,7 +58,7 @@
 
 <section class="card" aria-labelledby="evidence-title">
   <h2 class="card__title" id="evidence-title">The evidence, word for word</h2>
-  <p class="small">Every quote below was found word for word in the article. Quotes that weren't are never shown.</p>
+  <p class="small">Every quote below was found word for word in its article. Quotes that weren't are never shown.</p>
   {% for group, title in [(view.supporting, "Supports the claim"), (view.contradicting, "Contradicts the claim")] %}
   {% if group %}
   <h3 class="subhead">{{ title }} <span class="num">({{ group|length }})</span></h3>
@@ -67,32 +67,38 @@
     <li class="quote quote--{{ q.label }}">
       <blockquote class="quote__text"><p>{{ q.quote }}</p></blockquote>
       <p class="quote__why">{{ q.reason }}</p>
-      <p class="quote__source">{{ q.section }} · {{ q.citation }} · {{ q.licence }}</p>
+      <p class="quote__source">{% if q.n %}<a href="#article-{{ q.n }}">Article <span class="num">{{ q.n }}</span></a>: {{ q.ref }}{% else %}{{ q.citation }}{% endif %} · {{ q.section }} · {{ q.licence }}</p>
     </li>
     {% endfor %}
   </ul>
   {% endif %}
   {% endfor %}
   {% if not view.supporting and not view.contradicting %}
-  <p>No passage in the article read supports or contradicts the claim.</p>
+  <p>No passage in the {{ "article" if view.articles|length == 1 else "articles" }} read supports or contradicts the claim.</p>
   {% endif %}
 </section>
 
 <section class="card" aria-labelledby="article-title">
-  <h2 class="card__title" id="article-title">The article that was read</h2>
-  {% for a in view.articles %}
-  <div class="citation">
-    <p class="citation__title">{{ a.title }}</p>
-    <p class="citation__line">{{ a.citation }}.{% if a.doi %} doi:{{ a.doi }}{% endif %}</p>
-    <p class="citation__line">Licence: {{ a.licence }} · PMID <span class="num">{{ a.pmid }}</span> · {{ a.pmcid }}</p>
-    <p class="citation__links">
-      {% if a.pmc_url %}<a href="{{ a.pmc_url }}" rel="noopener noreferrer" target="_blank">Full text on PubMed Central {{ icon("out") }}<span class="visually-hidden"> (opens in a new tab)</span></a>{% endif %}
-      {% if a.pubmed_url %}<a href="{{ a.pubmed_url }}" rel="noopener noreferrer" target="_blank">PubMed record {{ icon("out") }}<span class="visually-hidden"> (opens in a new tab)</span></a>{% endif %}
-    </p>
-  </div>
+  <h2 class="card__title" id="article-title">{% if view.articles|length == 1 %}The article that was read{% else %}The <span class="num">{{ view.articles|length }}</span> articles that were read{% endif %}</h2>
+  {% if view.articles %}
+  <ol class="articles">
+    {% for a in view.articles %}
+    <li class="citation" id="article-{{ a.n }}">
+      <p class="citation__title">{{ a.title }}</p>
+      {% if a.finding %}<p class="citation__finding"><span class="verdict-ink verdict-ink--{{ a.finding.ink }}">{{ a.finding.word }}</span> · {{ a.finding.detail }}</p>{% endif %}
+      {% if a.kind %}<p class="citation__kind">{{ a.kind }}{% if a.weight is defined and a.weight is not none %} · <span class="nowrap">weight <span class="num">{{ "%.2f"|format(a.weight) }}</span></span>{% endif %}</p>{% endif %}
+      <p class="citation__line">{{ a.citation }}.{% if a.doi %} doi:{{ a.doi }}{% endif %}</p>
+      <p class="citation__line">Licence: {{ a.licence }} · PMID <span class="num">{{ a.pmid }}</span> · {{ a.pmcid }}</p>
+      <p class="citation__links">
+        {% if a.pmc_url %}<a href="{{ a.pmc_url }}" rel="noopener noreferrer" target="_blank">Full text on PubMed Central {{ icon("out") }}<span class="visually-hidden"> (opens in a new tab)</span></a>{% endif %}
+        {% if a.pubmed_url %}<a href="{{ a.pubmed_url }}" rel="noopener noreferrer" target="_blank">PubMed record {{ icon("out") }}<span class="visually-hidden"> (opens in a new tab)</span></a>{% endif %}
+      </p>
+    </li>
+    {% endfor %}
+  </ol>
   {% else %}
   <p>No article could be read for this claim.</p>
-  {% endfor %}
+  {% endif %}
 </section>
 
 <section class="card" aria-labelledby="searched-title">

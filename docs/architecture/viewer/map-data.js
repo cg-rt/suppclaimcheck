@@ -41,7 +41,7 @@ window.ARCHITECTURE_MAP = {
       "status": "live",
       "version": "0.1.2",
       "phase_built": 1,
-      "technology": "cloudflared 2026.10.3 (official image, pinned by digest)",
+      "technology": "cloudflared 2026.10.7 (official image, pinned by digest)",
       "purpose": "The only way in from the internet. Holds an outbound tunnel to Cloudflare and forwards both hostnames to web.",
       "why_it_exists": "No open router ports. Cloudflare terminates TLS and applies Access to the admin hostname. A separate reverse proxy was dropped because cloudflared already routes by hostname (D-011).\n",
       "ports": {},

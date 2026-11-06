@@ -1,6 +1,6 @@
 """The signed-in pages (P1.10): new check (text, or a link to a page, P3.12), confirm, live progress,
-result, history; the feedback form under a result (P4.03); and two pages anyone can read: the privacy
-notice (P3.06) and what the page reader does (P3.12)."""
+result, history; the feedback form under a result (P4.03); and three pages anyone can read: the privacy
+notice (P3.06), what the page reader does (P3.12) and how a check works (P3.11)."""
 
 import asyncio
 import logging
@@ -53,6 +53,7 @@ async def _new_check_page(
         "new_check.html",
         status_code,
         idempotency_key=str(uuid.uuid4()),
+        method=METHOD,
         links=links,
         mode=mode if links else "text",
         **context,
@@ -241,7 +242,7 @@ async def save_feedback(request: Request, job_id: str) -> Response:
             "Your answers could not be saved. Please try again in a minute.", 503
         )
     return RedirectResponse(
-        f"/checks/{job_id}?feedback=saved#feedback", status_code=303
+        f"/checks/{job['id']}?feedback=saved#feedback", status_code=303
     )
 
 
@@ -324,7 +325,8 @@ async def confirm_check(request: Request, job_id: str) -> Response:
                 if known
                 else "The search could not be started. Please try again in a minute.",
             )
-    return RedirectResponse(f"/checks/{job_id}", status_code=303)
+    # The ID as core stored it, not as typed in the address (P3.07).
+    return RedirectResponse(f"/checks/{job['id']}", status_code=303)
 
 
 def _sse(event: str, html: str) -> str:
@@ -389,6 +391,78 @@ READER = {
     "min_interval_s": 1,
     "robots_cache_minutes": 60,
 }
+
+
+@router.get("/method")
+async def method(request: Request) -> Response:
+    """How a check reaches a verdict (P3.11, docs/METHOD.md): public, so it can be read before an
+    invitation. The numbers are METHOD's, which a test keeps equal to core's active config."""
+    await current_session(
+        request
+    )  # for the header when signed in; the page itself is public
+    m = METHOD
+    tiers = [
+        (views.TIER_NAMES[t], w, t in m["human_tiers"]) for t, w in m["weights"].items()
+    ]
+    return render(request, "method.html", m=m, tiers=tiers, example=worked_example(m))
+
+
+# The method as core's active config sets it (pipeline-v9 [search], [retrieval], [evidence], [rubric],
+# [cache], [inputs]). Web doesn't read core's config, so a test keeps the two equal, like READER.
+METHOD = {
+    "pipeline": "pipeline-v9",
+    "rubric": "rubric-v1",
+    "considered": 20,
+    "read": 5,
+    "passages": 6,
+    "keyword_weight": 0.7,
+    "weights": {
+        "systematic_review": 1.0,
+        "rct": 0.8,
+        "human_trial": 0.6,
+        "observational": 0.4,
+        "human_other": 0.4,
+        "narrative_review": 0.3,
+        "unclassified": 0.2,
+        "animal": 0.15,
+        "in_vitro": 0.1,
+        "other": 0.1,
+    },
+    "human_tiers": (
+        "systematic_review",
+        "rct",
+        "human_trial",
+        "observational",
+        "human_other",
+        "narrative_review",
+    ),
+    "full_strength": 2.0,
+    "min_strength": 0.25,
+    "mixed_share": 0.25,
+    "reuse_days": 7,
+    "page_chars": 30_000,
+}
+
+
+def worked_example(m: dict) -> dict:
+    """The method page's example, worked out from the current weights and thresholds: a meta-analysis
+    and a randomised trial support the claim, a narrative review contradicts it."""
+    w_for = m["weights"]["systematic_review"] + m["weights"]["rct"]
+    w_against = m["weights"]["narrative_review"]
+    total = w_for + w_against
+    direction = (w_for - w_against) / total
+    strength = min(1.0, total / m["full_strength"])
+    share = min(w_for, w_against) / total
+    return {
+        "w_for": w_for,
+        "w_against": w_against,
+        "total": total,
+        "share": share,
+        "mixed": share >= m["mixed_share"],
+        "direction": direction,
+        "strength": strength,
+        "score": round(50 + 50 * direction * strength),
+    }
 
 
 @router.get("/history")
