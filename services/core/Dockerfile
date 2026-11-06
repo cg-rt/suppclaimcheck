@@ -26,6 +26,11 @@ FROM python:3.14.8-slim-trixie@sha256:fbecd461fc72d21b2143c6eaba25143738079154a6
 # image scanners flag (P1.11), so the final image drops it.
 RUN rm -rf /usr/local/lib/python3.14/site-packages/pip /usr/local/lib/python3.14/site-packages/pip-* \
     /usr/local/lib/python3.14/ensurepip /usr/local/bin/pip /usr/local/bin/pip3*
+# Debian security fixes released after the base image was built (D-056; the release scan fails on
+# fixable ones, P1.11). Python lives in /usr/local, outside apt, so it stays the pinned version.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin scc
 COPY --from=build /app/.venv /app/.venv
 COPY --from=build /app/models /app/models

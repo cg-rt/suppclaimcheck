@@ -332,3 +332,16 @@ Project-management decisions are kept in a private repository and share this num
   - **A long page** is read only from the top (30,000 characters, about 7,500 tokens); the confirm page says so.
   - **The host network:** the home network's own public address isn't on the block list; nothing listens on it (the site is reached only through Cloudflare Tunnel, D-027).
   - **New dependency:** none; `httpcore` is now declared by the gateway, which already had it through httpx.
+
+### D-056 · 2026-11-06 · The release scan passes again: Debian updates at build, cloudflared 2026.10.7, one scoped secret exception · [Owner] [Agent]
+- **Context:** in M7 (P3.07) the five images were scanned the way the release workflow does (`trivy image --exit-code 1 --severity CRITICAL,HIGH --ignore-unfixed`). Every one failed, so the next release would have stopped at the scan:
+  - **web, core, gateway, postgres:** CVE-2026-109518 in Debian's `apt` (HIGH, published 2026-11-04, fixed in 3.0.4). It needs an `apt` install over a tampered connection; the running containers never run `apt`. The pinned `python:3.14.8-slim-trixie` digest still ships 3.0.3; postgres already installs Debian updates at build (D-040), so only a stale local build cache showed it there.
+  - **edge:** cloudflared 2026.10.3 carries two HIGH denial-of-service findings, CVE-2026-63209 (klauspost/compress, its `.trivyignore.yaml` entry expired 2026-11-05) and CVE-2026-116587 (go-jose, new). 2026.10.4 fixes only the first; 2026.10.7 (2026-10-30) scans clean.
+  - **gateway:** Trivy's secret scanner reports 11 CRITICAL `gcp-service-account` matches in the Anthropic SDK 1.15.0. Each is the docstring example `{"type": "service_account"}`, not a key.
+- **Decision:**
+  - **Python images install Debian security updates at build** (owner's choice), as postgres does: `apt-get update && apt-get upgrade` in the final stage, before the non-root user. Python itself lives in `/usr/local`, outside `apt`, so it stays the pinned version.
+  - **edge uses cloudflared 2026.10.7**, pinned by digest, before it is two weeks old (owner's choice, as in D-040): it is the process that holds the tunnel.
+  - **One secret exception, scoped by path:** `.trivyignore.yaml` excuses `gcp-service-account` only under `/app/.venv/lib/python3.14/site-packages/anthropic/**`, until 2027-02-06. An exception by pattern was rejected: the same text opens a real Google key file, so it would hide one anywhere in an image.
+  - **Result:** all five images built fresh on 2026-11-06 pass the release gate with exit code 0.
+- **Alternatives:** accept the `apt` finding for two weeks and wait for a new base digest (owner chose the build-time update); keep cloudflared 2026.10.3 and list both findings until 13 Nov; turn off Trivy's secret scanner for images (gitleaks covers the repo, not what lands in an image).
+- **Trade-offs:** a Python image built on two days can differ in its Debian packages, as the postgres image already could; the digest pins the starting point, not the result. A Debian update can break a build; the release workflow then fails before anything is pushed. cloudflared 2026.10.7 has had less time in the wild.
