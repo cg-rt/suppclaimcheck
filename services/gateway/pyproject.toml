@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "SuppClaimCheck gateway module"
 requires-python = ">=3.14"
 dependencies = [
-    "anthropic==1.15.0",
+    "anthropic==2.2.0",
     # The page reader (P3.12, D-055) connects through its own network backend; httpx already brings it.
     "httpcore==1.0.9",
     "psycopg-pool==3.3.3",
